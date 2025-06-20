@@ -27,26 +27,34 @@ __version__ = version("llm7shi")
 
 # Import main functions for convenience
 from .gemini import (
-    generate_content_retry,
-    generate_content_retry_with_thoughts,
+    DEFAULT_MODEL,
+    build_schema_from_json,
     config_from_schema,
     config_from_schema_string,
+    generate_content_retry,
+    generate_content_retry_with_thoughts,
+    show_params,
     upload_file,
     delete_file,
 )
 
 from .terminal import (
+    bold,
     convert_markdown,
     MarkdownStreamConverter,
 )
 
 __all__ = [
-    "generate_content_retry",
-    "generate_content_retry_with_thoughts", 
+    "DEFAULT_MODEL",
+    "build_schema_from_json",
     "config_from_schema",
     "config_from_schema_string",
+    "generate_content_retry",
+    "generate_content_retry_with_thoughts",
+    "show_params",
     "upload_file",
     "delete_file",
+    "bold",
     "convert_markdown",
     "MarkdownStreamConverter",
 ]

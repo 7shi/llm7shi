@@ -9,7 +9,7 @@ models = [
     "gemini-2.5-pro",
 ]
 
-default_model = models[0]
+DEFAULT_MODEL = models[0]
 
 client = genai.Client(
     api_key=os.environ.get("GEMINI_API_KEY"),
@@ -115,7 +115,7 @@ def generate_content_retry_with_thoughts(contents, *, model=None, config=None, i
     for attempt in range(5, 0, -1):
         try:
             response = client.models.generate_content_stream(
-                model=model or default_model,
+                model=model or DEFAULT_MODEL,
                 config=config,
                 contents=contents,
             )
