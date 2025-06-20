@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "locations_and_temperatures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "location": {
+              "type": "string"
+          },
+          "temperature": {
+              "type": "number",
+              "description": "Temperature in Celsius"
+          }
+        },
+        "required": ["location", "temperature"]
+      }
+    }
+  }
+}
