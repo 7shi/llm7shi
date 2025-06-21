@@ -47,8 +47,7 @@ export GEMINI_API_KEY="your-api-key-here"
 
 ## API Reference
 
-- [llm7shi/gemini.md](llm7shi/gemini.md): Main API wrapper with retry logic and schema support
-- [llm7shi/terminal.md](llm7shi/terminal.md): Terminal formatting utilities for Markdown conversion
+See [llm7shi/README.md](llm7shi/README.md) for complete API documentation and module details.
 
 ## Examples
 
