@@ -7,10 +7,13 @@ This example demonstrates how to use JSON schemas to generate structured data ou
 ## Code Explanation
 
 ```python
+import json
 from pathlib import Path
-from llm7shi import config_from_schema, generate_content_retry
+from llm7shi import build_schema_from_json, config_from_schema, generate_content_retry
 
-schema = Path(__file__).with_suffix(".json")
+with open(Path(__file__).with_suffix(".json")) as f:
+    schema = build_schema_from_json(json.load(f))
+
 generate_content_retry(
     ["The temperature in Tokyo is 90 degrees Fahrenheit."],
     config=config_from_schema(schema),
@@ -19,8 +22,8 @@ generate_content_retry(
 
 ### Key Components
 
-1. **Schema Loading**: Uses `Path(__file__).with_suffix(".json")` to automatically load `schema.json`
-2. **Configuration**: `config_from_schema()` creates a generation config from the JSON schema
+1. **Schema Loading**: Loads `schema.json` and converts it using `build_schema_from_json()`
+2. **Configuration**: `config_from_schema()` creates a generation config from the Gemini schema
 3. **Structured Input**: Natural language text that contains data to be extracted
 4. **Structured Output**: AI returns properly formatted JSON matching the schema
 
@@ -93,6 +96,6 @@ uv run examples/schema.py
 
 ## Related Functions
 
-- `config_from_schema(file_path)`: Load schema from JSON file
-- `config_from_schema_string(json_string)`: Create schema from JSON string
+- `build_schema_from_json(json_data)`: Convert JSON schema to Gemini Schema object
+- `config_from_schema(schema)`: Create generation config from Gemini schema
 - `generate_content_retry()`: Main generation function with schema support

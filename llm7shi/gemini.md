@@ -14,6 +14,9 @@ Built-in automatic retry functionality for API errors (429, 500, 503). Sets appr
 ### 4. Flexible Output Control
 Supports enabling/disabling streaming output and changing output destinations. Covers a wide range from CLI use to batch processing.
 
+### 5. Schema-based Generation
+Supports structured JSON output using JSON schemas. Converts standard JSON schema definitions to Gemini's Schema format for type-safe responses.
+
 ## Main Functions
 
 ### `generate_content_retry_with_thoughts()`
@@ -26,7 +29,8 @@ thoughts, text = generate_content_retry_with_thoughts(
     config=config_text,
     include_thoughts=True,        # Include thinking process
     thinking_budget=None,         # Thinking time limit (optional)
-    file=sys.stdout              # Output destination (None to disable)
+    file=sys.stdout,             # Output destination (None to disable)
+    show_params=True             # Display parameters before generation
 )
 ```
 
@@ -44,7 +48,8 @@ text = generate_content_retry(
     config=config_text,
     include_thoughts=True,
     thinking_budget=None,
-    file=sys.stdout
+    file=sys.stdout,
+    show_params=True
 )
 ```
 
@@ -60,8 +65,7 @@ config_text = types.GenerateContentConfig(
 )
 
 # For JSON output (with schema)
-config_json = config_from_schema_string('''
-{
+json_schema = {
     "type": "object",
     "properties": {
         "answer": {"type": "string"},
@@ -69,17 +73,34 @@ config_json = config_from_schema_string('''
     },
     "required": ["answer", "confidence"]
 }
-''')
+schema = build_schema_from_json(json_schema)
+config_json = config_from_schema(schema)
 ```
 
 ### Schema Functions
 ```python
-# Generate configuration from JSON schema string
-config = config_from_schema_string(schema_json_string)
+# Build Gemini Schema from JSON schema dictionary
+json_schema = {
+    "type": "object",
+    "properties": {
+        "answer": {"type": "string"},
+        "confidence": {"type": "number"}
+    },
+    "required": ["answer", "confidence"]
+}
+schema = build_schema_from_json(json_schema)
 
-# Generate configuration from schema file
-config = config_from_schema("schema.json")
+# Create configuration from Schema
+config = config_from_schema(schema)
 ```
+
+### Supported Schema Types
+- `object`: With properties and required fields
+- `string`: With optional enum values
+- `boolean`: Boolean values
+- `number`: Floating point numbers
+- `integer`: Integer values
+- `array`: With typed items
 
 ## Output Control
 
@@ -118,7 +139,7 @@ with open("debug.log", "w", encoding="utf-8") as log_file:
 ## Error Handling
 
 ### Auto-retry Target Errors
-- **429**: Rate limit → Wait according to `retryDelay`
+- **429**: Rate limit → Wait according to `retryDelay` from error details (default 15s)
 - **500**: Server error → Retry after 15 seconds
 - **502**: Bad Gateway → Retry after 15 seconds
 - **503**: Service unavailable → Retry after 15 seconds
@@ -176,6 +197,36 @@ text = generate_content_retry(contents, model=model, config=config)
 
 # Delete file after use
 delete_file(image_file)
+```
+
+### Supported MIME Types
+- Images: `image/jpeg`, `image/png`, `image/gif`, `image/webp`
+- Documents: `application/pdf`, `text/plain`
+- Audio: `audio/mpeg`, `audio/wav`
+- Video: `video/mp4`
+
+## Utility Functions
+
+### `do_show_params()`
+Display generation parameters for debugging.
+
+```python
+do_show_params(["Analyze this file"], model="gemini-2.5-flash", file=sys.stderr)
+# Output:
+# - model : gemini-2.5-flash
+# 
+# > Analyze this file
+```
+
+### Parameter Display
+The `generate_content_retry` functions have a `show_params` parameter (default=True) that automatically displays the model and prompt before generation:
+
+```python
+# Parameters will be displayed before generation
+text = generate_content_retry(["Hello"], show_params=True)
+
+# Disable parameter display
+text = generate_content_retry(["Hello"], show_params=False)
 ```
 
 ## Usage Examples
@@ -236,4 +287,4 @@ default_model = models[0]  # Set Flash as default
 2. **Encoding**: UTF-8 recommended for file output
 3. **Resource Management**: Delete uploaded files after use
 4. **Rate Limiting**: Automatically waits on 429 errors, but appropriate usage intervals recommended
-5. **Thinking Feature**: Only supported on Gemini 2.5 Pro, not available on Flash
+5. **Thinking Feature**: Supported on both Gemini 2.5 Pro and Flash models
