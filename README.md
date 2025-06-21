@@ -6,7 +6,8 @@ A simplified Python library for interacting with large language models. Currentl
 
 - **Simple API**: Easy-to-use wrapper for Gemini models
 - **Automatic Retry**: Built-in retry logic for API errors (429, 500, 502, 503) with exponential backoff
-- **Streaming Support**: Real-time output streaming for interactive experiences
+- **Streaming Output**: Both text and schema-based generation support real-time streaming
+- **Thinking Process**: Automatic thinking budget optimization for Gemini 2.5 models
 - **Schema-based Generation**: JSON schema support for structured outputs
 - **Terminal Formatting**: Convert Markdown formatting to colored terminal output
 - **Error Resilience**: Robust error handling for production use
@@ -44,7 +45,22 @@ Set your Gemini API key as an environment variable:
 export GEMINI_API_KEY="your-api-key-here"
 ```
 
-## Usage
+## API Reference
+
+- [**`llm7shi/gemini.md`**](llm7shi/gemini.md): Main API wrapper with retry logic and schema support
+- [**`llm7shi/terminal.py`**](llm7shi/terminal.md): Terminal formatting utilities for Markdown conversion
+
+## Examples
+
+Run the included examples:
+
+```bash
+# Basic text generation
+uv run examples/hello.py
+
+# Schema-based structured output
+uv run examples/schema.py
+```
 
 ### Basic Text Generation
 
@@ -96,49 +112,3 @@ generate_content_retry(
   }
 }
 ```
-
-## API Reference
-
-### Core Functions
-
-- `generate_content_retry(messages, config=None, file=None)`: Main function for generating content with automatic retry
-- `config_from_schema(schema_path)`: Create a generation config from a JSON schema file
-
-### Supported Models
-
-- `gemini-2.5-flash` (default)
-- `gemini-2.5-pro`
-
-## Architecture
-
-### Core Modules
-
-- **`llm7shi/gemini.py`**: Main API wrapper with retry logic and schema support
-- **`llm7shi/terminal.py`**: Terminal formatting utilities for Markdown conversion
-
-### Key Features
-
-- **Streaming Output**: Both text and schema-based generation support real-time streaming
-- **Thinking Process**: Automatic thinking budget optimization for Gemini 2.5 models
-- **Cross-platform**: Windows console compatibility included
-
-## Examples
-
-Run the included examples:
-
-```bash
-# Basic text generation
-uv run examples/hello.py
-
-# Schema-based structured output
-uv run examples/schema.py
-```
-
-## Dependencies
-
-- `colorama>=0.4.6`: Cross-platform colored terminal output
-- `google-genai>=1.21.1`: Official Google Generative AI client
-
-## License
-
-CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
