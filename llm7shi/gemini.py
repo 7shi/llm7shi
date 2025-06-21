@@ -272,8 +272,6 @@ def generate_content_retry(contents, *, model=None, config=None, include_thought
     raise RuntimeError("Max retries exceeded.")
 
 
-
-
 def do_show_params(contents, *, model=None, file=sys.stdout, **kwargs):
     """Display generation parameters for debugging/logging.
     
@@ -295,7 +293,7 @@ def do_show_params(contents, *, model=None, file=sys.stdout, **kwargs):
     
     # Print parameters with aligned colons
     for k, v in params.items():
-        print(f"- {k:<{max_key_len}} : {v}", file=file)
+        print(f"- {k:<{max_key_len}}: {v}", file=file)
 
     # Quote each line of contents
     for content in contents:
