@@ -28,10 +28,10 @@ __version__ = version("llm7shi")
 # Import main functions for convenience
 from .gemini import (
     DEFAULT_MODEL,
+    Response,
     build_schema_from_json,
     config_from_schema,
     generate_content_retry,
-    generate_content_retry_with_thoughts,
     do_show_params,
     upload_file,
     delete_file,
@@ -45,10 +45,10 @@ from .terminal import (
 
 __all__ = [
     "DEFAULT_MODEL",
+    "Response",
     "build_schema_from_json",
     "config_from_schema",
     "generate_content_retry",
-    "generate_content_retry_with_thoughts",
     "do_show_params",
     "upload_file",
     "delete_file",

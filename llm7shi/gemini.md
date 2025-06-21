@@ -19,11 +19,11 @@ Supports structured JSON output using JSON schemas. Converts standard JSON schem
 
 ## Main Functions
 
-### `generate_content_retry_with_thoughts()`
-Function to retrieve thinking process and answer separately.
+### `generate_content_retry()`
+Main function that returns a Response object containing all generation results.
 
 ```python
-thoughts, text = generate_content_retry_with_thoughts(
+response = generate_content_retry(
     ["question content"],
     model="gemini-2.5-flash",
     config=config_text,
@@ -34,26 +34,55 @@ thoughts, text = generate_content_retry_with_thoughts(
 )
 ```
 
-**Return value**: Tuple of `(thoughts: str, text: str)`
-- `thoughts`: AI's thinking process
-- `text`: Final answer
+**Return value**: `Response` object with the following attributes:
+- `thoughts`: AI's thinking process (str)
+- `text`: Final answer (str)
+- `response`: Raw API response object
+- `chunks`: List of all streaming chunks received
+- `model`: The model used for generation
+- `config`: The GenerateContentConfig used
+- `contents`: The input contents sent to the API
 
-### `generate_content_retry()`
-Wrapper function for backward compatibility.
+### Response Class
+Dataclass that encapsulates all generation results:
 
 ```python
-text = generate_content_retry(
-    ["question content"],
-    model="gemini-2.5-flash",
-    config=config_text,
-    include_thoughts=True,
-    thinking_budget=None,
-    file=sys.stdout,
-    show_params=True
-)
+@dataclass
+class Response:
+    model: Optional[str] = None
+    config: Optional[types.GenerateContentConfig] = None
+    contents: Optional[List[Any]] = None
+    response: Optional[Any] = None
+    chunks: List[Any] = field(default_factory=list)
+    thoughts: str = ""
+    text: str = ""
+    
+    def __str__(self) -> str:
+        """Return the text content when converting to string."""
+        return self.text
+    
+    def __repr__(self) -> str:
+        """Return a concise representation showing contents and text."""
+        # Shows contents[0] and text, truncated at 10 characters
 ```
 
-**Return value**: `str` - Final answer only
+### Usage Examples
+```python
+# Basic usage - Response object
+response = generate_content_retry(["Hello, World!"])
+print(response.text)  # Access text directly
+print(str(response))  # Same as response.text
+print(response)       # Shows concise representation
+
+# Access all response data
+print(f"Model: {response.model}")
+print(f"Thoughts: {response.thoughts}")
+print(f"Chunks count: {len(response.chunks)}")
+
+# Backward compatibility - use as string
+response = generate_content_retry(["Question"])
+result = str(response)  # Get text content
+```
 
 ## Configuration and Schemas
 
@@ -106,34 +135,38 @@ config = config_from_schema(schema)
 
 ### Standard Output (Default)
 ```python
-text = generate_content_retry(contents, model=model, config=config)
+response = generate_content_retry(contents, model=model, config=config)
 # Thinking process and answer displayed in real-time
+print(response.text)  # Access final answer
 ```
 
 ### Disable Output
 ```python
-text = generate_content_retry(contents, model=model, config=config, file=None)
+response = generate_content_retry(contents, model=model, config=config, file=None)
 # No screen output, retrieve result only
+print(f"Result: {response.text}")
 ```
 
 ### File Output
 ```python
 with open("conversation.txt", "w", encoding="utf-8") as f:
-    text = generate_content_retry(contents, model=model, config=config, file=f)
+    response = generate_content_retry(contents, model=model, config=config, file=f)
 # Save thinking process and answer to file
+print(f"Generated {len(response.chunks)} chunks")
 ```
 
 ### Log File Output
 ```python
 import sys
 with open("debug.log", "w", encoding="utf-8") as log_file:
-    thoughts, text = generate_content_retry_with_thoughts(
+    response = generate_content_retry(
         contents, 
         model=model,
         config=config,
         file=log_file  # Record details to log file
     )
-    print(f"Result: {text}")  # Display only result to console
+    print(f"Result: {response.text}")  # Display only result to console
+    print(f"Thinking: {response.thoughts[:100]}...")  # Show thinking summary
 ```
 
 ## Error Handling
@@ -154,29 +187,31 @@ with open("debug.log", "w", encoding="utf-8") as log_file:
 
 ### Analyzing Thinking Process
 ```python
-thoughts, answer = generate_content_retry_with_thoughts(
+response = generate_content_retry(
     contents, model=model, config=config, file=None
 )
 
 # Analyze thinking process
-if "mathematics" in thoughts:
+if "mathematics" in response.thoughts:
     print("Using mathematical reasoning")
-if "step" in thoughts.lower():
+if "step" in response.thoughts.lower():
     print("Executing step-by-step thinking")
 
-print(f"Final answer: {answer}")
+print(f"Final answer: {response.text}")
+print(f"Used model: {response.model}")
 ```
 
 ### Controlling Thinking Time
 ```python
 # When quick response is needed
-quick_answer = generate_content_retry(
+response = generate_content_retry(
     contents,
     model=model,
     config=config,
     thinking_budget=30,  # Thinking time within 30 seconds
     file=None
 )
+print(f"Quick answer: {response.text}")
 ```
 
 ## File Operations
@@ -193,7 +228,8 @@ contents = [
     ]}
 ]
 
-text = generate_content_retry(contents, model=model, config=config)
+response = generate_content_retry(contents, model=model, config=config)
+print(f"Image description: {response.text}")
 
 # Delete file after use
 delete_file(image_file)
@@ -223,10 +259,12 @@ The `generate_content_retry` functions have a `show_params` parameter (default=T
 
 ```python
 # Parameters will be displayed before generation
-text = generate_content_retry(["Hello"], show_params=True)
+response = generate_content_retry(["Hello"], show_params=True)
+print(response.text)
 
 # Disable parameter display
-text = generate_content_retry(["Hello"], show_params=False)
+response = generate_content_retry(["Hello"], show_params=False)
+print(response.text)
 ```
 
 ## Usage Examples
@@ -238,12 +276,13 @@ def chat_with_gemini():
         user_input = input("Question: ")
         if user_input.lower() in ['quit', 'exit']:
             break
-        answer = generate_content_retry(
+        response = generate_content_retry(
             [user_input],
             model="gemini-2.5-flash",
             config=config_text,
             include_thoughts=True
         )
+        print(f"Answer: {response.text}")
         print()
 ```
 
@@ -257,15 +296,11 @@ for i, question in enumerate(questions):
     
     # File output for progress display
     with open(f"log_{i+1}.txt", "w", encoding="utf-8") as log:
-        thoughts, answer = generate_content_retry_with_thoughts(
+        response = generate_content_retry(
             contents, model=model, config=config, file=log
         )
     
-    results.append({
-        "question": question,
-        "thoughts": thoughts,
-        "answer": answer
-    })
+    results.append(response)
     
     print(f"Completed: {i+1}/{len(questions)}")
 ```

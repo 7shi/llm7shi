@@ -1,6 +1,8 @@
 # Standard library imports
 import os, sys, json, time, re
 from pathlib import Path
+from dataclasses import dataclass, field
+from typing import List, Optional, Any
 
 # Google Gemini API imports
 from google import genai
@@ -8,6 +10,47 @@ from google.genai import types
 
 # Local imports for terminal formatting
 from .terminal import convert_markdown, MarkdownStreamConverter
+
+
+@dataclass
+class Response:
+    """Response object containing the results from generate_content_retry.
+    
+    Attributes:
+        model: The model used for generation
+        config: The GenerateContentConfig used
+        contents: The input contents sent to the API
+        response: The raw API response object
+        chunks: List of all streaming chunks received
+        thoughts: The thinking process text (if include_thoughts=True)
+        text: The final generated text
+    """
+    model: Optional[str] = None
+    config: Optional[types.GenerateContentConfig] = None
+    contents: Optional[List[Any]] = None
+    response: Optional[Any] = None
+    chunks: List[Any] = field(default_factory=list)
+    thoughts: str = ""
+    text: str = ""
+    
+    def __str__(self) -> str:
+        """Return the text content when converting to string."""
+        return self.text
+    
+    def __repr__(self) -> str:
+        """Return a concise representation showing contents and text."""
+        if self.contents is None:
+            contents_repr = "None"
+        else:
+            contents_repr = str(self.contents[0])
+            if len(contents_repr) > 10:
+                contents_repr = contents_repr[:10] + "..."
+        
+        text_repr = self.text
+        if len(text_repr) > 10:
+            text_repr = text_repr[:10] + "..."
+        
+        return f"Response(contents={contents_repr!r}, text={text_repr!r})"
 
 # Available Gemini models
 models = [
@@ -101,8 +144,8 @@ def config_from_schema(schema):
     )
 
 
-def generate_content_retry_with_thoughts(contents, *, model=None, config=None, include_thoughts=True, thinking_budget=None, file=sys.stdout, show_params=True):
-    """Generate content with retry logic and return both thoughts and text as a tuple.
+def generate_content_retry(contents, *, model=None, config=None, include_thoughts=True, thinking_budget=None, file=sys.stdout, show_params=True):
+    """Generate content with retry logic and return a Response object.
     
     Args:
         contents: The content to send
@@ -114,7 +157,7 @@ def generate_content_retry_with_thoughts(contents, *, model=None, config=None, i
         show_params: Whether to display parameters before generation (default: False)
     
     Returns:
-        tuple: (thoughts, text) where thoughts is the thinking process and text is the final answer
+        Response: Object containing thoughts, text, response, and chunks
     """
     # Display parameters if requested
     if show_params:
@@ -148,9 +191,11 @@ def generate_content_retry_with_thoughts(contents, *, model=None, config=None, i
             thoughts_shown = False  # Track if thinking header was shown
             answer_shown = False  # Track if answer header was shown
             converter = MarkdownStreamConverter()  # For terminal formatting
+            chunks = []  # Collect all chunks
             
             # Process streaming response chunks
             for chunk in response:
+                chunks.append(chunk)
                 if hasattr(chunk, "candidates") and chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
                     for part in chunk.candidates[0].content.parts:
                         if not part.text:
@@ -189,7 +234,15 @@ def generate_content_retry_with_thoughts(contents, *, model=None, config=None, i
             if file and not text.endswith("\n"):
                 print(flush=True, file=file)
             
-            return (thoughts, text)
+            return Response(
+                model=model or DEFAULT_MODEL,
+                config=config,
+                contents=contents,
+                response=response,
+                chunks=chunks,
+                thoughts=thoughts,
+                text=text,
+            )
         except genai.errors.APIError as e:
             # Handle retryable API errors (rate limit, server errors)
             if hasattr(e, "code") and e.code in [429, 500, 502, 503]:
@@ -219,33 +272,6 @@ def generate_content_retry_with_thoughts(contents, *, model=None, config=None, i
     raise RuntimeError("Max retries exceeded.")
 
 
-def generate_content_retry(contents, *, model=None, config=None, include_thoughts=True, thinking_budget=None, file=sys.stdout, show_params=True):
-    """Compatibility wrapper for generate_content_retry_with_thoughts.
-    
-    This function maintains backward compatibility by returning only the text portion.
-    
-    Args:
-        contents: The content to send
-        model: The model to use (default: None)
-        config: GenerateContentConfig object (default: None)
-        include_thoughts: Whether to include thoughts in the response
-        thinking_budget: Optional thinking budget
-        file: Output file for streaming content (default: sys.stdout, None to disable)
-        show_params: Whether to display parameters before generation (default: False)
-    
-    Returns:
-        str: The generated text (without thoughts)
-    """
-    _, text = generate_content_retry_with_thoughts(
-        contents,
-        model=model,
-        config=config,
-        include_thoughts=include_thoughts,
-        thinking_budget=thinking_budget,
-        file=file,
-        show_params=show_params
-    )
-    return text
 
 
 def do_show_params(contents, *, model=None, file=sys.stdout, **kwargs):
