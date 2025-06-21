@@ -6,6 +6,8 @@ A simplified Python library for interacting with large language models. Currentl
 
 This library emerged from a common developer problem: reusing Gemini API code across multiple projects led to "secret sauce" code that became increasingly complex with error handling, retry logic, and other production necessities. Rather than continuing to copy-paste and modify the same code, we extracted it into a standalone library.
 
+The name is admittedly a personal project identifier. If you find the name off-putting, please feel free to fork this project under a different name - it's released under CC0, so you have complete freedom to do so.
+
 ## Design Philosophy
 
 llm7shi is intentionally a **thin wrapper** around the Gemini API - it doesn't attempt to abstract away the underlying API or create a universal LLM interface. Instead, it focuses on:
