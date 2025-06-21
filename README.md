@@ -93,3 +93,13 @@ generate_content_retry(
     config=config_from_schema(LocationsAndTemperatures),
 )
 ```
+
+## Testing
+
+Run the test suite with:
+
+```bash
+uv run pytest
+```
+
+See [tests/README.md](tests/README.md) for detailed testing documentation.

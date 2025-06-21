@@ -44,6 +44,7 @@ export GEMINI_API_KEY="your-api-key-here"
    - Provides retry logic for API errors (429, 500, 502, 503)
    - Supports both text generation and structured JSON output via schemas
    - Includes thinking process visualization for Gemini 2.5 models
+   - Returns Response dataclass containing thoughts, text, response, chunks, model, config, and contents
 
 2. **llm7shi/terminal.py**: Terminal formatting utilities
    - Converts Markdown bold (`**text**`) to terminal colors
@@ -60,7 +61,9 @@ export GEMINI_API_KEY="your-api-key-here"
 - **Streaming Support**: Both modules support real-time output streaming
 - **Error Resilience**: Automatic retry with exponential backoff for API errors
 - **Flexible Output**: Supports output to console, files, or silent operation via `file` parameter
-- **Schema-based Generation**: JSON schema support for structured outputs
+- **Schema-based Generation**: JSON schema and Pydantic model support for structured outputs
+- **Response Object**: Comprehensive dataclass containing all generation results and metadata
+- **Pydantic Integration**: Direct support for Pydantic models in `config_from_schema()`
 - **Package Structure**: Proper Python package with `__init__.py` and convenient imports
 - **Documentation Pairing**: Each `.py` file has a corresponding `.md` documentation file
 
@@ -69,8 +72,21 @@ export GEMINI_API_KEY="your-api-key-here"
 ### Running Examples
 ```bash
 uv run examples/hello.py        # Basic text generation
-uv run examples/schema.py       # JSON schema-based generation
+uv run examples/schema1.py      # JSON schema-based generation
+uv run examples/schema2.py      # Pydantic schema-based generation
 ```
+
+### Running Tests
+```bash
+uv run pytest                   # Run all tests
+uv run pytest -v              # Verbose output
+uv run pytest tests/test_hello.py  # Run specific test
+```
+
+### Testing Strategy
+- All tests use mocked API calls (no real API keys needed)
+- Set GEMINI_API_KEY=dummy for testing
+- Comprehensive coverage of examples and core functionality
 
 ### Testing API Integration
 When testing Gemini API integration:
