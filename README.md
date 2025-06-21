@@ -52,19 +52,9 @@ export GEMINI_API_KEY="your-api-key-here"
 
 ## Examples
 
-Run the included examples:
-
-```bash
-# Basic text generation
-uv run examples/hello.py
-
-# Schema-based structured output
-uv run examples/schema.py
-```
+See [examples/README.md](examples/README.md) for complete examples and documentation.
 
 ### Basic Text Generation
-
-- [examples/hello.md](examples/hello.md)
 
 ```python
 from llm7shi import generate_content_retry
@@ -72,44 +62,22 @@ from llm7shi import generate_content_retry
 generate_content_retry(["Hello, World!"])
 ```
 
-### Structured JSON Output
-
-- [examples/schema.md](examples/schema.md)
+### Pydantic Schema Example
 
 ```python
-import json
-from pathlib import Path
-from llm7shi import build_schema_from_json, config_from_schema, generate_content_retry
+from typing import List
+from pydantic import BaseModel, Field
+from llm7shi import config_from_schema, generate_content_retry
 
-with open(Path(__file__).with_suffix(".json")) as f:
-    schema = build_schema_from_json(json.load(f))
+class LocationTemperature(BaseModel):
+    location: str
+    temperature: float = Field(description="Temperature in Celsius")
+
+class LocationsAndTemperatures(BaseModel):
+    locations_and_temperatures: List[LocationTemperature]
 
 generate_content_retry(
     ["The temperature in Tokyo is 90 degrees Fahrenheit."],
-    config=config_from_schema(schema),
+    config=config_from_schema(LocationsAndTemperatures),
 )
-```
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "locations_and_temperatures": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "location": {
-            "type": "string"
-          },
-          "temperature": {
-            "type": "number",
-            "description": "Temperature in Celsius"
-          }
-        },
-        "required": ["location", "temperature"]
-      }
-    }
-  }
-}
 ```

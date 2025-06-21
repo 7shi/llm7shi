@@ -1,4 +1,4 @@
-# schema.py - Structured JSON Output Example
+# schema1.py - Structured JSON Output Example
 
 ## Overview
 
@@ -12,7 +12,10 @@ from pathlib import Path
 from llm7shi import build_schema_from_json, config_from_schema, generate_content_retry
 
 with open(Path(__file__).with_suffix(".json")) as f:
+    # build_schema_from_json() provides schema validation for early error detection
     schema = build_schema_from_json(json.load(f))
+    # You can also use json.load(f) directly, but schema validation is recommended
+    #schema = json.load(f)
 
 generate_content_retry(
     ["The temperature in Tokyo is 90 degrees Fahrenheit."],
@@ -22,12 +25,27 @@ generate_content_retry(
 
 ### Key Components
 
-1. **Schema Loading**: Loads `schema.json` and converts it using `build_schema_from_json()`
-2. **Configuration**: `config_from_schema()` creates a generation config from the Gemini schema
-3. **Structured Input**: Natural language text that contains data to be extracted
-4. **Structured Output**: AI returns properly formatted JSON matching the schema
+1. **Schema Loading**: Loads `schema1.json` and converts it using `build_schema_from_json()`
+2. **Schema Validation**: `build_schema_from_json()` validates the schema for early error detection
+3. **Configuration**: `config_from_schema()` creates a generation config from the schema
+4. **Structured Input**: Natural language text that contains data to be extracted
+5. **Structured Output**: AI returns properly formatted JSON matching the schema
 
-## Schema Definition (schema.json)
+### Alternative Approach
+
+You can skip schema validation and use the JSON directly:
+
+```python
+with open(Path(__file__).with_suffix(".json")) as f:
+    schema = json.load(f)  # Direct usage without validation
+```
+
+However, using `build_schema_from_json()` is recommended because it:
+- Validates the schema syntax at load time for early error detection
+- Ensures compatibility with Gemini's schema requirements
+- Catches schema errors before API calls
+
+## Schema Definition (schema1.json)
 
 ```json
 {
@@ -84,7 +102,7 @@ The AI will:
 Run this example with:
 
 ```bash
-uv run examples/schema.py
+uv run examples/schema1.py
 ```
 
 ## Use Cases
@@ -96,6 +114,6 @@ uv run examples/schema.py
 
 ## Related Functions
 
-- `build_schema_from_json(json_data)`: Convert JSON schema to Gemini Schema object
-- `config_from_schema(schema)`: Create generation config from Gemini schema
+- `build_schema_from_json(json_data)`: Convert and validate JSON schema to Gemini Schema object
+- `config_from_schema(schema)`: Create generation config from JSON schema or Gemini schema
 - `generate_content_retry()`: Main generation function with schema support
