@@ -18,7 +18,7 @@ llm7shi is intentionally a **thin wrapper** around the Gemini API - it doesn't a
 ## Features
 
 - **Minimal Wrapper**: Thin layer over Gemini API without complex abstraction
-- **Production-Ready Error Handling**: Built-in retry logic for API errors (429, 500, 502, 503) with exponential backoff
+- **Production-Ready Error Handling**: Built-in retry logic for API errors (429, 500, 502, 503) respecting API-suggested retry delays
 - **Streaming Output**: Both text and schema-based generation support real-time streaming
 - **Thinking Process Visualization**: Leverage Gemini 2.5's thinking capabilities with automatic budget optimization
 - **Schema-based Generation**: JSON schema and Pydantic model support for structured outputs
