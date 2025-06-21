@@ -4,14 +4,12 @@ version = "0.1.0"
 description = "A simplified Python library for interacting with large language models"
 readme = "README.md"
 license = { text = "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication" }
+repository = "https://github.com/7shi/llm7shi"
 requires-python = ">=3.10"
 dependencies = [
     "colorama>=0.4.6",
     "google-genai>=1.21.1",
 ]
-
-[project.urls]
-Repository = "https://github.com/7shi/llm7shi"
 
 [dependency-groups]
 dev = [
