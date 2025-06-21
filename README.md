@@ -48,27 +48,30 @@ export GEMINI_API_KEY="your-api-key-here"
 
 ### Basic Text Generation
 
+- [examples/hello.py](examples/hello.py)
+
 ```python
-from llm7shi.gemini import generate_content_retry
+from llm7shi import generate_content_retry
 
 generate_content_retry(["Hello, World!"])
 ```
 
 ### Structured JSON Output
 
+- [examples/schema.py](examples/schema.py)
+
 ```python
 from pathlib import Path
-from llm7shi.gemini import config_from_schema, generate_content_retry
+from llm7shi import config_from_schema, generate_content_retry
 
-# Load a JSON schema file
-schema = Path("schema.json")
+schema = Path(__file__).with_suffix(".json")
 generate_content_retry(
     ["The temperature in Tokyo is 90 degrees Fahrenheit."],
     config=config_from_schema(schema),
 )
 ```
 
-Example schema file (`schema.json`):
+- [examples/schema.json](examples/schema.json)
 
 ```json
 {

@@ -7,11 +7,11 @@
         "type": "object",
         "properties": {
           "location": {
-              "type": "string"
+            "type": "string"
           },
           "temperature": {
-              "type": "number",
-              "description": "Temperature in Celsius"
+            "type": "number",
+            "description": "Temperature in Celsius"
           }
         },
         "required": ["location", "temperature"]
