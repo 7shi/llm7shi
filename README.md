@@ -2,15 +2,28 @@
 
 A simplified Python library for interacting with large language models. Currently supports Google's Gemini AI models.
 
+## Why llm7shi?
+
+This library emerged from a common developer problem: reusing Gemini API code across multiple projects led to "secret sauce" code that became increasingly complex with error handling, retry logic, and other production necessities. Rather than continuing to copy-paste and modify the same code, we extracted it into a standalone library.
+
+## Design Philosophy
+
+llm7shi is intentionally a **thin wrapper** around the Gemini API - it doesn't attempt to abstract away the underlying API or create a universal LLM interface. Instead, it focuses on:
+
+- **Preserving Gemini's capabilities**: Access all Gemini-specific features like thinking process visualization
+- **Solving real-world problems**: Built-in retry logic, error handling, and streaming support
+- **Minimal learning curve**: If you know the Gemini API, you know llm7shi
+- **Production-ready**: Handle the tedious but essential aspects like rate limiting and error recovery
+
 ## Features
 
-- **Simple API**: Easy-to-use wrapper for Gemini models
-- **Automatic Retry**: Built-in retry logic for API errors (429, 500, 502, 503) with exponential backoff
+- **Minimal Wrapper**: Thin layer over Gemini API without complex abstraction
+- **Production-Ready Error Handling**: Built-in retry logic for API errors (429, 500, 502, 503) with exponential backoff
 - **Streaming Output**: Both text and schema-based generation support real-time streaming
-- **Thinking Process**: Automatic thinking budget optimization for Gemini 2.5 models
-- **Schema-based Generation**: JSON schema support for structured outputs
+- **Thinking Process Visualization**: Leverage Gemini 2.5's thinking capabilities with automatic budget optimization
+- **Schema-based Generation**: JSON schema and Pydantic model support for structured outputs
 - **Terminal Formatting**: Convert Markdown formatting to colored terminal output
-- **Error Resilience**: Robust error handling for production use
+- **Battle-Tested**: Handles the tedious but essential production concerns
 
 ## Requirements
 
