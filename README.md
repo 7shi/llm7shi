@@ -18,9 +18,21 @@ A simplified Python library for interacting with large language models. Currentl
 
 ## Installation
 
-This project uses `uv` as the package manager. Install dependencies with:
+### As a library
+
+To use llm7shi as a library in your project:
 
 ```bash
+uv add https://github.com/7shi/llm7shi.git
+```
+
+### For development
+
+To download and develop the project:
+
+```bash
+git clone https://github.com/7shi/llm7shi.git
+cd llm7shi
 uv sync
 ```
 
