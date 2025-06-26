@@ -1,41 +1,40 @@
 # Tests
 
-This directory contains pytest tests for llm7shi library examples and functionality. All tests use mocked API calls to avoid requiring real Gemini API keys or making network requests.
+This directory contains pytest tests for llm7shi library modules and functionality. All tests use mocked API calls to avoid requiring real API keys or making network requests.
 
-## Test Files
+## Test Structure
 
-### [test_hello.py](test_hello.py) - Basic Text Generation Test
-Tests the basic text generation functionality from `examples/hello.py`.
+Tests are organized by module to provide comprehensive unit test coverage:
 
-**Documentation**: [test_hello.md](test_hello.md)
+### Core Module Tests
 
-**Coverage**:
-- Response object structure validation
-- Text streaming and concatenation
-- Default model configuration
-- API call parameter verification
+#### [test_gemini.py](test_gemini.py) - Gemini API Module Tests
+Unit tests for the core Gemini API wrapper functionality in `llm7shi/gemini.py`.
 
-### [test_schema1.py](test_schema1.py) - JSON Schema Generation Test
-Tests JSON schema-based structured output from `examples/schema1.py`.
+**Documentation**: [test_gemini.md](test_gemini.md)
 
-**Documentation**: [test_schema1.md](test_schema1.md)
+**Key Features**: Response dataclass, schema building, content generation with retry logic, file operations, thinking process extraction.
 
-**Coverage**:
-- Schema loading and validation with `build_schema_from_json()`
-- Direct JSON usage without validation
-- Error detection for invalid schemas
-- Structured JSON response generation
+#### [test_utils.py](test_utils.py) - Utility Functions Tests
+Unit tests for helper functions in `llm7shi/utils.py`.
 
-### [test_schema2.py](test_schema2.py) - Pydantic Schema Integration Test
-Tests Pydantic model integration from `examples/schema2.py`.
+**Documentation**: [test_utils.md](test_utils.md)
 
-**Documentation**: [test_schema2.md](test_schema2.md)
+**Key Features**: Parameter display, OpenAI message conversion, schema modification, reference resolution.
 
-**Coverage**:
-- Direct Pydantic model usage with `config_from_schema()`
-- Type-safe JSON parsing and validation
-- Field description preservation
-- Simplified API workflow
+#### [test_compat.py](test_compat.py) - Multi-Provider Compatibility Tests
+Unit tests for the compatibility layer in `llm7shi/compat.py`.
+
+**Documentation**: [test_compat.md](test_compat.md)
+
+**Key Features**: Model selection, multi-provider generation, schema processing, error handling.
+
+#### [test_terminal.py](test_terminal.py) - Terminal Formatting Tests
+Unit tests for terminal output formatting in `llm7shi/terminal.py`.
+
+**Documentation**: [test_terminal.md](test_terminal.md)
+
+**Key Features**: Bold formatting, markdown conversion, streaming processing, Windows compatibility.
 
 ## Running Tests
 
@@ -51,29 +50,46 @@ uv run pytest
 # Run with verbose output
 uv run pytest -v
 
-# Run specific test file
-uv run pytest tests/test_hello.py
+# Run specific test module
+uv run pytest tests/test_gemini.py
+
+# Run specific test class
+uv run pytest tests/test_gemini.py::TestResponse
 
 # Run specific test function
-uv run pytest tests/test_hello.py::test_hello_example
+uv run pytest tests/test_gemini.py::TestResponse::test_response_init
 
 # Run with coverage report
 uv run pytest --cov=llm7shi
+
+# Run tests matching a pattern
+uv run pytest -k "schema"
 ```
 
 ## Test Strategy
 
 ### Mock Implementation
-- **No API Calls**: All tests use `unittest.mock.patch` to mock `generate_content_stream`
-- **Dummy Credentials**: Tests set `GEMINI_API_KEY=dummy` to avoid requiring real API keys
-- **Realistic Responses**: Mock data simulates actual Gemini API response patterns
+- **No API Calls**: Most tests use `unittest.mock.patch` to mock API clients and methods
+- **Dummy Credentials**: API tests set `GEMINI_API_KEY=dummy` and `OPENAI_API_KEY=dummy` to avoid requiring real API keys
+- **Realistic Responses**: Mock data simulates actual API response patterns for both Gemini and OpenAI
+- **Pure I/O Testing**: Terminal formatting tests use actual colorama output without mocking for realistic validation
 - **Isolated Testing**: Complete separation from external dependencies
 
-### Test Data
-- **Authentic Examples**: Tests use the same inputs and expected outputs as the examples
-- **Real Schema Files**: `test_schema1.py` loads actual `examples/schema1.json`
-- **Pydantic Models**: `test_schema2.py` uses the same models as `examples/schema2.py`
-- **Streaming Simulation**: Mock chunks simulate realistic streaming responses
+### Mock Patterns
+- **Gemini API**: Mock `genai.Client` and `client.models.generate_content_stream()`
+- **OpenAI API**: Mock `openai.OpenAI` and `client.chat.completions.create()`
+- **File Operations**: Mock file upload/delete operations and processing state polling
+- **Environment Variables**: Use `monkeypatch.setenv()` for API key setup
+- **Streaming Responses**: `MockChunk` class simulates realistic streaming chunks
+
+### Test Organization
+Tests are organized by functionality within each module:
+
+1. **Class-based Testing**: Related tests grouped into test classes (e.g., `TestResponse`, `TestSchemaBuilding`)
+2. **Comprehensive Coverage**: Each public function and method has dedicated test cases
+3. **Edge Case Testing**: Error conditions, empty inputs, malformed data, and boundary conditions
+4. **Parameter Validation**: All function parameters and their combinations are tested
+5. **State Management**: Streaming converters and stateful objects are thoroughly tested
 
 ## Benefits
 
@@ -81,14 +97,23 @@ uv run pytest --cov=llm7shi
 - **Reliable Results**: Consistent behavior regardless of API availability
 - **Development Workflow**: Enable test-driven development without external dependencies
 - **CI/CD Ready**: Tests can run in any environment without API credentials
-- **Coverage Validation**: Ensure all example functionality works as expected
+- **Modular Coverage**: Each module can be tested independently
+- **Regression Prevention**: Comprehensive unit tests catch breaking changes early
 
 ## Test Structure
 
 Each test file follows a consistent pattern:
-1. **Setup**: Mock API key and patch `generate_content_stream`
-2. **Execution**: Run the example code with test inputs
-3. **Verification**: Assert response structure, content, and API call parameters
-4. **Edge Cases**: Test error conditions and alternative usage patterns
 
-All tests are designed to be independent, fast, and comprehensive in coverage of the library's core functionality.
+1. **Imports**: Module-specific imports and test utilities
+2. **Mock Classes**: Reusable mock objects (e.g., `MockChunk` for API responses)
+3. **Fixtures**: Shared test setup (e.g., `set_dummy_api_key`)
+4. **Test Classes**: Grouped by functionality for better organization
+5. **Test Methods**: Individual test cases with descriptive names
+6. **Assertions**: Comprehensive validation of outputs and side effects
+
+### Test Naming Convention
+- Test files: `test_{module_name}.py`
+- Test classes: `Test{ClassName}` or `Test{FunctionGroup}`
+- Test methods: `test_{specific_functionality}`
+
+All tests are designed to be independent, fast, and provide comprehensive coverage of the library's functionality without requiring external API access.
