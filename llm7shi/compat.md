@@ -14,7 +14,7 @@ The main function that provides a unified interface for content generation:
 from llm7shi.compat import generate_with_schema
 
 # Generate structured output with schema
-result = generate_with_schema(
+response = generate_with_schema(
     contents=["Your prompt here"],
     schema=YourPydanticModel,  # or JSON schema dict
     model="gemini-2.5-flash",  # or "gpt-4.1-mini"
@@ -26,12 +26,18 @@ result = generate_with_schema(
     show_params=True
 )
 
+# Access generated text
+print(response.text)  # The generated content
+print(response.model)  # The model used
+print(response.thoughts)  # Thinking process (Gemini only)
+
 # Generate plain text without schema
-result = generate_with_schema(
+response = generate_with_schema(
     contents=["Hello, World!"],
     schema=None,  # Plain text generation
     model="gpt-4.1-mini"
 )
+print(response.text)  # Direct text access
 ```
 
 **Parameters:**
@@ -46,7 +52,7 @@ result = generate_with_schema(
 - `show_params`: Display generation parameters
 
 **Returns:**
-- `str`: Generated text (JSON string if schema provided, plain text otherwise)
+- `Response`: Response object containing generated text and metadata
 
 ### 2. API-Specific Implementations
 
@@ -66,6 +72,7 @@ Features:
 - Inlines `$defs` references using `inline_defs()`
 - Adds required `additionalProperties: false` for OpenAI compatibility
 - Converts message format using `contents_to_openai_messages()`
+- Creates Response object with collected chunks and raw response data
 
 ### 3. Utility Functions (from utils.py)
 
@@ -136,40 +143,47 @@ else:
 ```python
 from llm7shi.compat import generate_with_schema
 from pydantic import BaseModel
+import json
 
 class Location(BaseModel):
     city: str
     temperature: float
 
 # Works with both APIs
-result = generate_with_schema(
+response = generate_with_schema(
     contents=["What's the weather in Tokyo?"],
     schema=Location,
     model="gemini-2.5-flash"  # or "gpt-4.1-mini"
 )
+
+# Parse structured output
+location_data = json.loads(response.text)
+location = Location(**location_data)
+print(f"City: {location.city}, Temperature: {location.temperature}")
 ```
 
 ### Plain Text Generation
 
 ```python
 # Simple text generation without schema
-result = generate_with_schema(
+response = generate_with_schema(
     contents=["Write a haiku about coding"],
     schema=None,
     temperature=0.9
 )
-print(result)
+print(response.text)
 ```
 
 ### With System Prompt
 
 ```python
-result = generate_with_schema(
+response = generate_with_schema(
     contents=["Analyze this code: print('hello')"],
     schema=None,
     system_prompt="You are a code review expert",
     model="gpt-4.1-mini"
 )
+print(response.text)
 ```
 
 ## Environment Setup

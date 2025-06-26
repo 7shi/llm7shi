@@ -82,7 +82,7 @@ class TestGeminiIntegration:
             model="gemini-2.5-flash"
         )
         
-        assert result == "Gemini response"
+        assert result.text == "Gemini response"
         mock_generate.assert_called_once()
     
     @patch('llm7shi.generate_content_retry')
@@ -123,7 +123,7 @@ class TestGeminiIntegration:
         
         mock_config.assert_called_once_with(json_schema)
         mock_generate.assert_called_once()
-        assert result == '{"name": "test"}'
+        assert result.text == '{"name": "test"}'
     
     @patch('llm7shi.generate_content_retry')
     def test_gemini_with_temperature(self, mock_generate):
@@ -141,7 +141,7 @@ class TestGeminiIntegration:
         call_args = mock_generate.call_args
         config = call_args[1]['config']
         assert config.temperature == 0.9
-        assert result == "Creative response"
+        assert result.text == "Creative response"
     
     @patch('llm7shi.generate_content_retry')
     def test_gemini_with_system_prompt(self, mock_generate):
@@ -159,7 +159,7 @@ class TestGeminiIntegration:
         call_args = mock_generate.call_args
         config = call_args[1]['config']
         assert config.system_instruction == ["You are helpful"]
-        assert result == "Assistant response"
+        assert result.text == "Assistant response"
 
 
 class TestOpenAIIntegration:
@@ -186,7 +186,7 @@ class TestOpenAIIntegration:
             model="gpt-4-mini"
         )
         
-        assert result == "OpenAI response"
+        assert result.text == "OpenAI response"
         mock_client.chat.completions.create.assert_called_once()
     
     @patch('openai.OpenAI')
@@ -339,7 +339,7 @@ class TestErrorHandling:
             model="unsupported-model"
         )
         
-        assert result == "fallback_response"
+        assert result.text == "fallback_response"
 
 
 class TestSchemaProcessing:

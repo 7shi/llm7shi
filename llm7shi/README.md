@@ -21,11 +21,21 @@ Main API wrapper for Google's Gemini AI models with automatic retry logic, strea
 
 **Key Features**:
 - `generate_content_retry()` - Main generation function with retry logic
-- `Response` dataclass - Comprehensive result object
 - `build_schema_from_json()` - JSON schema to Gemini Schema conversion
 - `config_from_schema()` - Create config for structured output
 - File upload/delete operations
 - Thinking process visualization
+
+### [response.py](response.py) - Response Data Class
+Provider-agnostic response object that encapsulates results from LLM API calls.
+
+**Documentation**: [response.md](response.md)
+
+**Key Features**:
+- `Response` dataclass - Comprehensive result object
+- Provider-independent design
+- Text, thoughts, and metadata access
+- String conversion support
 
 ### [utils.py](utils.py) - Utility Functions
 Helper functions for parameter display, message formatting, and schema transformations.
@@ -89,11 +99,12 @@ response = generate_content_retry(contents, config=config)
 from llm7shi.compat import generate_with_schema
 
 # Works with both providers
-result = generate_with_schema(
+response = generate_with_schema(
     contents=["Your prompt"],
     schema=YourModel,
     model="gemini-2.5-flash"  # or "gpt-4-mini"
 )
+print(response.text)
 ```
 
 ## Architecture
@@ -104,6 +115,7 @@ The package follows a modular design with clear separation of concerns:
 llm7shi/
 ├── __init__.py      # Public API exports
 ├── gemini.py        # Gemini-specific implementation
+├── response.py      # Response data class
 ├── utils.py         # Shared utility functions
 ├── compat.py        # Multi-provider compatibility
 └── terminal.py      # Output formatting

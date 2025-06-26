@@ -5,6 +5,7 @@ from typing import Dict, Any, List, Union, Type
 from pydantic import BaseModel
 
 from .utils import contents_to_openai_messages, add_additional_properties_false, do_show_params, inline_defs
+from .response import Response
 
 
 def generate_with_schema(
@@ -18,7 +19,7 @@ def generate_with_schema(
     thinking_budget=None,
     file=sys.stdout,
     show_params: bool = True,
-) -> str:
+) -> Response:
     """Generate content using either OpenAI or Gemini API.
     
     Args:
@@ -33,7 +34,7 @@ def generate_with_schema(
         show_params: Whether to display parameters before generation
         
     Returns:
-        str: Generated text (JSON string if schema is provided, plain text otherwise)
+        Response: Response object containing generated text and metadata
     """
     if model is None or model.startswith("gemini"):
         return _generate_with_gemini(model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params)
@@ -51,7 +52,7 @@ def _generate_with_gemini(
     thinking_budget=None,
     file=sys.stdout,
     show_params: bool = True,
-) -> str:
+) -> Response:
     """Generate with Gemini API."""
     from . import config_from_schema, generate_content_retry, config_text
     
@@ -77,8 +78,8 @@ def _generate_with_gemini(
         file=file
     )
     
-    # Return result text
-    return result.text
+    # Return Response object
+    return result
 
 
 def _generate_with_openai(
@@ -89,7 +90,7 @@ def _generate_with_openai(
     system_prompt: str = None,
     file=sys.stdout,
     show_params: bool = True,
-) -> str:
+) -> Response:
     """Generate with OpenAI API with streaming."""
     from openai import OpenAI
     
@@ -133,11 +134,13 @@ def _generate_with_openai(
         kwargs["temperature"] = temperature
     
     # Call API with structured output and streaming
-    stream = client.chat.completions.create(**kwargs)
+    response = client.chat.completions.create(**kwargs)
     
-    # Collect streamed response
+    # Collect streamed response and chunks
     collected_content = ""
-    for chunk in stream:
+    chunks = []
+    for chunk in response:
+        chunks.append(chunk)
         if chunk.choices[0].delta.content is not None:
             content = chunk.choices[0].delta.content
             collected_content += content
@@ -147,5 +150,13 @@ def _generate_with_openai(
     if file and not collected_content.endswith("\n"):
         print(file=file)  # New line after streaming
     
-    # Return result
-    return collected_content
+    # Create Response object for OpenAI
+    return Response(
+        model=model,
+        config=kwargs,
+        contents=contents,
+        response=response,
+        chunks=chunks,
+        thoughts="",    # OpenAI doesn't have thinking process
+        text=collected_content,
+    )

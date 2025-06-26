@@ -96,10 +96,11 @@ Note: Model names avoid "Test" prefix to prevent pytest collection warnings.
 - Default model selection handling (None passed to Gemini)
 
 ### Response Processing
-- OpenAI response structure parsing and content extraction
-- Gemini response object handling and attribute access
+- OpenAI response structure parsing and Response object creation
+- Gemini Response object handling and attribute access
 - Error response processing and exception handling
-- Streaming response processing for both providers
+- Streaming response processing and chunk collection for both providers
+- Unified Response object return type across providers
 
 ### Schema Compatibility
 - Pydantic model to JSON schema conversion accuracy

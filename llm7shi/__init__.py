@@ -28,7 +28,6 @@ __version__ = version("llm7shi")
 # Import main functions for convenience
 from .gemini import (
     DEFAULT_MODEL,
-    Response,
     build_schema_from_json,
     config_from_schema,
     config_text,
@@ -36,6 +35,8 @@ from .gemini import (
     upload_file,
     delete_file,
 )
+
+from .response import Response
 
 from .terminal import (
     bold,
@@ -53,13 +54,14 @@ from .utils import (
 __all__ = [
     # gemini.py
     "DEFAULT_MODEL",
-    "Response",
     "build_schema_from_json",
     "config_from_schema",
     "config_text",
     "generate_content_retry",
     "upload_file",
     "delete_file",
+    # response.py
+    "Response",
     # terminal.py
     "bold",
     "convert_markdown",
