@@ -10,6 +10,7 @@ from google.genai import types
 
 # Local imports for terminal formatting
 from .terminal import convert_markdown, MarkdownStreamConverter
+from .utils import do_show_params
 
 
 @dataclass
@@ -159,6 +160,10 @@ def generate_content_retry(contents, *, model=None, config=None, include_thought
     Returns:
         Response: Object containing thoughts, text, response, and chunks
     """
+    # Use default model if none specified
+    if model is None:
+        model = DEFAULT_MODEL
+    
     # Display parameters if requested
     if show_params:
         # Call the show_params function (defined later in this module)
@@ -180,7 +185,7 @@ def generate_content_retry(contents, *, model=None, config=None, include_thought
         try:
             # Stream response from Gemini API
             response = client.models.generate_content_stream(
-                model=model or DEFAULT_MODEL,
+                model=model,
                 config=config,
                 contents=contents,
             )
@@ -235,7 +240,7 @@ def generate_content_retry(contents, *, model=None, config=None, include_thought
                 print(flush=True, file=file)
             
             return Response(
-                model=model or DEFAULT_MODEL,
+                model=model,
                 config=config,
                 contents=contents,
                 response=response,
@@ -270,37 +275,6 @@ def generate_content_retry(contents, *, model=None, config=None, include_thought
                 # Re-raise non-retryable errors
                 raise
     raise RuntimeError("Max retries exceeded.")
-
-
-def do_show_params(contents, *, model=None, file=sys.stdout, **kwargs):
-    """Display generation parameters for debugging/logging.
-    
-    Args:
-        contents: The content/prompts to display
-        model: Model name being used
-        file: File object to write output to (default: sys.stdout)
-        **kwargs: Additional parameters to display
-    """
-    # Do nothing if file is None
-    if file is None:
-        return
-    
-    # Collect all parameters
-    params = {"model": model or DEFAULT_MODEL, **kwargs}
-    
-    # Find the maximum key length for alignment
-    max_key_len = max(len(k) for k in params.keys()) if params else 0
-    
-    # Print parameters with aligned colons
-    for k, v in params.items():
-        print(f"- {k:<{max_key_len}}: {v}", file=file)
-
-    # Quote each line of contents
-    for content in contents:
-        print(file=file)
-        for line in content.splitlines():
-            print(">", line, file=file)
-    print(file=file)
 
 
 def upload_file(path, mime_type):

@@ -17,5 +17,6 @@
         "required": ["location", "temperature"]
       }
     }
-  }
+  },
+  "required": ["locations_and_temperatures"]
 }

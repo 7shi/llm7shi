@@ -31,8 +31,8 @@ from .gemini import (
     Response,
     build_schema_from_json,
     config_from_schema,
+    config_text,
     generate_content_retry,
-    do_show_params,
     upload_file,
     delete_file,
 )
@@ -43,16 +43,30 @@ from .terminal import (
     MarkdownStreamConverter,
 )
 
+from .utils import (
+    do_show_params,
+    contents_to_openai_messages,
+    add_additional_properties_false,
+    inline_defs,
+)
+
 __all__ = [
+    # gemini.py
     "DEFAULT_MODEL",
     "Response",
     "build_schema_from_json",
     "config_from_schema",
+    "config_text",
     "generate_content_retry",
-    "do_show_params",
     "upload_file",
     "delete_file",
+    # terminal.py
     "bold",
     "convert_markdown",
     "MarkdownStreamConverter",
+    # utils.py
+    "do_show_params",
+    "contents_to_openai_messages",
+    "add_additional_properties_false",
+    "inline_defs",
 ]

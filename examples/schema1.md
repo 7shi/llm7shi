@@ -67,7 +67,8 @@ However, using `build_schema_from_json()` is recommended because it:
         "required": ["location", "temperature"]
       }
     }
-  }
+  },
+  "required": ["locations_and_temperatures"]
 }
 ```
 
@@ -76,7 +77,7 @@ However, using `build_schema_from_json()` is recommended because it:
 - **Object Structure**: Defines the expected JSON object shape
 - **Array Support**: Handles multiple location-temperature pairs
 - **Type Validation**: Ensures correct data types (string, number)
-- **Required Fields**: Specifies mandatory properties
+- **Required Fields**: Specifies mandatory properties at both root and item levels
 - **Descriptions**: Provides context for AI understanding
 
 ## Expected Output

@@ -1,0 +1,18 @@
+import json
+from pathlib import Path
+from llm7shi.compat import generate_with_schema
+
+with open(Path(__file__).parent / "schema1.json") as f:
+    schema = json.load(f)
+
+generate_with_schema(
+    ["The temperature in Tokyo is 90 degrees Fahrenheit."],
+    schema=schema,
+    model="gemini-2.5-flash",
+)
+print("=" * 40)
+generate_with_schema(
+    ["The temperature in Tokyo is 90 degrees Fahrenheit."],
+    schema=schema,
+    model="gpt-4.1-mini",
+)
