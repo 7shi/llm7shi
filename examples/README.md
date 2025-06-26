@@ -19,7 +19,7 @@ To run any example:
 | `schema1.py` | `compat1.py` | JSON schema output |
 | `schema2.py` | `compat2.py` | Pydantic model output |
 
-The compatibility versions use `llm7shi.compat.generate_with_schema()` to work seamlessly with both Gemini and OpenAI models, while the original versions use Gemini-specific functions.
+The compatibility versions use `llm7shi.compat.generate_with_schema()` to work seamlessly with both Gemini and OpenAI models, while the original versions use Gemini-specific functions. The `compat` module provides optional API abstraction that is kept separate from the core thin wrapper functionality.
 
 ## Basic Usage
 

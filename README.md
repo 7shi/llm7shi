@@ -10,7 +10,7 @@ The name is admittedly a personal project identifier. If you find the name off-p
 
 ## Design Philosophy
 
-llm7shi is intentionally a **thin wrapper** around the Gemini API - it's doesn't attempt to abstract away the underlying API or create a universal LLM interface. However, it does introduce API abstractions for certain features. Instead, it focuses on:
+llm7shi is intentionally a **thin wrapper** around the Gemini API - it doesn't attempt to abstract away the underlying API or create a universal LLM interface. However, it does provide some API abstractions for specific workflows where they add clear value, which are isolated in the optional `compat` module. The core library focuses on:
 
 - **Preserving Gemini's capabilities**: Access all Gemini-specific features like thinking process visualization
 - **Solving real-world problems**: Built-in retry logic, error handling, and streaming support
@@ -20,7 +20,7 @@ llm7shi is intentionally a **thin wrapper** around the Gemini API - it's doesn't
 ## Features
 
 - **Minimal Wrapper**: Thin layer over Gemini API without complex abstraction
-- **API Abstraction**: Introduces abstractions for certain features to simplify common workflows.
+- **Optional Abstraction**: Multi-provider compatibility available through separate `compat` module
 - **Production-Ready Error Handling**: Built-in retry logic for API errors (429, 500, 502, 503) respecting API-suggested retry delays
 - **Streaming Output**: Both text and schema-based generation support real-time streaming
 - **Thinking Process Visualization**: Leverage Gemini 2.5's thinking capabilities with automatic budget optimization
