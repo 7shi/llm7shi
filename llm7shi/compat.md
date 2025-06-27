@@ -23,7 +23,8 @@ response = generate_with_schema(
     include_thoughts=True,      # Gemini only
     thinking_budget=None,       # Gemini only
     file=sys.stdout,
-    show_params=True
+    show_params=True,
+    max_length=None            # Maximum length of generated text
 )
 
 # Access generated text
@@ -50,6 +51,7 @@ print(response.text)  # Direct text access
 - `thinking_budget`: Thinking token budget (Gemini only)
 - `file`: Output stream for real-time display
 - `show_params`: Display generation parameters
+- `max_length`: Maximum length of generated text (None for no limit)
 
 **Returns:**
 - `Response`: Response object containing generated text and metadata
@@ -182,6 +184,14 @@ response = generate_with_schema(
     schema=None,
     system_prompt="You are a code review expert",
     model="gpt-4.1-mini"
+)
+print(response.text)
+
+# Limit response length
+response = generate_with_schema(
+    contents=["Write a long essay about AI"],
+    schema=None,
+    max_length=300  # Stop at 300 characters
 )
 print(response.text)
 ```

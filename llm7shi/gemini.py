@@ -104,7 +104,7 @@ def config_from_schema(schema):
     )
 
 
-def generate_content_retry(contents, *, model=None, config=None, include_thoughts=True, thinking_budget=None, file=sys.stdout, show_params=True):
+def generate_content_retry(contents, *, model=None, config=None, include_thoughts=True, thinking_budget=None, file=sys.stdout, show_params=True, max_length=None):
     """Generate content with retry logic and return a Response object.
     
     Args:
@@ -115,6 +115,7 @@ def generate_content_retry(contents, *, model=None, config=None, include_thought
         thinking_budget: Optional thinking budget
         file: Output file for streaming content (default: sys.stdout, None to disable)
         show_params: Whether to display parameters before generation (default: False)
+        max_length: Maximum length of generated text (default: None, no limit)
     
     Returns:
         Response: Object containing thoughts, text, response, and chunks
@@ -188,6 +189,10 @@ def generate_content_retry(contents, *, model=None, config=None, include_thought
                         # Stream formatted output to terminal
                         if file:
                             print(converter.feed(chunk.text), end="", flush=True, file=file)
+                
+                # Break outer loop if max_length exceeded
+                if max_length is not None and len(text) >= max_length:
+                    break
             
             # Flush any remaining markdown formatting
             remaining = converter.flush()

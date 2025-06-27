@@ -61,13 +61,14 @@ Main generation function with automatic retry logic:
 
 ```python
 response = generate_content_retry(
-    contents,                    # Content to send
-    model=None,                 # Model name (uses DEFAULT_MODEL if None)
-    config=None,                # GenerateContentConfig object
-    include_thoughts=True,      # Include thinking process
-    thinking_budget=None,       # Optional thinking time limit
+    contents,                  # Content to send
+    model=None,                # Model name (uses DEFAULT_MODEL if None)
+    config=None,               # GenerateContentConfig object
+    include_thoughts=True,     # Include thinking process
+    thinking_budget=None,      # Optional thinking time limit
     file=sys.stdout,           # Output stream (None to disable)
-    show_params=True           # Display parameters before generation
+    show_params=True,          # Display parameters before generation
+    max_length=None            # Maximum length of generated text
 )
 ```
 
@@ -76,6 +77,7 @@ response = generate_content_retry(
 - Streaming output with real-time markdown formatting
 - Thinking process visualization for Gemini 2.5 models
 - Flexible output control (stdout, file, or silent)
+- Length limitation with `max_length` parameter
 
 **Return Value:** `Response` object containing all generation data
 
@@ -233,6 +235,12 @@ with open("output.txt", "w", encoding="utf-8") as f:
 response = generate_content_retry(
     contents,
     show_params=False  # Don't show model/prompt info
+)
+
+# Limit output length
+response = generate_content_retry(
+    contents,
+    max_length=500  # Stop generation at 500 characters
 )
 ```
 

@@ -19,6 +19,7 @@ def generate_with_schema(
     thinking_budget=None,
     file=sys.stdout,
     show_params: bool = True,
+    max_length=None,
 ) -> Response:
     """Generate content using either OpenAI or Gemini API.
     
@@ -32,14 +33,15 @@ def generate_with_schema(
         thinking_budget: Optional thinking budget (Gemini only)
         file: File to stream output to. Defaults to sys.stdout.
         show_params: Whether to display parameters before generation
+        max_length: Maximum length of generated text (default: None, no limit)
         
     Returns:
         Response: Response object containing generated text and metadata
     """
     if model is None or model.startswith("gemini"):
-        return _generate_with_gemini(model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params)
+        return _generate_with_gemini(model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params, max_length)
     else:
-        return _generate_with_openai(model, contents, schema, temperature, system_prompt, file, show_params)
+        return _generate_with_openai(model, contents, schema, temperature, system_prompt, file, show_params, max_length)
 
 
 def _generate_with_gemini(
@@ -52,6 +54,7 @@ def _generate_with_gemini(
     thinking_budget=None,
     file=sys.stdout,
     show_params: bool = True,
+    max_length=None,
 ) -> Response:
     """Generate with Gemini API."""
     from . import config_from_schema, generate_content_retry, config_text
@@ -75,7 +78,8 @@ def _generate_with_gemini(
         show_params=show_params,
         include_thoughts=include_thoughts,
         thinking_budget=thinking_budget,
-        file=file
+        file=file,
+        max_length=max_length
     )
     
     # Return Response object
@@ -90,6 +94,7 @@ def _generate_with_openai(
     system_prompt: str = None,
     file=sys.stdout,
     show_params: bool = True,
+    max_length=None,
 ) -> Response:
     """Generate with OpenAI API with streaming."""
     from openai import OpenAI
@@ -146,6 +151,10 @@ def _generate_with_openai(
             collected_content += content
             if file:
                 print(content, end='', flush=True, file=file)
+            
+            # Check max_length and break if exceeded
+            if max_length is not None and len(collected_content) >= max_length:
+                break
     
     if file and not collected_content.endswith("\n"):
         print(file=file)  # New line after streaming
