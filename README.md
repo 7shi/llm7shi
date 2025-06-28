@@ -62,6 +62,12 @@ Set your Gemini API key as an environment variable:
 export GEMINI_API_KEY="your-api-key-here"
 ```
 
+For OpenAI API compatibility (via compat module):
+
+```bash
+export OPENAI_API_KEY="your-openai-api-key-here"
+```
+
 ## API Reference
 
 See [llm7shi/README.md](llm7shi/README.md) for complete API documentation and module details.
