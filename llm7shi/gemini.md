@@ -1,306 +1,32 @@
 # gemini.py - Gemini API Client
 
-This module provides a simplified interface for interacting with Google's Gemini API, including automatic retry logic, streaming support, and structured output generation.
+## Why This Exists
 
-## Core Components
+The Gemini API client was built to address several key challenges when working with Google's Gemini models:
 
-### Response Class
+1. **Robust API Interaction**: The raw Gemini API can experience rate limits and transient errors. We needed automatic retry logic with exponential backoff to handle these gracefully.
 
-A dataclass that encapsulates all generation results:
+2. **Thinking Process Visualization**: Gemini 2.5 models support a thinking feature that helps understand the model's reasoning process. This needed to be captured and displayed cleanly.
 
-```python
-@dataclass
-class Response:
-    model: Optional[str] = None
-    config: Optional[types.GenerateContentConfig] = None
-    contents: Optional[List[Any]] = None
-    response: Optional[Any] = None  # Raw API response
-    chunks: List[Any] = field(default_factory=list)
-    thoughts: str = ""
-    text: str = ""
-    
-    def __str__(self) -> str:
-        """Return the text content when converting to string."""
-        return self.text
-    
-    def __repr__(self) -> str:
-        """Return a concise representation."""
-        # Shows truncated contents and text
-```
+3. **Streaming with Terminal Formatting**: For better user experience, we wanted real-time output with markdown formatting converted to terminal colors. This required coordinated streaming between API chunks and terminal display.
 
-**Attributes:**
-- `model`: The model used for generation
-- `config`: GenerateContentConfig used
-- `contents`: Input contents sent to the API
-- `response`: Raw API response object
-- `chunks`: All streaming chunks received
-- `thoughts`: Thinking process text (if `include_thoughts=True`)
-- `text`: Final generated text
+4. **Structured Output Support**: The library needed to support both free-form text and structured JSON output using schemas, with proper validation and error handling.
 
-### Available Models
+5. **Quality Control**: Large language models can sometimes generate repetitive output loops. We needed detection mechanisms to identify and stop such patterns automatically.
 
-```python
-models = ["gemini-2.5-flash", "gemini-2.5-pro"]
-DEFAULT_MODEL = models[0]  # gemini-2.5-flash
-```
+## Key Design Decisions
 
-### Default Configuration
+### Response Object
+Created a comprehensive `Response` dataclass to capture all aspects of generation - not just the final text, but the model used, configuration, raw API response, streaming chunks, and thinking process. This enables debugging and analysis of API interactions.
 
-```python
-# Plain text responses
-config_text = types.GenerateContentConfig(
-    response_mime_type="text/plain",
-)
-```
+### Retry Strategy
+Implemented specific retry logic for different error types:
+- Rate limits (429): Respect the API's retryDelay
+- Server errors (500, 502, 503): Fixed 15-second delays
+- Other errors: Fail immediately
 
-## Main Functions
+### Output Length Control
+Added `max_length` parameter to prevent runaway generation costs and `check_repetition` to detect when models get stuck in loops, automatically stopping generation with a warning.
 
-### generate_content_retry()
-
-Main generation function with automatic retry logic:
-
-```python
-response = generate_content_retry(
-    contents,                  # Content to send
-    model=None,                # Model name (uses DEFAULT_MODEL if None)
-    config=None,               # GenerateContentConfig object
-    include_thoughts=True,     # Include thinking process
-    thinking_budget=None,      # Optional thinking time limit
-    file=sys.stdout,           # Output stream (None to disable)
-    show_params=True,          # Display parameters before generation
-    max_length=None,           # Maximum length of generated text
-    check_repetition=True      # Check for repetitive patterns
-)
-```
-
-**Features:**
-- Automatic retry for API errors (429, 500, 502, 503)
-- Streaming output with real-time markdown formatting
-- Thinking process visualization for Gemini 2.5 models
-- Flexible output control (stdout, file, or silent)
-- Length limitation with `max_length` parameter
-- Repetition detection: Checks every 1KB for repetitive patterns and stops generation if detected
-
-**Return Value:** `Response` object containing all generation data
-
-### build_schema_from_json()
-
-Convert JSON schema to Gemini Schema object:
-
-```python
-json_schema = {
-    "type": "object",
-    "properties": {
-        "name": {"type": "string"},
-        "age": {"type": "integer"},
-        "active": {"type": "boolean"}
-    },
-    "required": ["name"]
-}
-
-schema = build_schema_from_json(json_schema)
-```
-
-**Supported Types:**
-- `object`: With properties and required fields
-- `string`: With optional enum values
-- `boolean`: True/false values
-- `number`: Floating point numbers
-- `integer`: Whole numbers
-- `array`: With typed items
-
-### config_from_schema()
-
-Create GenerateContentConfig for structured JSON output:
-
-```python
-config = config_from_schema(schema)
-# Returns config with response_mime_type="application/json"
-```
-
-### upload_file()
-
-Upload files to Gemini API:
-
-```python
-file = upload_file("image.jpg", "image/jpeg")
-
-# Use in contents
-contents = [{
-    "role": "user",
-    "parts": [
-        {"text": "Describe this image"},
-        {"fileData": {
-            "mimeType": file.mime_type,
-            "fileUri": file.uri
-        }}
-    ]
-}]
-```
-
-**Supported MIME Types:**
-- Images: `image/jpeg`, `image/png`, `image/gif`, `image/webp`
-- Documents: `application/pdf`, `text/plain`
-- Audio: `audio/mpeg`, `audio/wav`
-- Video: `video/mp4`
-
-### delete_file()
-
-Delete uploaded files:
-
-```python
-delete_file(file)
-```
-
-## Usage Examples
-
-### Basic Text Generation
-
-```python
-from llm7shi import generate_content_retry
-
-# Simple generation
-response = generate_content_retry(["Hello, World!"])
-print(response.text)
-
-# With specific model
-response = generate_content_retry(
-    ["Explain quantum computing"],
-    model="gemini-2.5-pro"
-)
-```
-
-### Structured Output with Schema
-
-```python
-from llm7shi import build_schema_from_json, config_from_schema
-
-# Define schema
-schema_dict = {
-    "type": "object",
-    "properties": {
-        "summary": {"type": "string"},
-        "sentiment": {
-            "type": "string",
-            "enum": ["positive", "negative", "neutral"]
-        },
-        "score": {"type": "number"}
-    },
-    "required": ["summary", "sentiment", "score"]
-}
-
-# Build config
-schema = build_schema_from_json(schema_dict)
-config = config_from_schema(schema)
-
-# Generate structured output
-response = generate_content_retry(
-    ["Analyze this text: Great product!"],
-    config=config
-)
-
-import json
-result = json.loads(response.text)
-print(f"Sentiment: {result['sentiment']}")
-```
-
-### Thinking Process Visualization
-
-```python
-# Enable thinking display
-response = generate_content_retry(
-    ["Solve: What is 25% of 80?"],
-    include_thoughts=True
-)
-
-print(f"Thoughts: {response.thoughts}")
-print(f"Answer: {response.text}")
-
-# Limit thinking time
-response = generate_content_retry(
-    ["Complex problem..."],
-    thinking_budget=30  # Max 30 seconds thinking
-)
-```
-
-### Output Control
-
-```python
-# Silent mode (no output)
-response = generate_content_retry(contents, file=None)
-
-# Output to file
-with open("output.txt", "w", encoding="utf-8") as f:
-    response = generate_content_retry(contents, file=f)
-
-# Disable parameter display
-response = generate_content_retry(
-    contents,
-    show_params=False  # Don't show model/prompt info
-)
-
-# Limit output length
-response = generate_content_retry(
-    contents,
-    max_length=500  # Stop generation at 500 characters
-)
-
-# Disable repetition detection
-response = generate_content_retry(
-    contents,
-    check_repetition=False  # Don't check for repetitive patterns
-)
-```
-
-### Error Handling and Retry
-
-The function automatically retries on these errors:
-- **429**: Rate limit (waits based on retryDelay)
-- **500**: Server error (15 second wait)
-- **502**: Bad Gateway (15 second wait)
-- **503**: Service unavailable (15 second wait)
-
-```python
-try:
-    response = generate_content_retry(contents)
-except RuntimeError as e:
-    print(f"Max retries exceeded: {e}")
-```
-
-## Environment Setup
-
-Set your API key:
-```bash
-export GEMINI_API_KEY="your-api-key"
-```
-
-## Integration with utils.py
-
-The module uses functions from utils.py:
-
-```python
-from llm7shi.utils import do_show_params, detect_repetition
-
-# Called internally when show_params=True
-do_show_params(contents, model=model, file=file)
-
-# Called every 1KB when check_repetition=True
-if detect_repetition(text):
-    # Stop generation and show warning
-```
-
-## Terminal Formatting
-
-Uses `MarkdownStreamConverter` for real-time markdown formatting:
-- Bold text (`**text**`) converted to terminal colors
-- Thinking process shown with 🤔 emoji
-- Answer shown with 💡 emoji
-- Repetition warning shown with ⚠️ emoji
-
-## Notes
-
-1. **Default Model**: Uses `gemini-2.5-flash` when model is not specified
-2. **Streaming**: Always uses streaming API for real-time output
-3. **File Processing**: Uploaded files wait for processing completion
-4. **Rate Limiting**: Automatic retry with appropriate delays
-5. **Thinking Feature**: Available on both Flash and Pro models
+### File Upload Handling
+Gemini's file API requires uploading first, then referencing in requests. We abstracted this complexity while ensuring proper cleanup with delete functionality.

@@ -1,126 +1,25 @@
 # test_terminal.py - Terminal Formatting Tests
 
-Unit tests for terminal output formatting in `llm7shi/terminal.py`.
+## Why These Tests Exist
 
-## Test Coverage
+Testing terminal formatting presented unique challenges for real-time streaming scenarios:
 
-### Bold Function Tests
-- `bold()` simple text formatting with colorama styles
-- Empty string handling and edge cases
-- Special character processing (newlines, symbols)
-- Color code application and reset sequences
+### Streaming State Management Testing
+**Problem**: The `MarkdownStreamConverter` maintains state across multiple `feed()` calls and must handle markdown markers split across chunk boundaries. This stateful behavior is complex to test and critical for real-time LLM output.
 
-### Markdown Conversion Tests
-- `convert_markdown()` one-shot markdown to terminal conversion
-- Single bold section conversion (`**text**` → colored text)
-- Multiple bold sections in single string
-- Bold text at string start, middle, and end
-- Entirely bold text handling
-- Plain text without formatting (pass-through)
-- Empty string and edge case handling
+**Solution**: Comprehensive tests for partial marker scenarios (like `*` at chunk end followed by `*bold**` in next chunk) to ensure the converter properly buffers and reassembles split markers.
 
-### Unclosed Formatting Tests
-- Unclosed bold markers (`**text` without closing `**`)
-- Empty bold markers (`****`)
-- Only asterisks handling
-- Malformed markup graceful degradation
+### Cross-Platform Compatibility Validation
+**Problem**: Terminal formatting works differently on Windows vs Unix systems. The module uses Colorama for cross-platform ANSI support, but this needed verification without requiring multiple test environments.
 
-### Newline and Multiline Tests
-- Bold text spanning multiple lines
-- Mixed content with newlines between bold sections
-- Newline preservation in formatted output
-- Complex multiline scenarios
+**Solution**: Integration tests that verify Windows console initialization and module import success, ensuring the formatting works across platforms.
 
-### Streaming Converter Tests
-- `MarkdownStreamConverter` initialization and state management
-- Complete bold formatting in single chunk processing
-- Bold formatting split across multiple chunks
-- Opening marker split across chunks (`*` + `*bold content**`)
-- Closing marker split across chunks (`**bold content*` + `*`)
-- Multiple bold sections in streaming context
+### Graceful Degradation Testing
+**Problem**: Real-world markdown input can be malformed (unclosed `**` markers, incomplete formatting). The converter needs to handle these gracefully without breaking or leaving terminals in inconsistent states.
 
-### Buffer Management Tests
-- Partial marker buffering and state tracking
-- Buffer content management and cleanup
-- Bold state persistence across feed operations
-- Non-matching continuation handling (buffer flush)
+**Solution**: Extensive tests for malformed input patterns and auto-closing behavior at newlines to ensure robust handling of imperfect input.
 
-### Auto-closing Behavior Tests
-- Newline auto-closing of bold formatting
-- Newlines within properly closed bold sections
-- `flush()` method with pending content processing
-- End-of-stream bold completion
+### Functional vs Implementation Testing
+**Problem**: Terminal formatting produces ANSI escape sequences that are hard to test directly. We needed to verify functionality without tightly coupling tests to specific escape sequence values.
 
-### Streaming State Tests
-- Bold state tracking (`bright_mode` flag, not `bold_open`)
-- Buffer management for incomplete markers
-- State persistence across multiple `feed()` calls
-- Complex streaming scenarios with multiple partial updates
-- Proper attribute name usage matching actual implementation
-
-### Windows Console Integration Tests
-- Windows console compatibility verification
-- Module import success validation
-- Cross-platform behavior validation
-
-## Test Strategy
-
-### Pure Input/Output Testing
-- Tests actual colorama ANSI escape sequences without mocking
-- Focuses on content preservation and functionality verification
-- Validates that markdown markers are properly removed
-- Checks for presence of expected text content rather than exact formatting codes
-
-### Test Data
-- Various markdown patterns: simple, complex, nested, malformed
-- Streaming chunk scenarios: complete, partial, split markers
-- Edge cases: empty strings, only asterisks, very long text
-- Realistic streaming scenarios with multiple chunks
-- Pure functional testing without dependency on internal colorama constants
-
-## Test Classes
-
-- **TestBoldFunction**: Simple bold text formatting
-- **TestConvertMarkdown**: One-shot markdown conversion
-- **TestMarkdownStreamConverter**: Streaming conversion functionality
-- **TestWindowsConsoleIntegration**: Platform compatibility
-- **TestEdgeCases**: Error conditions and boundary cases
-
-## Key Test Scenarios
-
-### Basic Functionality
-- Bold text wrapping with ANSI escape sequences
-- Markdown pattern recognition and replacement
-- Plain text pass-through behavior
-- Correct `convert_markdown()` behavior for unclosed markers
-- Content preservation in all formatting operations
-
-### Streaming Processing
-- Incremental chunk processing with state management
-- Partial marker handling across chunk boundaries
-- Auto-closing behavior for incomplete formatting
-- Buffer management for single asterisk at chunk boundaries
-
-### Edge Case Handling
-- Malformed markdown graceful degradation (immediate processing)
-- Very long text processing efficiency
-- Nested marker pattern handling with proper state transitions
-- Single asterisk buffering at chunk boundaries
-
-### Platform Compatibility
-- Windows console initialization verification
-- Cross-platform ANSI escape sequence consistency
-- Module import success across platforms
-
-## Running Tests
-
-```bash
-# Run all terminal formatting tests
-uv run pytest tests/test_terminal.py
-
-# Run specific test class
-uv run pytest tests/test_terminal.py::TestMarkdownStreamConverter
-
-# Run with verbose output
-uv run pytest tests/test_terminal.py -v
-```
+**Solution**: Content-focused testing that verifies markdown markers are removed and expected text is preserved, rather than testing exact escape sequence output.

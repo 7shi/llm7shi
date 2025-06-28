@@ -17,6 +17,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Focus on user-visible changes and benefits
 - Group changes under Added/Changed/Fixed sections as appropriate
 
+### Documentation Guidelines
+- **Two-tier documentation structure**: Each Python module has a paired `.md` file (1:1 pairing)
+- **Module `.md` files**: Focus on **implementation rationale and design decisions** - explain WHY the code was written, what problems it solves, and key design choices. Avoid code examples and detailed usage instructions.
+- **Directory `README.md` files**: Provide practical information for users - usage examples, file organization, running instructions, environment setup
+- **Rationale over implementation**: Code can be understood by reading it; documentation should explain the thought process behind it
+
 ## Project Overview
 
 llm7shi is a simplified Python library for interacting with large language models. Currently supports Google's Gemini AI models, with potential for future expansion to other LLM providers.
@@ -30,55 +36,33 @@ uv sync
 ```
 
 ### Environment Configuration
-Set your Gemini API key:
+Set your API keys:
 ```bash
 export GEMINI_API_KEY="your-api-key-here"
+export OPENAI_API_KEY="your-api-key-here"
 ```
 
 ## Architecture
 
-### Core Modules
+### Design Philosophy
 
-1. **llm7shi/gemini.py**: Main API wrapper
-   - Handles Gemini API client initialization
-   - Provides retry logic for API errors (429, 500, 502, 503)
-   - Supports both text generation and structured JSON output via schemas
-   - Includes thinking process visualization for Gemini 2.5 models
-   - Returns Response dataclass containing thoughts, text, response, chunks, model, config, and contents
+The library follows a **simplicity-first approach** with **optional complexity**:
 
-2. **llm7shi/terminal.py**: Terminal formatting utilities
-   - Converts Markdown bold (`**text**`) to terminal colors
-   - Provides both one-shot and streaming conversion
-   - Handles Windows console compatibility
+- **Core simplicity**: Basic text generation requires minimal configuration
+- **Layered functionality**: Advanced features (schemas, multi-provider) are opt-in
+- **Streaming by default**: Real-time output for better user experience
+- **Error resilience**: Automatic retry logic handles transient API failures
+- **Provider independence**: Optional compatibility layer enables vendor flexibility
 
-3. **llm7shi/utils.py**: Utility functions
-   - Parameter display formatting (`do_show_params`)
-   - Message format conversion for OpenAI compatibility
-   - Schema transformations (inline $defs, add additionalProperties)
-   - Repetition detection (`detect_repetition`) for identifying output loops
+### Module Organization
 
-4. **llm7shi/__init__.py**: Package initialization and convenience imports
-   - Provides package-level imports for easy access
-   - Dynamic version retrieval from package metadata
-   - Centralizes all public API functions
+Each module addresses specific architectural concerns:
 
-5. **llm7shi/compat.py**: Multi-provider compatibility layer (optional)
-   - Provides abstraction for using multiple LLM providers
-   - `generate_with_schema()`: Unified interface supporting Gemini, OpenAI, and Anthropic
-   - Automatic provider detection based on model name
-   - Schema conversion and compatibility handling
-   - System prompt support across all providers
-
-### Key Design Patterns
-
-- **Streaming Support**: Both modules support real-time output streaming
-- **Error Resilience**: Automatic retry with exponential backoff for API errors
-- **Flexible Output**: Supports output to console, files, or silent operation via `file` parameter
-- **Schema-based Generation**: JSON schema and Pydantic model support for structured outputs
-- **Response Object**: Comprehensive dataclass containing all generation results and metadata
-- **Pydantic Integration**: Direct support for Pydantic models in `config_from_schema()`
-- **Package Structure**: Proper Python package with `__init__.py` and convenient imports
-- **Documentation Pairing**: Each `.py` file has a corresponding `.md` documentation file
+- **gemini.py**: Core API interaction and reliability
+- **terminal.py**: User experience and cross-platform output formatting  
+- **utils.py**: Cross-cutting concerns and provider compatibility
+- **compat.py**: Optional multi-provider abstraction layer
+- **response.py**: Unified data structure for all generation results
 
 ## Common Development Tasks
 
@@ -96,31 +80,21 @@ uv run pytest -v              # Verbose output
 uv run pytest tests/test_hello.py  # Run specific test
 ```
 
-### Testing Strategy
-- All tests use mocked API calls (no real API keys needed)
-- Set GEMINI_API_KEY=dummy for testing
-- Comprehensive coverage of examples and core functionality
+### Testing Philosophy
+- **Mock-first approach**: No real API calls to ensure fast, reliable CI/CD
+- **Comprehensive coverage**: All examples and core functionality tested
+- **Error scenario validation**: Retry logic and edge cases thoroughly tested
 
-### Testing API Integration
-When testing Gemini API integration:
-1. Check for proper error handling (rate limits, server errors)
-2. Verify streaming output works correctly
-3. Test schema validation for structured outputs
+### Development Principles
+- **Simplicity first**: New features should maintain the library's ease-of-use
+- **Backward compatibility**: Always maintain existing API contracts
+- **Streaming support**: New features should work with real-time output where applicable
+- **Documentation rationale**: Focus on WHY decisions were made, not HOW code works
+- **Two-tier docs**: Module `.md` for rationale, directory `README.md` for usage
 
-### Adding New Features
-- Follow the existing pattern of separating API logic from presentation
-- Maintain backward compatibility (see how `generate_content_retry` wraps the newer function)
-- Include documentation for new features
-- Support both streaming and non-streaming modes where applicable
-- Create corresponding `.md` documentation file for any new `.py` module
-- Update `__init__.py` to export new public functions
-- Add examples in the `examples/` directory with matching documentation
+## Key Decisions
 
-## Important Notes
-
-- The project supports Gemini 2.5 models (`gemini-2.5-flash`, `gemini-2.5-pro`)
-- Documentation exists in `.md` files alongside Python modules (1:1 pairing)
-- The API automatically handles thinking budget for optimal response times
-- Windows console fixes are included in terminal.py
-- Package uses dynamic version management via `importlib.metadata`
-- Designed for future extensibility to support additional LLM providers
+- **Gemini 2.5 focus**: Primary support for latest models with thinking capabilities
+- **Documentation philosophy**: Rationale over implementation details
+- **Extensible architecture**: Designed for future multi-provider expansion
+- **User experience priority**: Streaming output and terminal formatting included by default

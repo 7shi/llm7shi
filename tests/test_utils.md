@@ -1,95 +1,25 @@
 # test_utils.py - Utility Functions Tests
 
-Unit tests for helper functions in `llm7shi/utils.py`.
+## Why These Tests Exist
 
-## Test Coverage
+Testing utility functions required addressing specific cross-cutting concerns:
 
-### Parameter Display Tests
-- `do_show_params()` parameter display formatting with keyword-only arguments
-- Output to stdout vs file handling (file=None disables output)
-- Parameter alignment and formatting consistency
-- Content quoting and string representation
-- Temperature parameter display via **kwargs
-- Configuration object display via **kwargs
-- File output redirection and validation using print() internally
+### Parameter Display Testing
+**Problem**: The `do_show_params()` function needed to handle various output scenarios (console, file, disabled) while maintaining consistent formatting. This seemingly simple function had complex behavior around alignment and quoting.
 
-### Message Conversion Tests
-- `contents_to_openai_messages()` message format conversion
-- Conversion without system prompt (user messages only)
-- Conversion with system prompt (system + user messages)
-- Empty content list handling
-- Single content item processing
-- Empty system prompt handling (falsy values excluded)
+**Solution**: Comprehensive mocking of `sys.stdout` and file objects to verify exact output formatting and ensure the function respects the `file=None` disable mechanism.
 
-### Schema Modification Tests
-- `add_additional_properties_false()` schema modification for OpenAI compatibility
-- Simple object schema property addition
-- Recursive processing for nested object structures
-- Array handling with object items
-- Non-object schema preservation (no modification)
-- Existing additionalProperties override behavior
-- Deeply nested schema structure processing
+### Schema Transformation Validation
+**Problem**: The schema processing functions (`add_additional_properties_false`, `inline_defs`) perform complex recursive transformations that must preserve schema semantics while meeting API-specific requirements. These transformations are critical for multi-provider compatibility.
 
-### Schema Reference Resolution Tests
-- `inline_defs()` JSON schema reference resolution
-- Simple `$ref` inlining with definition replacement
-- Nested reference resolution (refs within refs)
-- Array items reference inlining
-- Schema without definitions (no-op behavior)
-- Unused definitions removal
-- Title field removal during inlining process
-- Circular reference detection (raises `RecursionError` in current implementation)
+**Solution**: Extensive test cases covering nested structures, arrays, and edge cases to ensure transformations don't break schema validity or lose information.
 
-## Mock Strategy
+### Message Format Conversion Testing
+**Problem**: Converting between different LLM provider message formats required ensuring no content is lost and proper role assignment occurs. The `contents_to_openai_messages()` function bridges different API paradigms.
 
-### Output Mocking
-- Mock `sys.stdout` for output capture and validation
-- File object mocking for output redirection testing (via MagicMock)
-- String content verification and formatting validation
-- Mock file.write() calls to verify print() behavior
+**Solution**: Tests covering various content combinations and system prompt scenarios to verify format compliance and data integrity.
 
-### Test Data
-- Various content types: strings, lists, mixed content
-- Schema examples: simple objects, nested structures, arrays
-- Reference schemas: simple refs, nested refs, circular refs
-- Edge cases: empty inputs, malformed data, boundary conditions
+### Circular Reference Handling
+**Problem**: JSON schemas can contain circular references, which the `inline_defs()` function needs to detect to avoid infinite loops during processing.
 
-## Test Classes
-
-- **TestDoShowParams**: Parameter display and formatting
-- **TestContentsToOpenaiMessages**: Message format conversion
-- **TestAddAdditionalPropertiesFalse**: OpenAI schema compatibility
-- **TestInlineDefs**: JSON schema reference resolution
-
-## Key Test Scenarios
-
-### Parameter Display
-- Console vs file output comparison
-- Parameter value formatting and alignment
-- Content string quoting and escaping
-- Multiple parameter combinations
-
-### Message Conversion
-- OpenAI message format compliance
-- System prompt integration strategies
-- Content list processing and validation
-- Role assignment and message structure
-
-### Schema Processing
-- OpenAI compatibility requirements
-- Reference resolution accuracy
-- Recursive processing validation
-- Edge case handling and error prevention
-
-## Running Tests
-
-```bash
-# Run all utility function tests
-uv run pytest tests/test_utils.py
-
-# Run specific test class
-uv run pytest tests/test_utils.py::TestDoShowParams
-
-# Run with verbose output
-uv run pytest tests/test_utils.py -v
-```
+**Solution**: Explicit tests for circular reference detection to ensure the function fails gracefully with `RecursionError` rather than hanging indefinitely.

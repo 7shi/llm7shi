@@ -1,90 +1,20 @@
 # llm7shi Package Initialization
 
-This module serves as the main entry point for the llm7shi package, providing convenient imports for all public APIs.
+## Why This Design
 
-## Package Overview
+The `__init__.py` module was designed to solve specific package organization challenges:
 
-llm7shi is a simplified Python library for interacting with large language models. Currently supports Google's Gemini AI models with features including:
+### Convenient Public API
+**Problem**: Users should be able to import commonly used functions directly from the package without needing to know internal module structure.
 
-- Simple API wrapper with automatic retry logic
-- Streaming support for real-time output
-- JSON schema-based structured generation
-- Terminal formatting utilities
-- Robust error handling
+**Solution**: Created a curated `__all__` list that exports the most frequently used functions at the package level, while keeping implementation details in separate modules.
 
-## Module Structure
+### Selective Export Strategy
+**Problem**: Not all functionality should be part of the main API. Some modules (like `compat.py`) are for advanced use cases and shouldn't clutter the primary interface.
 
-The package is organized into several modules:
+**Solution**: Explicitly chose which symbols to export. For example, `compat.py` requires explicit import (`from llm7shi.compat import generate_with_schema`) to keep it separate from the core API.
 
-### gemini.py
-Core functionality for interacting with Google's Gemini API:
-- `DEFAULT_MODEL`: Default model to use (gemini-2.5-flash)
-- `Response`: Dataclass containing generation results
-- `build_schema_from_json()`: Convert JSON schema to Gemini Schema object
-- `config_from_schema()`: Create config for structured JSON output
-- `config_text`: Default config for plain text responses
-- `generate_content_retry()`: Main generation function with retry logic
-- `upload_file()`: Upload files to Gemini API
-- `delete_file()`: Delete uploaded files
+### Dynamic Versioning
+**Problem**: Hard-coding version numbers in source code creates maintenance overhead and sync issues with package metadata.
 
-### terminal.py
-Terminal formatting utilities for better output display:
-- `bold()`: Convert text to bold terminal format
-- `convert_markdown()`: Convert Markdown bold to terminal colors
-- `MarkdownStreamConverter`: Stream converter for real-time formatting
-
-### utils.py
-Utility functions for various operations:
-- `do_show_params()`: Display generation parameters
-- `contents_to_openai_messages()`: Convert to OpenAI message format
-- `add_additional_properties_false()`: Add OpenAI schema requirements
-- `inline_defs()`: Inline $defs references in JSON schemas
-
-### compat.py (not exported)
-Compatibility layer for using multiple LLM providers:
-- `generate_with_schema()`: Unified interface for OpenAI and Gemini
-- Must be imported explicitly: `from llm7shi.compat import generate_with_schema`
-
-## Version Management
-
-The package version is dynamically retrieved from package metadata using `importlib.metadata`.
-
-## Example Usage
-
-Basic text generation:
-```python
-from llm7shi import generate_content_retry
-
-response = generate_content_retry(["Hello, World!"])
-print(response.text)
-```
-
-Schema-based structured output:
-```python
-from llm7shi import config_from_schema, build_schema_from_json
-import json
-
-# Load and build schema
-with open("schema.json") as f:
-    schema_data = json.load(f)
-schema = build_schema_from_json(schema_data)
-
-# Create config and generate
-config = config_from_schema(schema)
-response = generate_content_retry(["Extract data"], config=config)
-```
-
-Using compatibility layer:
-```python
-from llm7shi.compat import generate_with_schema
-
-# Works with both Gemini and OpenAI models
-result = generate_with_schema(
-    contents=["Hello"],
-    model="gpt-4-mini"  # or "gemini-2.5-flash"
-)
-```
-
-## Exported Symbols
-
-All symbols listed in `__all__` are available for import directly from the llm7shi package. This provides a clean public API while keeping internal implementation details private.
+**Solution**: Used `importlib.metadata` to dynamically retrieve the version from package metadata, ensuring single source of truth.

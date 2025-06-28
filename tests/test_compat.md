@@ -1,122 +1,25 @@
 # test_compat.py - Multi-Provider Compatibility Tests
 
-Unit tests for the compatibility layer in `llm7shi/compat.py`.
+## Why These Tests Exist
 
-## Test Coverage
+Testing the compatibility layer required solving unique challenges around multi-provider abstraction:
 
-### Model Selection Logic
-- Gemini model routing (`gemini-2.5-flash`, `gemini-2.5-pro`)
-- OpenAI model routing (`gpt-4-mini`, `gpt-4o`, etc.)
-- Default model selection (falls back to Gemini)
-- Unsupported model handling and fallback behavior
+### Provider Routing Validation
+**Problem**: The compatibility layer automatically routes to different APIs based on model names. This routing logic is critical but simple - we needed to ensure it works correctly without over-engineering the detection mechanism.
 
-### Gemini Integration Tests
-- `generate_with_schema()` with Pydantic models and JSON schemas
-- Parameter passing to underlying Gemini functions
-- Schema processing pipeline (`config_from_schema`, `build_schema_from_json`)
-- Temperature parameter handling and validation
-- System prompt integration (prepended to content)
-- Configuration object creation and validation
+**Solution**: Focused tests on model name pattern matching and default fallback behavior to verify the simple prefix-based routing works reliably.
 
-### OpenAI Integration Tests
-- OpenAI API client initialization and usage
-- Message format conversion via `contents_to_openai_messages()`
-- Streaming response handling and content extraction
-- JSON schema formatting for OpenAI compatibility
-- Pydantic model to JSON schema conversion
-- Temperature parameter forwarding
-- Response format specification for structured output
+### API Abstraction Testing
+**Problem**: Each LLM provider has different API patterns, response formats, and parameter requirements. The compatibility layer needed to abstract these differences while preserving provider-specific features.
 
-### Schema Processing Tests
-- Pydantic model detection and handling (`inspect.isclass`, `issubclass`)
-- JSON schema processing pipeline for OpenAI
-- Schema modification (`add_additional_properties_false`)
-- Reference inlining (`inline_defs`)
-- Schema validation and error handling
+**Solution**: Comprehensive mocking of both OpenAI and Gemini APIs to test that the same function call produces equivalent `Response` objects regardless of the underlying provider.
 
-### Error Handling Tests
-- OpenAI API error propagation
-- Unsupported model fallback behavior
-- Invalid schema handling
-- Network error scenarios
+### Schema Processing Pipeline Validation
+**Problem**: Different providers require different schema formats, and the processing pipeline (Pydantic→JSON→Provider-specific) has multiple transformation steps that could introduce errors.
 
-## Mock Strategy
+**Solution**: End-to-end tests that verify schema transformations preserve semantic meaning while meeting each provider's specific format requirements.
 
-### API Client Mocking
-- Mock `openai.OpenAI` client initialization
-- Mock `client.chat.completions.create()` for OpenAI responses
-- Mock Gemini functions from package root (`llm7shi.generate_content_retry`, `llm7shi.config_from_schema`, etc.)
-- Mock environment variables (`GEMINI_API_KEY`, `OPENAI_API_KEY`)
-- Note: Uses relative imports in compat.py, requiring root-level mocking
+### Import and Mocking Complexity
+**Problem**: The compat module uses relative imports from the main package, which created challenges for mocking during testing. Standard module-level mocking didn't work as expected.
 
-### Response Simulation
-- OpenAI response structure simulation with choices and messages
-- Gemini response object mocking with proper attributes
-- Error response simulation for testing error handling
-- Streaming chunk simulation for response processing
-
-### Schema Processing Mocks
-- Mock schema processing utilities (`add_additional_properties_false`, `inline_defs`)
-- Mock Pydantic model detection and conversion
-- Mock JSON schema validation and transformation
-- Note: `inline_defs` only called for Pydantic models in current implementation
-
-## Test Classes
-
-- **TestModelSelection**: Model routing and selection logic
-- **TestGeminiIntegration**: Gemini API integration and parameter handling
-- **TestOpenAIIntegration**: OpenAI API integration and response processing
-- **TestErrorHandling**: Error scenarios and fallback behavior
-- **TestSchemaProcessing**: Schema conversion and processing utilities
-
-## Test Models
-
-```python
-class LocationTemperature(BaseModel):
-    location: str
-    temperature: float = Field(description="Temperature in Celsius")
-
-class LocationList(BaseModel):
-    locations: List[LocationTemperature]
-```
-
-Note: Model names avoid "Test" prefix to prevent pytest collection warnings.
-
-## Key Test Scenarios
-
-### Provider Selection
-- Model name pattern matching for routing decisions
-- Default provider selection when no model specified
-- Fallback behavior for unrecognized model names
-
-### Parameter Handling
-- Temperature parameter forwarding to both providers
-- System prompt integration strategies (positional vs keyword arguments)
-- Schema parameter processing and conversion
-- Default model selection handling (None passed to Gemini)
-
-### Response Processing
-- OpenAI response structure parsing and Response object creation
-- Gemini Response object handling and attribute access
-- Error response processing and exception handling
-- Streaming response processing and chunk collection for both providers
-- Unified Response object return type across providers
-
-### Schema Compatibility
-- Pydantic model to JSON schema conversion accuracy
-- OpenAI schema format requirements and modifications
-- Reference resolution and schema flattening (Pydantic only)
-- Schema processing pipeline differences between providers
-
-## Running Tests
-
-```bash
-# Run all compatibility layer tests
-uv run pytest tests/test_compat.py
-
-# Run specific test class
-uv run pytest tests/test_compat.py::TestModelSelection
-
-# Run with verbose output
-uv run pytest tests/test_compat.py -v
-```
+**Solution**: Root-level mocking strategy (`llm7shi.generate_content_retry`) rather than module-level imports to properly intercept the function calls made by the compatibility layer.

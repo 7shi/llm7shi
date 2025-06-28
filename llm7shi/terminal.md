@@ -1,173 +1,31 @@
 # terminal.py - Terminal Formatting Utilities
 
-## Overview
+## Why This Exists
 
-A module for converting Markdown bold syntax (`**text**`) to terminal colors using Colorama.
-Designed for displaying formatted text in CLI applications with proper handling of streaming output.
+When building CLI applications that display LLM responses, we faced several specific challenges that standard terminal output couldn't address:
 
-## Design Philosophy
+### Real-Time Markdown Formatting
+**Problem**: LLM APIs stream responses with markdown formatting (like `**bold**` text), but terminals need ANSI escape codes for visual formatting. Converting after complete response arrival loses the real-time streaming effect.
 
-### Purpose
-Convert Markdown bold notation to terminal formatting for enhanced visual representation in command-line interfaces.
+**Solution**: Created a streaming converter that processes markdown in chunks as they arrive, maintaining formatting state across chunk boundaries.
 
-### Key Features
+### Robustness for Incomplete Text
+**Problem**: Streaming text can be cut off mid-markdown marker (e.g., a chunk ending with just `*` when `**` is intended). Standard markdown parsers expect complete text.
 
-1. **Robustness**: Handles incomplete or malformed markdown gracefully
-   - Auto-closes unclosed bold tags at newlines
-   - Ensures styles are properly reset at text boundaries
+**Solution**: Implemented intelligent buffering that holds incomplete markers until the next chunk arrives, plus auto-closing of unclosed formatting at line boundaries.
 
-2. **Streaming Support**: Optimized for real-time text processing
-   - `MarkdownStreamConverter` class for chunk-by-chunk processing
-   - Intelligent buffering to handle split `**` markers across chunks
+### Cross-Platform Terminal Support
+**Problem**: Windows consoles historically didn't support ANSI escape codes, causing formatting to display as raw escape sequences.
 
-3. **Cross-Platform Compatibility**: 
-   - Windows console support via `just_fix_windows_console()`
-   - Consistent line ending normalization (converts CRLF/CR to LF)
+**Solution**: Integrated Colorama's Windows console fixes and normalized line endings across platforms.
 
-### Processing Flow
+## Key Design Decisions
 
-```
-Input: "**bold** text"
-     ↓
-Parse: Detect ** markers and toggle bold state
-     ↓
-Apply: Insert Style.BRIGHT/Style.NORMAL codes
-     ↓
-Output: ANSI-formatted text for terminal display
-```
+### Streaming-First Architecture
+The `MarkdownStreamConverter` class maintains state between `feed()` calls, allowing continuous processing of text streams without losing formatting context.
 
-## API Reference
+### Conservative Formatting
+Auto-closes bold formatting at newlines to prevent formatting "bleed" into subsequent content. This ensures that unclosed markdown doesn't affect the entire terminal session.
 
-### Functions
-
-#### `bold(text: str) -> str`
-Wraps text with terminal bold formatting.
-
-**Parameters:**
-- `text`: Text to format as bold
-
-**Returns:**
-- Text wrapped with `Style.BRIGHT` and `Style.NORMAL`
-
-**Example:**
-```python
-print(bold("Important message"))
-# Output: Displays "Important message" in bold
-```
-
-#### `convert_markdown(text: str) -> str`
-Converts Markdown bold syntax to terminal formatting.
-
-**Parameters:**
-- `text`: Text containing Markdown bold markers (`**`)
-
-**Returns:**
-- Text with Colorama style codes replacing Markdown syntax
-
-**Features:**
-- Detects `**` markers and toggles bold state
-- Auto-closes bold at newlines to prevent formatting bleed
-- Normalizes all line endings to Unix style (LF)
-- Ensures proper style reset at text end
-
-**Example:**
-```python
-text = "This is **important** information\n**Unclosed bold"
-print(convert_markdown(text))
-# Bold automatically closed at newline and end
-```
-
-### Classes
-
-#### `MarkdownStreamConverter`
-Handles Markdown bold conversion for streaming text.
-
-**Use Cases:**
-- Real-time text streams (e.g., LLM responses)
-- Processing large texts in chunks
-- Incremental output display
-
-**Attributes:**
-- `buffer`: Stores incomplete `**` markers between chunks
-- `bright_mode`: Tracks current bold state
-
-**Methods:**
-
-##### `__init__()`
-Initializes the converter with empty buffer and normal text state.
-
-##### `feed(chunk: str) -> str`
-Processes a chunk of streaming text.
-
-**Parameters:**
-- `chunk`: Text fragment to process
-
-**Returns:**
-- Formatted text with appropriate style codes
-
-**Behavior:**
-- Buffers single `*` at chunk end to detect `**` across boundaries
-- Combines buffered content with new chunk before processing
-- Auto-closes bold at newlines
-- Maintains state between calls
-
-##### `flush() -> str`
-Finalizes processing and resets converter state.
-
-**Returns:**
-- Any remaining buffered content with proper style closure
-
-**Usage:**
-```python
-converter = MarkdownStreamConverter()
-# Process streaming chunks
-for chunk in stream:
-    print(converter.feed(chunk), end='')
-# Always flush at end
-print(converter.flush(), end='')
-```
-
-## Usage Examples
-
-### Basic Usage
-```python
-from terminal import convert_markdown
-
-text = "**Error**: File not found"
-print(convert_markdown(text))
-```
-
-### Streaming Usage
-```python
-from terminal import MarkdownStreamConverter
-
-converter = MarkdownStreamConverter()
-chunks = ["**Processing", "** in progress", "\nCompleted"]
-
-for chunk in chunks:
-    print(converter.feed(chunk), end='')
-print(converter.flush())
-```
-
-## Limitations
-
-1. **Nested Decorations**: Compound decorations like `***bold italic***` are not supported
-2. **Other Markdown**: Headers, lists, code blocks, etc. are not converted
-3. **Escaping**: Escaping with `\**` is not supported
-
-## Implementation Details
-
-### Dependencies
-- **Colorama**: Provides cross-platform ANSI color support
-  - `Style.BRIGHT`: Activates bold formatting
-  - `Style.NORMAL`: Resets to normal text
-  - `just_fix_windows_console()`: Enables ANSI codes on Windows
-
-### State Management
-The `MarkdownStreamConverter` maintains state across chunks:
-- **bright_mode**: Boolean flag tracking bold state
-  - `False`: Normal text mode
-  - `True`: Bold text mode
-- **buffer**: String holding incomplete markers
-  - Stores single `*` when chunk ends mid-marker
-  - Enables proper `**` detection across chunk boundaries
+### Minimal Scope
+Focused only on bold formatting (`**text**`) rather than full markdown support, as this was the specific need for displaying LLM thinking processes and emphasis.

@@ -1,120 +1,15 @@
 # schema1.py - Structured JSON Output Example
 
-## Overview
+## Why This Example Exists
 
-This example demonstrates how to use JSON schemas to generate structured data output from Gemini AI models, converting natural language into well-defined JSON format.
+This example addresses the need for structured data extraction from LLM outputs using standard JSON Schema.
 
-## Code Explanation
+### Standard JSON Schema Approach
+**Problem**: Natural language outputs from LLMs are hard to parse and integrate into applications. Developers needed a way to get predictable, structured data using existing JSON Schema standards.
 
-```python
-import json
-from pathlib import Path
-from llm7shi import build_schema_from_json, config_from_schema, generate_content_retry
+**Solution**: Uses standard JSON Schema files with validation to ensure LLM outputs match expected structure, enabling reliable data extraction and integration.
 
-with open(Path(__file__).with_suffix(".json")) as f:
-    # build_schema_from_json() provides schema validation for early error detection
-    schema = build_schema_from_json(json.load(f))
-    # You can also use json.load(f) directly, but schema validation is recommended
-    #schema = json.load(f)
+### Early Error Detection Philosophy
+**Problem**: Schema errors often surface during API calls, wasting time and tokens. The example shows the recommended pattern of early schema validation.
 
-generate_content_retry(
-    ["The temperature in Tokyo is 90 degrees Fahrenheit."],
-    config=config_from_schema(schema),
-)
-```
-
-### Key Components
-
-1. **Schema Loading**: Loads `schema1.json` and converts it using `build_schema_from_json()`
-2. **Schema Validation**: `build_schema_from_json()` validates the schema for early error detection
-3. **Configuration**: `config_from_schema()` creates a generation config from the schema
-4. **Structured Input**: Natural language text that contains data to be extracted
-5. **Structured Output**: AI returns properly formatted JSON matching the schema
-
-### Alternative Approach
-
-You can skip schema validation and use the JSON directly:
-
-```python
-with open(Path(__file__).with_suffix(".json")) as f:
-    schema = json.load(f)  # Direct usage without validation
-```
-
-However, using `build_schema_from_json()` is recommended because it:
-- Validates the schema syntax at load time for early error detection
-- Ensures compatibility with Gemini's schema requirements
-- Catches schema errors before API calls
-
-## Schema Definition (schema1.json)
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "locations_and_temperatures": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "location": {
-            "type": "string"
-          },
-          "temperature": {
-            "type": "number",
-            "description": "Temperature in Celsius"
-          }
-        },
-        "required": ["location", "temperature"]
-      }
-    }
-  },
-  "required": ["locations_and_temperatures"]
-}
-```
-
-### Schema Features
-
-- **Object Structure**: Defines the expected JSON object shape
-- **Array Support**: Handles multiple location-temperature pairs
-- **Type Validation**: Ensures correct data types (string, number)
-- **Required Fields**: Specifies mandatory properties at both root and item levels
-- **Descriptions**: Provides context for AI understanding
-
-## Expected Output
-
-The AI will:
-1. Parse the natural language input ("Tokyo is 90 degrees Fahrenheit")
-2. Convert Fahrenheit to Celsius (90°F → 32.2°C)
-3. Return structured JSON:
-
-```json
-{
-  "locations_and_temperatures": [
-    {
-      "location": "Tokyo",
-      "temperature": 32.2
-    }
-  ]
-}
-```
-
-## Usage
-
-Run this example with:
-
-```bash
-uv run examples/schema1.py
-```
-
-## Use Cases
-
-- **Data Extraction**: Extract structured information from unstructured text
-- **Format Conversion**: Convert between different data representations
-- **API Integration**: Generate API-ready JSON from natural language
-- **Database Population**: Structure data for database insertion
-
-## Related Functions
-
-- `build_schema_from_json(json_data)`: Convert and validate JSON schema to Gemini Schema object
-- `config_from_schema(schema)`: Create generation config from JSON schema or Gemini schema
-- `generate_content_retry()`: Main generation function with schema support
+**Solution**: Demonstrates `build_schema_from_json()` for validation at load time versus direct JSON usage, catching schema issues before expensive API calls.
