@@ -68,7 +68,8 @@ response = generate_content_retry(
     thinking_budget=None,      # Optional thinking time limit
     file=sys.stdout,           # Output stream (None to disable)
     show_params=True,          # Display parameters before generation
-    max_length=None            # Maximum length of generated text
+    max_length=None,           # Maximum length of generated text
+    check_repetition=True      # Check for repetitive patterns
 )
 ```
 
@@ -78,6 +79,7 @@ response = generate_content_retry(
 - Thinking process visualization for Gemini 2.5 models
 - Flexible output control (stdout, file, or silent)
 - Length limitation with `max_length` parameter
+- Repetition detection: Checks every 1KB for repetitive patterns and stops generation if detected
 
 **Return Value:** `Response` object containing all generation data
 
@@ -242,6 +244,12 @@ response = generate_content_retry(
     contents,
     max_length=500  # Stop generation at 500 characters
 )
+
+# Disable repetition detection
+response = generate_content_retry(
+    contents,
+    check_repetition=False  # Don't check for repetitive patterns
+)
 ```
 
 ### Error Handling and Retry
@@ -268,13 +276,17 @@ export GEMINI_API_KEY="your-api-key"
 
 ## Integration with utils.py
 
-The module uses `do_show_params()` from utils.py for parameter display:
+The module uses functions from utils.py:
 
 ```python
-from llm7shi.utils import do_show_params
+from llm7shi.utils import do_show_params, detect_repetition
 
 # Called internally when show_params=True
 do_show_params(contents, model=model, file=file)
+
+# Called every 1KB when check_repetition=True
+if detect_repetition(text):
+    # Stop generation and show warning
 ```
 
 ## Terminal Formatting
@@ -283,6 +295,7 @@ Uses `MarkdownStreamConverter` for real-time markdown formatting:
 - Bold text (`**text**`) converted to terminal colors
 - Thinking process shown with 🤔 emoji
 - Answer shown with 💡 emoji
+- Repetition warning shown with ⚠️ emoji
 
 ## Notes
 

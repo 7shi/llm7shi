@@ -22,6 +22,13 @@ Unit tests for helper functions in `llm7shi/utils.py`.
 
 **Key Features**: Parameter display, OpenAI message conversion, schema modification, reference resolution.
 
+#### [test_utils_repetition.py](test_utils_repetition.py) - Repetition Detection Tests
+Unit tests for the `detect_repetition()` function in `llm7shi/utils.py`.
+
+**Documentation**: [test_utils_repetition.md](test_utils_repetition.md)
+
+**Key Features**: Pattern detection algorithms, threshold validation, edge case handling, LLM loop prevention.
+
 #### [test_compat.py](test_compat.py) - Multi-Provider Compatibility Tests
 Unit tests for the compatibility layer in `llm7shi/compat.py`.
 

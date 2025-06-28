@@ -116,3 +116,35 @@ def inline_defs(schema: Dict[str, Any]) -> Dict[str, Any]:
             return obj
     
     return resolve_ref(schema)
+
+
+def detect_repetition(text: str, threshold: int = 50) -> bool:
+    """Detect if text has repetitive patterns.
+    
+    Checks for patterns of 1-threshold characters that repeat at least
+    (threshold - pattern_len // 2) times at the end of the text.
+    
+    Args:
+        text: Text to check for repetitions
+        threshold: Maximum pattern length to check (default: 50)
+        
+    Returns:
+        bool: True if repetition detected, False otherwise
+    """
+    # Check patterns from 1 to threshold characters
+    for pattern_len in range(1, threshold + 1):
+        # Calculate required repetitions
+        required_reps = threshold - pattern_len // 2
+        
+        # Skip if text is too short for this pattern length
+        if len(text) < pattern_len * required_reps:
+            continue
+        
+        # Extract pattern from the end
+        pattern = text[-pattern_len:]
+        
+        # Check if text ends with required repetitions
+        if text.endswith(pattern * required_reps):
+            return True
+    
+    return False

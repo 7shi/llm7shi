@@ -24,7 +24,8 @@ response = generate_with_schema(
     thinking_budget=None,       # Gemini only
     file=sys.stdout,
     show_params=True,
-    max_length=None            # Maximum length of generated text
+    max_length=None,           # Maximum length of generated text
+    check_repetition=True      # Check for repetitive patterns
 )
 
 # Access generated text
@@ -52,6 +53,7 @@ print(response.text)  # Direct text access
 - `file`: Output stream for real-time display
 - `show_params`: Display generation parameters
 - `max_length`: Maximum length of generated text (None for no limit)
+- `check_repetition`: Check for repetitive patterns every 1KB (default: True)
 
 **Returns:**
 - `Response`: Response object containing generated text and metadata
@@ -65,6 +67,7 @@ Features:
 - Supports thinking process display with `include_thoughts`
 - System prompt becomes `system_instruction`
 - Leverages `generate_content_retry()` with automatic retry logic
+- Repetition detection handled by `generate_content_retry()`
 
 #### OpenAI API (_generate_with_openai)
 
@@ -75,6 +78,7 @@ Features:
 - Adds required `additionalProperties: false` for OpenAI compatibility
 - Converts message format using `contents_to_openai_messages()`
 - Creates Response object with collected chunks and raw response data
+- Repetition detection using `detect_repetition()` from utils.py
 
 ### 3. Utility Functions (from utils.py)
 

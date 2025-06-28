@@ -51,10 +51,23 @@ export GEMINI_API_KEY="your-api-key-here"
    - Provides both one-shot and streaming conversion
    - Handles Windows console compatibility
 
-3. **llm7shi/__init__.py**: Package initialization and convenience imports
+3. **llm7shi/utils.py**: Utility functions
+   - Parameter display formatting (`do_show_params`)
+   - Message format conversion for OpenAI compatibility
+   - Schema transformations (inline $defs, add additionalProperties)
+   - Repetition detection (`detect_repetition`) for identifying output loops
+
+4. **llm7shi/__init__.py**: Package initialization and convenience imports
    - Provides package-level imports for easy access
    - Dynamic version retrieval from package metadata
    - Centralizes all public API functions
+
+5. **llm7shi/compat.py**: Multi-provider compatibility layer (optional)
+   - Provides abstraction for using multiple LLM providers
+   - `generate_with_schema()`: Unified interface supporting Gemini, OpenAI, and Anthropic
+   - Automatic provider detection based on model name
+   - Schema conversion and compatibility handling
+   - System prompt support across all providers
 
 ### Key Design Patterns
 

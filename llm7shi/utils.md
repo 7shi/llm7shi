@@ -179,15 +179,67 @@ result = inline_defs(schema)
 # }
 ```
 
+### detect_repetition()
+
+Detect if text has repetitive patterns, useful for identifying LLM output loops.
+
+```python
+def detect_repetition(
+    text: str,
+    threshold: int = 50
+) -> bool
+```
+
+**Parameters:**
+- `text`: Text to check for repetitions
+- `threshold`: Maximum pattern length to check (default: 50)
+
+**Returns:**
+- `True` if repetition detected, `False` otherwise
+
+**Algorithm:**
+- Checks for patterns of 1 to `threshold` characters
+- Each pattern of length `n` must repeat at least `threshold - n // 2` times
+- Only checks patterns at the end of the text
+- Stops checking when text is too short for larger patterns
+
+**Examples:**
+```python
+# Single character repetition
+detect_repetition("a" * 50)  # True (50 repetitions of 'a')
+detect_repetition("a" * 49)  # False (not enough repetitions)
+
+# Multi-character patterns
+detect_repetition("abc" * 49)  # True (49 repetitions, needs 49)
+detect_repetition("hello " * 50)  # True (pattern length 6, needs 47)
+
+# No repetition
+detect_repetition("This is normal text")  # False
+
+# Custom threshold
+detect_repetition("xy" * 5, threshold=10)  # True (needs 9 repetitions)
+```
+
+**Use Cases:**
+- Detecting when LLMs get stuck in repetitive loops
+- Stopping generation when output becomes repetitive
+- Quality control for generated text
+
 ## Usage Context
 
 ### In gemini.py
 
-`do_show_params()` is used when `show_params=True` in `generate_content_retry()`:
+Functions are used in `generate_content_retry()`:
 
 ```python
+# Parameter display when show_params=True
 if show_params:
     do_show_params(contents, model=model, file=file)
+
+# Repetition detection when check_repetition=True
+if check_repetition and len(text) >= next_check_size:
+    if detect_repetition(text):
+        # Stop generation and show warning
 ```
 
 ### In compat.py
@@ -223,12 +275,13 @@ from llm7shi import (
     do_show_params,
     contents_to_openai_messages,
     add_additional_properties_false,
-    inline_defs
+    inline_defs,
+    detect_repetition
 )
 ```
 
 Or import directly from the module:
 
 ```python
-from llm7shi.utils import do_show_params
+from llm7shi.utils import do_show_params, detect_repetition
 ```

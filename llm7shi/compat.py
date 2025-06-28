@@ -4,8 +4,9 @@ import inspect
 from typing import Dict, Any, List, Union, Type
 from pydantic import BaseModel
 
-from .utils import contents_to_openai_messages, add_additional_properties_false, do_show_params, inline_defs
+from .utils import contents_to_openai_messages, add_additional_properties_false, do_show_params, inline_defs, detect_repetition
 from .response import Response
+from .terminal import MarkdownStreamConverter
 
 
 def generate_with_schema(
@@ -20,6 +21,7 @@ def generate_with_schema(
     file=sys.stdout,
     show_params: bool = True,
     max_length=None,
+    check_repetition: bool = True,
 ) -> Response:
     """Generate content using either OpenAI or Gemini API.
     
@@ -34,14 +36,15 @@ def generate_with_schema(
         file: File to stream output to. Defaults to sys.stdout.
         show_params: Whether to display parameters before generation
         max_length: Maximum length of generated text (default: None, no limit)
+        check_repetition: Whether to check for repetitive patterns (default: True)
         
     Returns:
         Response: Response object containing generated text and metadata
     """
     if model is None or model.startswith("gemini"):
-        return _generate_with_gemini(model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params, max_length)
+        return _generate_with_gemini(model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params, max_length, check_repetition)
     else:
-        return _generate_with_openai(model, contents, schema, temperature, system_prompt, file, show_params, max_length)
+        return _generate_with_openai(model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition)
 
 
 def _generate_with_gemini(
@@ -55,6 +58,7 @@ def _generate_with_gemini(
     file=sys.stdout,
     show_params: bool = True,
     max_length=None,
+    check_repetition: bool = True,
 ) -> Response:
     """Generate with Gemini API."""
     from . import config_from_schema, generate_content_retry, config_text
@@ -79,7 +83,8 @@ def _generate_with_gemini(
         include_thoughts=include_thoughts,
         thinking_budget=thinking_budget,
         file=file,
-        max_length=max_length
+        max_length=max_length,
+        check_repetition=check_repetition
     )
     
     # Return Response object
@@ -95,6 +100,7 @@ def _generate_with_openai(
     file=sys.stdout,
     show_params: bool = True,
     max_length=None,
+    check_repetition: bool = True,
 ) -> Response:
     """Generate with OpenAI API with streaming."""
     from openai import OpenAI
@@ -144,20 +150,38 @@ def _generate_with_openai(
     # Collect streamed response and chunks
     collected_content = ""
     chunks = []
+    next_check_size = 1024  # Check at 1KB intervals
+    converter = MarkdownStreamConverter()  # For terminal formatting
+    
     for chunk in response:
         chunks.append(chunk)
         if chunk.choices[0].delta.content is not None:
             content = chunk.choices[0].delta.content
             collected_content += content
+            # Stream formatted output to terminal
             if file:
-                print(content, end='', flush=True, file=file)
+                print(converter.feed(content), end='', flush=True, file=file)
+            
+            # Check for repetition every 1KB if enabled
+            if check_repetition and len(collected_content) >= next_check_size:
+                if detect_repetition(collected_content):
+                    if file:
+                        print(converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
+                    break
+                next_check_size += 1024
             
             # Check max_length and break if exceeded
             if max_length is not None and len(collected_content) >= max_length:
                 break
     
+    # Flush any remaining markdown formatting
+    remaining = converter.flush()
+    if remaining and file:
+        print(remaining, end='', flush=True, file=file)
+    
+    # Ensure output ends with newline
     if file and not collected_content.endswith("\n"):
-        print(file=file)  # New line after streaming
+        print(flush=True, file=file)
     
     # Create Response object for OpenAI
     return Response(

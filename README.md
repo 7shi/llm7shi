@@ -26,6 +26,7 @@ llm7shi is intentionally a **thin wrapper** around the Gemini API - it doesn't a
 - **Thinking Process Visualization**: Leverage Gemini 2.5's thinking capabilities with automatic budget optimization
 - **Schema-based Generation**: JSON schema and Pydantic model support for structured outputs
 - **Terminal Formatting**: Convert Markdown formatting to colored terminal output
+- **Repetition Detection**: Automatic detection and stopping of repetitive output patterns (configurable)
 - **Battle-Tested**: Handles the tedious but essential production concerns
 
 ## Requirements

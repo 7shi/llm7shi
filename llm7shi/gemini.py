@@ -9,7 +9,7 @@ from google.genai import types
 
 # Local imports for terminal formatting and response object
 from .terminal import convert_markdown, MarkdownStreamConverter
-from .utils import do_show_params
+from .utils import do_show_params, detect_repetition
 from .response import Response
 
 # Available Gemini models
@@ -104,7 +104,18 @@ def config_from_schema(schema):
     )
 
 
-def generate_content_retry(contents, *, model=None, config=None, include_thoughts=True, thinking_budget=None, file=sys.stdout, show_params=True, max_length=None):
+def generate_content_retry(
+    contents,
+    *,
+    model=None,
+    config=None,
+    include_thoughts=True,
+    thinking_budget=None,
+    file=sys.stdout,
+    show_params=True,
+    max_length=None,
+    check_repetition=True,
+):
     """Generate content with retry logic and return a Response object.
     
     Args:
@@ -116,6 +127,7 @@ def generate_content_retry(contents, *, model=None, config=None, include_thought
         file: Output file for streaming content (default: sys.stdout, None to disable)
         show_params: Whether to display parameters before generation (default: False)
         max_length: Maximum length of generated text (default: None, no limit)
+        check_repetition: Whether to check for repetitive patterns every 1KB (default: True)
     
     Returns:
         Response: Object containing thoughts, text, response, and chunks
@@ -157,6 +169,7 @@ def generate_content_retry(contents, *, model=None, config=None, include_thought
             answer_shown = False  # Track if answer header was shown
             converter = MarkdownStreamConverter()  # For terminal formatting
             chunks = []  # Collect all chunks
+            next_check_size = 1024  # Check at 1KB intervals
             
             # Process streaming response chunks
             for chunk in response:
@@ -189,6 +202,14 @@ def generate_content_retry(contents, *, model=None, config=None, include_thought
                         # Stream formatted output to terminal
                         if file:
                             print(converter.feed(chunk.text), end="", flush=True, file=file)
+                
+                # Check for repetition every 1KB if enabled
+                if check_repetition and len(text) >= next_check_size:
+                    if detect_repetition(text):
+                        if file:
+                            print(converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
+                        break
+                    next_check_size += 1024
                 
                 # Break outer loop if max_length exceeded
                 if max_length is not None and len(text) >= max_length:

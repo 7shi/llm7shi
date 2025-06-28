@@ -25,6 +25,7 @@ Main API wrapper for Google's Gemini AI models with automatic retry logic, strea
 - `config_from_schema()` - Create config for structured output
 - File upload/delete operations
 - Thinking process visualization
+- Repetition detection and automatic stopping
 
 ### [response.py](response.py) - Response Data Class
 Provider-agnostic response object that encapsulates results from LLM API calls.
@@ -47,6 +48,7 @@ Helper functions for parameter display, message formatting, and schema transform
 - `contents_to_openai_messages()` - Convert to OpenAI message format
 - `add_additional_properties_false()` - Add OpenAI schema requirements
 - `inline_defs()` - Inline $defs references in JSON schemas
+- `detect_repetition()` - Detect repetitive patterns in text output
 
 ### [compat.py](compat.py) - API Compatibility Layer
 Unified interface for both OpenAI and Gemini APIs, enabling seamless switching between providers.
@@ -58,6 +60,7 @@ Unified interface for both OpenAI and Gemini APIs, enabling seamless switching b
 - Automatic API selection based on model name
 - Support for JSON schemas, Pydantic models, or plain text
 - Preserves provider-specific features
+- Consistent repetition detection across providers
 
 **Note**: This module is not exported in `__init__.py`. Import explicitly:
 ```python
