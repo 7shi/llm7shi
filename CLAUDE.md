@@ -19,9 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Documentation Guidelines
 - **Two-tier documentation structure**: Each Python module has a paired `.md` file (1:1 pairing)
-- **Module `.md` files**: Focus on **implementation rationale and design decisions** - explain WHY the code was written, what problems it solves, and key design choices. Avoid code examples and detailed usage instructions.
-- **Directory `README.md` files**: Provide practical information for users - usage examples, file organization, running instructions, environment setup
-- **Rationale over implementation**: Code can be understood by reading it; documentation should explain the thought process behind it
+- See [DOCUMENTATION.md](DOCUMENTATION.md) for detailed documentation creation guidelines
 
 ## Project Overview
 
@@ -89,12 +87,10 @@ uv run pytest tests/test_hello.py  # Run specific test
 - **Simplicity first**: New features should maintain the library's ease-of-use
 - **Backward compatibility**: Always maintain existing API contracts
 - **Streaming support**: New features should work with real-time output where applicable
-- **Documentation rationale**: Focus on WHY decisions were made, not HOW code works
-- **Two-tier docs**: Module `.md` for rationale, directory `README.md` for usage
+- **Documentation**: Follow guidelines in [DOCUMENTATION.md](DOCUMENTATION.md)
 
 ## Key Decisions
 
 - **Gemini 2.5 focus**: Primary support for latest models with thinking capabilities
-- **Documentation philosophy**: Rationale over implementation details
 - **Extensible architecture**: Designed for future multi-provider expansion
 - **User experience priority**: Streaming output and terminal formatting included by default
