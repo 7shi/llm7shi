@@ -150,6 +150,7 @@ def _generate_with_openai(
     # Collect streamed response and chunks
     collected_content = ""
     chunks = []
+    repetition_detected = False  # Track if repetition was detected
     next_check_size = 1024  # Check at 1KB intervals
     converter = MarkdownStreamConverter()  # For terminal formatting
     
@@ -165,6 +166,7 @@ def _generate_with_openai(
             # Check for repetition every 1KB if enabled
             if check_repetition and len(collected_content) >= next_check_size:
                 if detect_repetition(collected_content):
+                    repetition_detected = True
                     if file:
                         print(converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
                     break
@@ -192,4 +194,5 @@ def _generate_with_openai(
         chunks=chunks,
         thoughts="",    # OpenAI doesn't have thinking process
         text=collected_content,
+        repetition=repetition_detected,
     )

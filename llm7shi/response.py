@@ -15,6 +15,7 @@ class Response:
         chunks: List of all streaming chunks received
         thoughts: The thinking process text (if include_thoughts=True)
         text: The final generated text
+        repetition: Whether repetitive patterns were detected during generation
     """
     model: Optional[str] = None
     config: Optional[Any] = None
@@ -23,6 +24,7 @@ class Response:
     chunks: List[Any] = field(default_factory=list)
     thoughts: str = ""
     text: str = ""
+    repetition: bool = False
     
     def __str__(self) -> str:
         """Return the text content when converting to string."""

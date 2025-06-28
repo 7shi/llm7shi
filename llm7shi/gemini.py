@@ -167,6 +167,7 @@ def generate_content_retry(
             thoughts = ""  # Thinking process text
             thoughts_shown = False  # Track if thinking header was shown
             answer_shown = False  # Track if answer header was shown
+            repetition_detected = False  # Track if repetition was detected
             converter = MarkdownStreamConverter()  # For terminal formatting
             chunks = []  # Collect all chunks
             next_check_size = 1024  # Check at 1KB intervals
@@ -206,6 +207,7 @@ def generate_content_retry(
                 # Check for repetition every 1KB if enabled
                 if check_repetition and len(text) >= next_check_size:
                     if detect_repetition(text):
+                        repetition_detected = True
                         if file:
                             print(converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
                         break
@@ -232,6 +234,7 @@ def generate_content_retry(
                 chunks=chunks,
                 thoughts=thoughts,
                 text=text,
+                repetition=repetition_detected,
             )
         except genai.errors.APIError as e:
             # Handle retryable API errors (rate limit, server errors)

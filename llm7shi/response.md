@@ -23,3 +23,8 @@ The `Response` class was created to solve several data management challenges tha
 **Problem**: When debugging LLM interactions or analyzing API behavior, you need access to the original inputs, all streaming chunks, and the raw API responses.
 
 **Solution**: Preserved all data from the API interaction in the Response object, enabling post-processing, debugging, and analysis without needing to re-run expensive API calls.
+
+### Repetition Detection Tracking
+**Problem**: LLM outputs can sometimes fall into repetitive loops, wasting tokens and providing poor user experience. Users need to know when generation was stopped due to detected repetition patterns.
+
+**Solution**: Added a `repetition` boolean field that tracks whether repetitive patterns were detected during generation, allowing users to distinguish between normal completion and early termination due to repetition.
