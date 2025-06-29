@@ -27,6 +27,21 @@ These utility functions solve specific cross-cutting concerns that emerged while
 
 **Solution**: Implemented a pattern detection algorithm that checks for repeating sequences at the end of generated text, with adjustable thresholds based on pattern complexity.
 
+#### Threshold and Formula Update (2025-01)
+**Problem**: The original formula (`threshold - pattern_len // 2`) with `threshold=50` was too sensitive for English text, where repetitive patterns can naturally occur over longer sequences without indicating a generation loop.
+
+**Solution**: After empirical analysis, updated to `threshold=200` and implemented a new formula based on linear interpolation:
+- For patterns < 31 chars: `total_len = 100 + (pattern_len - 1) * 8`, then `required_reps = total_len // pattern_len`
+- For patterns ≥ 31 chars: `required_reps = 10` (fixed)
+
+This ensures that single character repetitions need 100 occurrences (e.g., "aaaa..."), while longer patterns need proportionally fewer repetitions, with a minimum of 10 for patterns of 31+ characters.
+
+**Rationale**: The formula was designed to make `pattern_len * required_reps` increase roughly linearly, preventing false positives in normal English text while still catching actual generation loops. The boundary at 31 characters was chosen based on analysis showing diminishing returns beyond this point.
+
+**Note on Edge Cases**: Due to integer division, the formula produces minor reversals at certain points (e.g., pattern_len 15→16, 18→19, 23→24, 30→31) where `pattern_len * required_reps` slightly decreases. These reversals were deemed acceptable as they don't significantly impact the detection effectiveness and avoiding them would require more complex formulas.
+
+**Early Termination Optimization**: The implementation includes an early termination condition: if the text is too short by more than `pattern_len` characters (for patterns < 31) or any amount (for patterns ≥ 31), the search stops. This optimization is particularly effective because of the reversals - when a reversal occurs, the subsequent pattern often requires even more text, making further checks unnecessary.
+
 ## Key Design Decisions
 
 ### Non-Destructive Operations

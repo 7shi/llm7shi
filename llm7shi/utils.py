@@ -118,15 +118,16 @@ def inline_defs(schema: Dict[str, Any]) -> Dict[str, Any]:
     return resolve_ref(schema)
 
 
-def detect_repetition(text: str, threshold: int = 50) -> bool:
+def detect_repetition(text: str, threshold: int = 200) -> bool:
     """Detect if text has repetitive patterns.
     
-    Checks for patterns of 1-threshold characters that repeat at least
-    (threshold - pattern_len // 2) times at the end of the text.
+    Checks for patterns of 1-threshold characters that repeat based on
+    pattern length: shorter patterns need more repetitions, longer patterns
+    need fewer (minimum 10 repetitions for patterns >= 31 chars).
     
     Args:
         text: Text to check for repetitions
-        threshold: Maximum pattern length to check (default: 50)
+        threshold: Maximum pattern length to check (default: 200)
         
     Returns:
         bool: True if repetition detected, False otherwise
@@ -134,10 +135,20 @@ def detect_repetition(text: str, threshold: int = 50) -> bool:
     # Check patterns from 1 to threshold characters
     for pattern_len in range(1, threshold + 1):
         # Calculate required repetitions
-        required_reps = threshold - pattern_len // 2
+        if pattern_len >= 31:
+            required_reps = 10
+        else:
+            # Linear interpolation: total_len = 100 + (pattern_len - 1) * 8
+            total_len = 100 + (pattern_len - 1) * 8
+            required_reps = total_len // pattern_len
         
-        # Skip if text is too short for this pattern length
-        if len(text) < pattern_len * required_reps:
+        # Calculate the difference between required and actual text length
+        diff = pattern_len * required_reps - len(text)
+        if diff > 0:
+            # Break early if text is too short based on pattern length
+            if (pattern_len < 31 and diff > pattern_len) or pattern_len >= 31:
+                break
+            # Skip if text is too short for this pattern length
             continue
         
         # Extract pattern from the end
