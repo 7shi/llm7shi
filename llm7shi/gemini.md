@@ -30,3 +30,6 @@ Added `max_length` parameter to prevent runaway generation costs and `check_repe
 
 ### File Upload Handling
 Gemini's file API requires uploading first, then referencing in requests. We abstracted this complexity while ensuring proper cleanup with delete functionality.
+
+### Stream Interruption
+Streaming responses can be safely interrupted by simply breaking out of the loop consuming the iterator. No explicit `close()` method is required - the underlying HTTP client libraries (httpx/aiohttp) automatically handle resource cleanup when the generator is garbage collected.

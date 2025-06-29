@@ -50,16 +50,5 @@ During implementation of `max_length` truncation support, we investigated how to
 - ✅ Context manager support for automatic cleanup
 - ✅ Can cancel ongoing streaming by calling `close()`
 
-**Google Genai Implementation**:  
-- ❌ No explicit stream closing methods
-- ❌ Simple generator/iterator pattern only
-- ❌ No context manager or connection management
-- ❌ Only option is to `break` from iteration loop
-
 ### Implementation Strategy
-Based on these findings, we implemented different approaches:
-
-1. **OpenAI**: Call `response.close()` when stopping due to max_length or repetition detection to properly release HTTP connections
-2. **Gemini**: Use `break` to exit iteration loop (no connection cleanup possible)
-
-This ensures optimal resource management where supported while maintaining functionality across both providers.
+For OpenAI, we call `response.close()` when stopping due to max_length or repetition detection to properly release HTTP connections and ensure optimal resource management.
