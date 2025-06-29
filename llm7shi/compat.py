@@ -152,8 +152,11 @@ def _generate_with_openai(
     chunks = []
     repetition_detected = False  # Track if repetition was detected
     max_length_exceeded = None  # Track if max_length was exceeded
-    next_check_size = 1024  # Check at 1KB intervals
     converter = MarkdownStreamConverter()  # For terminal formatting
+    check_interval = 128  # Check trailing whitespace every 128 characters
+    next_check = check_interval  # Initial whitespace check at 128 characters
+    rep_check_interval = 4  # Check repetition every check_interval * 4 = 512 characters
+    rep_check_count = 0  # Counter for repetition check frequency
     
     for chunk in response:
         chunks.append(chunk)
@@ -164,15 +167,26 @@ def _generate_with_openai(
             if file:
                 print(converter.feed(content), end='', flush=True, file=file)
             
-            # Check for repetition every 1KB if enabled
-            if check_repetition and len(collected_content) >= next_check_size:
-                if detect_repetition(collected_content):
+            # Check for trailing whitespace every 128 characters
+            if check_repetition and len(collected_content) >= next_check:
+                if len(collected_content) - len(collected_content.rstrip()) >= check_interval:
                     repetition_detected = True
                     if file:
-                        print(converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
+                        print(converter.feed("\n\n⚠️ **Excessive whitespace detected, stopping generation**\n"), file=file)
                     response.close()  # Close stream connection
                     break
-                next_check_size += 1024
+                next_check += check_interval
+                
+                # Check for repetition every 512 characters if enabled
+                rep_check_count += 1
+                if rep_check_count >= rep_check_interval:
+                    if detect_repetition(collected_content):
+                        repetition_detected = True
+                        if file:
+                            print(converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
+                        response.close()  # Close stream connection
+                        break
+                    rep_check_count = 0
             
             # Check max_length and break if exceeded
             if max_length is not None and len(collected_content) >= max_length:

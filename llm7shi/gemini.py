@@ -171,7 +171,10 @@ def generate_content_retry(
             max_length_exceeded = None  # Track if max_length was exceeded
             converter = MarkdownStreamConverter()  # For terminal formatting
             chunks = []  # Collect all chunks
-            next_check_size = 1024  # Check at 1KB intervals
+            check_interval = 128  # Check trailing whitespace every 128 characters
+            next_check = check_interval  # Initial whitespace check at 128 characters
+            rep_check_interval = 4  # Check repetition every check_interval * 4 = 512 characters
+            rep_check_count = 0  # Counter for repetition check frequency
             
             # Process streaming response chunks
             for chunk in response:
@@ -205,14 +208,24 @@ def generate_content_retry(
                         if file:
                             print(converter.feed(chunk.text), end="", flush=True, file=file)
                 
-                # Check for repetition every 1KB if enabled
-                if check_repetition and len(text) >= next_check_size:
-                    if detect_repetition(text):
+                # Check for trailing whitespace every 128 characters
+                if check_repetition and len(text) >= next_check:
+                    if len(text) - len(text.rstrip()) >= check_interval:
                         repetition_detected = True
                         if file:
-                            print(converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
+                            print(converter.feed("\n\n⚠️ **Excessive whitespace detected, stopping generation**\n"), file=file)
                         break
-                    next_check_size += 1024
+                    next_check += check_interval
+                    
+                    # Check for repetition every 512 characters if enabled
+                    rep_check_count += 1
+                    if rep_check_count >= rep_check_interval:
+                        if detect_repetition(text):
+                            repetition_detected = True
+                            if file:
+                                print(converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
+                            break
+                        rep_check_count = 0
                 
                 # Break outer loop if max_length exceeded
                 if max_length is not None and len(text) >= max_length:

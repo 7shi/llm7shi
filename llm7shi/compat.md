@@ -52,3 +52,13 @@ During implementation of `max_length` truncation support, we investigated how to
 
 ### Implementation Strategy
 For OpenAI, we call `response.close()` when stopping due to max_length or repetition detection to properly release HTTP connections and ensure optimal resource management.
+
+## Repetition Detection Optimization (2025-06-29)
+
+Applied the same optimized detection strategy from `gemini.py` to the OpenAI implementation:
+
+- **Pattern detection**: Every 512 characters (previously 1024) using the optimized algorithm
+- **Whitespace detection**: Every 128 characters to catch excessive trailing whitespace (≥128 spaces)
+- **Unified behavior**: Both Gemini and OpenAI APIs now use identical detection frequencies and thresholds
+
+This ensures consistent quality control across providers while maintaining the performance benefits of the optimized algorithm.
