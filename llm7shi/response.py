@@ -16,6 +16,7 @@ class Response:
         thoughts: The thinking process text (if include_thoughts=True)
         text: The final generated text
         repetition: Whether repetitive patterns were detected during generation
+        max_length: Set to the length limit if generation was truncated (None for normal completion)
     """
     model: Optional[str] = None
     config: Optional[Any] = None
@@ -25,6 +26,7 @@ class Response:
     thoughts: str = ""
     text: str = ""
     repetition: bool = False
+    max_length: Optional[int] = None
     
     def __str__(self) -> str:
         """Return the text content when converting to string."""

@@ -168,6 +168,7 @@ def generate_content_retry(
             thoughts_shown = False  # Track if thinking header was shown
             answer_shown = False  # Track if answer header was shown
             repetition_detected = False  # Track if repetition was detected
+            max_length_exceeded = None  # Track if max_length was exceeded
             converter = MarkdownStreamConverter()  # For terminal formatting
             chunks = []  # Collect all chunks
             next_check_size = 1024  # Check at 1KB intervals
@@ -215,6 +216,9 @@ def generate_content_retry(
                 
                 # Break outer loop if max_length exceeded
                 if max_length is not None and len(text) >= max_length:
+                    max_length_exceeded = max_length
+                    if file:
+                        print(converter.feed("\n\n⚠️ **Max length reached, stopping generation**\n"), file=file)
                     break
             
             # Flush any remaining markdown formatting
@@ -235,6 +239,7 @@ def generate_content_retry(
                 thoughts=thoughts,
                 text=text,
                 repetition=repetition_detected,
+                max_length=max_length_exceeded,
             )
         except genai.errors.APIError as e:
             # Handle retryable API errors (rate limit, server errors)

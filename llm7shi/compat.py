@@ -151,6 +151,7 @@ def _generate_with_openai(
     collected_content = ""
     chunks = []
     repetition_detected = False  # Track if repetition was detected
+    max_length_exceeded = None  # Track if max_length was exceeded
     next_check_size = 1024  # Check at 1KB intervals
     converter = MarkdownStreamConverter()  # For terminal formatting
     
@@ -174,6 +175,9 @@ def _generate_with_openai(
             
             # Check max_length and break if exceeded
             if max_length is not None and len(collected_content) >= max_length:
+                max_length_exceeded = max_length
+                if file:
+                    print(converter.feed("\n\n⚠️ **Max length reached, stopping generation**\n"), file=file)
                 break
     
     # Flush any remaining markdown formatting
@@ -195,4 +199,5 @@ def _generate_with_openai(
         thoughts="",    # OpenAI doesn't have thinking process
         text=collected_content,
         repetition=repetition_detected,
+        max_length=max_length_exceeded,
     )

@@ -28,3 +28,8 @@ The `Response` class was created to solve several data management challenges tha
 **Problem**: LLM outputs can sometimes fall into repetitive loops, wasting tokens and providing poor user experience. Users need to know when generation was stopped due to detected repetition patterns.
 
 **Solution**: Added a `repetition` boolean field that tracks whether repetitive patterns were detected during generation, allowing users to distinguish between normal completion and early termination due to repetition.
+
+### Max Length Truncation Tracking
+**Problem**: When using `max_length` parameter to limit generation length, users need to know whether the output was truncated or completed naturally. This is important for understanding whether the full response was received.
+
+**Solution**: Added a `max_length` field that contains the length limit value only when generation was truncated due to reaching the maximum length. For normal completion, this field remains `None`, providing a clear signal about why generation stopped.
