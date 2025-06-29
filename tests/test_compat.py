@@ -3,6 +3,11 @@ from unittest.mock import patch, MagicMock
 from typing import List
 from pydantic import BaseModel, Field
 
+# Set dummy API keys for all tests
+import os
+os.environ["GEMINI_API_KEY"] = "dummy"
+os.environ["OPENAI_API_KEY"] = "dummy"
+
 from llm7shi.compat import generate_with_schema
 
 
@@ -15,13 +20,6 @@ class LocationTemperature(BaseModel):
 class LocationList(BaseModel):
     """Test Pydantic model for list of locations"""
     locations: List[LocationTemperature]
-
-
-@pytest.fixture(autouse=True)
-def set_dummy_api_keys(monkeypatch):
-    """Set dummy API keys for all tests"""
-    monkeypatch.setenv("GEMINI_API_KEY", "dummy")
-    monkeypatch.setenv("OPENAI_API_KEY", "dummy")
 
 
 class TestModelSelection:
