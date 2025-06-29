@@ -27,7 +27,7 @@ These utility functions solve specific cross-cutting concerns that emerged while
 
 **Solution**: Implemented a pattern detection algorithm that checks for repeating sequences at the end of generated text, with adjustable thresholds based on pattern complexity.
 
-#### Threshold and Formula Update (2025-01)
+#### Threshold and Formula Update
 **Problem**: The original formula (`threshold - pattern_len // 2`) with `threshold=50` was too sensitive for English text, where repetitive patterns can naturally occur over longer sequences without indicating a generation loop.
 
 **Solution**: After empirical analysis, updated to `threshold=200` and implemented a new formula based on linear interpolation:
