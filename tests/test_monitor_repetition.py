@@ -1,5 +1,5 @@
 import pytest
-from llm7shi.utils import detect_repetition
+from llm7shi.monitor import detect_repetition
 
 
 def test_detect_repetition_basic():

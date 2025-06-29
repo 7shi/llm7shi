@@ -4,9 +4,10 @@ import inspect
 from typing import Dict, Any, List, Union, Type
 from pydantic import BaseModel
 
-from .utils import contents_to_openai_messages, add_additional_properties_false, do_show_params, inline_defs, detect_repetition
+from .utils import contents_to_openai_messages, add_additional_properties_false, do_show_params, inline_defs
 from .response import Response
 from .terminal import MarkdownStreamConverter
+from .monitor import StreamMonitor
 
 
 def generate_with_schema(
@@ -150,13 +151,8 @@ def _generate_with_openai(
     # Collect streamed response and chunks
     collected_content = ""
     chunks = []
-    repetition_detected = False  # Track if repetition was detected
-    max_length_exceeded = None  # Track if max_length was exceeded
     converter = MarkdownStreamConverter()  # For terminal formatting
-    check_interval = 128  # Check trailing whitespace every 128 characters
-    next_check = check_interval  # Initial whitespace check at 128 characters
-    rep_check_interval = 4  # Check repetition every check_interval * 4 = 512 characters
-    rep_check_count = 0  # Counter for repetition check frequency
+    monitor = StreamMonitor(converter, max_length=max_length, check_repetition=check_repetition)
     
     for chunk in response:
         chunks.append(chunk)
@@ -167,32 +163,8 @@ def _generate_with_openai(
             if file:
                 print(converter.feed(content), end='', flush=True, file=file)
             
-            # Check for trailing whitespace every 128 characters
-            if check_repetition and len(collected_content) >= next_check:
-                if len(collected_content) - len(collected_content.rstrip()) >= check_interval:
-                    repetition_detected = True
-                    if file:
-                        print(converter.feed("\n\n⚠️ **Excessive whitespace detected, stopping generation**\n"), file=file)
-                    response.close()  # Close stream connection
-                    break
-                next_check += check_interval
-                
-                # Check for repetition every 512 characters if enabled
-                rep_check_count += 1
-                if rep_check_count >= rep_check_interval:
-                    if detect_repetition(collected_content):
-                        repetition_detected = True
-                        if file:
-                            print(converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
-                        response.close()  # Close stream connection
-                        break
-                    rep_check_count = 0
-            
-            # Check max_length and break if exceeded
-            if max_length is not None and len(collected_content) >= max_length:
-                max_length_exceeded = max_length
-                if file:
-                    print(converter.feed("\n\n⚠️ **Max length reached, stopping generation**\n"), file=file)
+            # Check for repetition and max length
+            if not monitor.check(collected_content, file):
                 response.close()  # Close stream connection
                 break
     
@@ -214,6 +186,6 @@ def _generate_with_openai(
         chunks=chunks,
         thoughts="",    # OpenAI doesn't have thinking process
         text=collected_content,
-        repetition=repetition_detected,
-        max_length=max_length_exceeded,
+        repetition=monitor.repetition_detected,
+        max_length=monitor.max_length_exceeded,
     )

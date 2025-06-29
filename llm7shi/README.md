@@ -48,7 +48,6 @@ Helper functions for parameter display, message formatting, and schema transform
 - `contents_to_openai_messages()` - Convert to OpenAI message format
 - `add_additional_properties_false()` - Add OpenAI schema requirements
 - `inline_defs()` - Inline $defs references in JSON schemas
-- `detect_repetition()` - Detect repetitive patterns in text output
 
 ### [compat.py](compat.py) - API Compatibility Layer
 Unified interface for both OpenAI and Gemini APIs, enabling seamless switching between providers.
@@ -77,6 +76,17 @@ Terminal output formatting utilities for better display of streaming responses.
 - `MarkdownStreamConverter` - Stream converter for real-time formatting
 - `bold()` - Simple bold text formatting
 - Windows console compatibility
+
+### [monitor.py](monitor.py) - Stream Output Monitoring
+Stream monitoring for output quality control, including repetition detection and length limits.
+
+**Documentation**: [monitor.md](monitor.md)
+
+**Key Features**:
+- `StreamMonitor` - Class for monitoring streaming output
+- `detect_repetition()` - Detect repetitive patterns in text output
+- Real-time pattern and whitespace detection
+- Provider-agnostic design for unified quality control
 
 ## Usage Examples
 
@@ -121,7 +131,8 @@ llm7shi/
 ├── response.py      # Response data class
 ├── utils.py         # Shared utility functions
 ├── compat.py        # Multi-provider compatibility
-└── terminal.py      # Output formatting
+├── terminal.py      # Output formatting
+└── monitor.py       # Stream output monitoring
 ```
 
 Each module:

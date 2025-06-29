@@ -22,10 +22,10 @@ Unit tests for helper functions in `llm7shi/utils.py`.
 
 **Key Features**: Parameter display, OpenAI message conversion, schema modification, reference resolution.
 
-#### [test_utils_repetition.py](test_utils_repetition.py) - Repetition Detection Tests
-Unit tests for the `detect_repetition()` function in `llm7shi/utils.py`.
+#### [test_monitor_repetition.py](test_monitor_repetition.py) - Repetition Detection Tests
+Unit tests for the `detect_repetition()` function in `llm7shi/monitor.py`.
 
-**Documentation**: [test_utils_repetition.md](test_utils_repetition.md)
+**Documentation**: [test_monitor_repetition.md](test_monitor_repetition.md)
 
 **Key Features**: Pattern detection algorithms, threshold validation, edge case handling, LLM loop prevention.
 

@@ -26,13 +26,7 @@ Implemented specific retry logic for different error types:
 - Other errors: Fail immediately
 
 ### Output Length Control
-Added `max_length` parameter to prevent runaway generation costs and `check_repetition` to detect when models get stuck in loops, automatically stopping generation with a warning.
-
-#### Repetition Detection Optimization (2025-06-29)
-Optimized the repetition detection frequency based on our improved algorithm:
-- **Pattern detection**: Every 512 characters (previously 1024) for better responsiveness
-- **Whitespace detection**: Added check every 128 characters for excessive trailing whitespace (≥128 spaces), a common LLM failure mode
-- **Rationale**: The optimized `detect_repetition` algorithm (see [docs/20250629-repetition-detection.md](../docs/20250629-repetition-detection.md)) is now efficient enough to run more frequently without performance impact
+Added `max_length` parameter to prevent runaway generation costs and `check_repetition` to detect when models get stuck in loops. Quality control logic is now handled by the `StreamMonitor` class (see [monitor.md](monitor.md))
 
 ### File Upload Handling
 Gemini's file API requires uploading first, then referencing in requests. We abstracted this complexity while ensuring proper cleanup with delete functionality.

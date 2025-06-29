@@ -49,6 +49,10 @@ from .utils import (
     contents_to_openai_messages,
     add_additional_properties_false,
     inline_defs,
+)
+
+from .monitor import (
+    StreamMonitor,
     detect_repetition,
 )
 
@@ -72,5 +76,7 @@ __all__ = [
     "contents_to_openai_messages",
     "add_additional_properties_false",
     "inline_defs",
+    # monitor.py
+    "StreamMonitor",
     "detect_repetition",
 ]

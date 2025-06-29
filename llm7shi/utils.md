@@ -22,12 +22,6 @@ These utility functions solve specific cross-cutting concerns that emerged while
 
 **Solution**: Created transformation functions that modify schemas to meet each API's specific requirements while preserving the original structure.
 
-### Repetition Detection (`detect_repetition`)
-**Problem**: Large language models occasionally get stuck in repetitive output loops, which wastes tokens and provides poor user experience. This was particularly noticeable during long generations.
-
-**Solution**: Implemented a pattern detection algorithm that checks for repeating sequences at the end of generated text. The algorithm uses a two-phase approach optimized for performance while maintaining accuracy.
-
-For detailed information about the algorithm, optimization strategy, and implementation details, see [Repetition Detection Algorithm](../docs/20250629-repetition-detection.md).
 
 ## Key Design Decisions
 

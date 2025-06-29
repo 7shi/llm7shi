@@ -39,26 +39,9 @@ The compatibility layer imports and uses existing library functions rather than 
 ### Schema Transformation Pipeline
 Created a series of transformation functions that modify schemas step-by-step to meet each API's requirements, making the process debuggable and extensible.
 
-## Stream Connection Management
+## Quality Control Integration
 
-### Investigation Results
-During implementation of `max_length` truncation support, we investigated how to properly close streaming connections when stopping generation early:
+### Unified Stream Monitoring
+**Problem**: OpenAI and Gemini implementations had duplicated repetition detection and max length logic.
 
-**OpenAI Implementation**:
-- ✅ Provides explicit `stream.close()` method
-- ✅ Properly closes underlying HTTP connection via httpx
-- ✅ Context manager support for automatic cleanup
-- ✅ Can cancel ongoing streaming by calling `close()`
-
-### Implementation Strategy
-For OpenAI, we call `response.close()` when stopping due to max_length or repetition detection to properly release HTTP connections and ensure optimal resource management.
-
-## Repetition Detection Optimization (2025-06-29)
-
-Applied the same optimized detection strategy from `gemini.py` to the OpenAI implementation:
-
-- **Pattern detection**: Every 512 characters (previously 1024) using the optimized algorithm
-- **Whitespace detection**: Every 128 characters to catch excessive trailing whitespace (≥128 spaces)
-- **Unified behavior**: Both Gemini and OpenAI APIs now use identical detection frequencies and thresholds
-
-This ensures consistent quality control across providers while maintaining the performance benefits of the optimized algorithm.
+**Solution**: Both providers now use the shared `StreamMonitor` class (see [monitor.md](monitor.md)) for consistent quality control while respecting provider-specific connection management requirements.
