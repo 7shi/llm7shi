@@ -211,6 +211,7 @@ def generate_content_retry(
                         repetition_detected = True
                         if file:
                             print(converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
+                        # Note: Google Genai doesn't provide stream.close() method, only break from loop
                         break
                     next_check_size += 1024
                 
@@ -219,6 +220,7 @@ def generate_content_retry(
                     max_length_exceeded = max_length
                     if file:
                         print(converter.feed("\n\n⚠️ **Max length reached, stopping generation**\n"), file=file)
+                    # Note: Google Genai doesn't provide stream.close() method, only break from loop
                     break
             
             # Flush any remaining markdown formatting

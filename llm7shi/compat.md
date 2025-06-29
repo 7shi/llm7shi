@@ -38,3 +38,28 @@ The compatibility layer imports and uses existing library functions rather than 
 
 ### Schema Transformation Pipeline
 Created a series of transformation functions that modify schemas step-by-step to meet each API's requirements, making the process debuggable and extensible.
+
+## Stream Connection Management
+
+### Investigation Results
+During implementation of `max_length` truncation support, we investigated how to properly close streaming connections when stopping generation early:
+
+**OpenAI Implementation**:
+- ✅ Provides explicit `stream.close()` method
+- ✅ Properly closes underlying HTTP connection via httpx
+- ✅ Context manager support for automatic cleanup
+- ✅ Can cancel ongoing streaming by calling `close()`
+
+**Google Genai Implementation**:  
+- ❌ No explicit stream closing methods
+- ❌ Simple generator/iterator pattern only
+- ❌ No context manager or connection management
+- ❌ Only option is to `break` from iteration loop
+
+### Implementation Strategy
+Based on these findings, we implemented different approaches:
+
+1. **OpenAI**: Call `response.close()` when stopping due to max_length or repetition detection to properly release HTTP connections
+2. **Gemini**: Use `break` to exit iteration loop (no connection cleanup possible)
+
+This ensures optimal resource management where supported while maintaining functionality across both providers.

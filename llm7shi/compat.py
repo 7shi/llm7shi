@@ -170,6 +170,7 @@ def _generate_with_openai(
                     repetition_detected = True
                     if file:
                         print(converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
+                    response.close()  # Close stream connection
                     break
                 next_check_size += 1024
             
@@ -178,6 +179,7 @@ def _generate_with_openai(
                 max_length_exceeded = max_length
                 if file:
                     print(converter.feed("\n\n⚠️ **Max length reached, stopping generation**\n"), file=file)
+                response.close()  # Close stream connection
                 break
     
     # Flush any remaining markdown formatting
