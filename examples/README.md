@@ -82,3 +82,21 @@ Compatibility version of schema2.py using Pydantic models with both providers.
 ```bash
 uv run examples/compat2.py
 ```
+
+## Advanced Examples
+
+### [essay.py](essay.py) - Automated Essay Evaluation
+Demonstrates multi-criteria essay evaluation with dynamic schema generation and cross-model comparison.
+
+**Documentation**: [essay.md](essay.md)  
+**Essay**: [essay.txt](essay.txt)
+
+Features:
+- Dynamic schema generation from evaluation criteria
+- Reasoning-first evaluation approach
+- Multi-model comparison using compat module
+- Automatic score calculation and aggregation
+
+```bash
+uv run examples/essay.py
+```
