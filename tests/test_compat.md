@@ -5,9 +5,9 @@
 Testing the compatibility layer required solving unique challenges around multi-provider abstraction:
 
 ### Provider Routing Validation
-**Problem**: The compatibility layer automatically routes to different APIs based on model names. This routing logic is critical but simple - we needed to ensure it works correctly without over-engineering the detection mechanism.
+**Problem**: The compatibility layer automatically routes to different APIs based on model names with vendor prefix support. This routing logic needs to handle both new vendor prefix format and legacy model names for backward compatibility.
 
-**Solution**: Focused tests on model name pattern matching and default fallback behavior to verify the simple prefix-based routing works reliably.
+**Solution**: Comprehensive tests covering vendor prefix parsing (`"openai:gpt-4o-mini"`, `"google:gemini-2.5-flash"`), legacy model name patterns, empty prefix handling, and error cases for unsupported vendor prefixes. Split into dedicated `test_compat_vendor.py` for focused vendor prefix testing.
 
 ### API Abstraction Testing
 **Problem**: Each LLM provider has different API patterns, response formats, and parameter requirements. The compatibility layer needed to abstract these differences while preserving provider-specific features.

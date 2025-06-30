@@ -72,7 +72,8 @@ Unified interface for both OpenAI and Gemini APIs, enabling seamless switching b
 
 **Key Features**:
 - `generate_with_schema()` - Unified generation function
-- Automatic API selection based on model name
+- Vendor prefix support (e.g., "openai:gpt-4o-mini", "google:gemini-2.5-flash")
+- Backward compatible automatic API selection based on model name
 - Support for JSON schemas, Pydantic models, or plain text
 - Preserves provider-specific features
 - Delegates OpenAI processing to `openai.py` module
@@ -131,9 +132,16 @@ from llm7shi.compat import generate_with_schema
 response = generate_with_schema(
     contents=["Your prompt"],
     schema=YourModel,
-    model="gemini-2.5-flash"  # or "gpt-4-mini"
+    model="openai:gpt-4o-mini"  # or "google:gemini-2.5-flash"
 )
 print(response.text)
+
+# Backward compatibility still works
+response = generate_with_schema(
+    contents=["Your prompt"],
+    schema=YourModel,
+    model="gemini-2.5-flash"  # or "gpt-4o-mini"
+)
 ```
 
 ## Architecture

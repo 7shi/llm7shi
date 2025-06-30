@@ -27,8 +27,14 @@ As the library evolved, we realized that different LLM providers have significan
 
 ## Key Design Decisions
 
-### Simple Model Detection
-Used model name prefixes for automatic API routing rather than explicit provider selection. This keeps the interface clean while being predictable.
+### Vendor Prefix Model Detection
+**Problem**: Users needed a clear way to specify which API to use while maintaining backward compatibility with existing model names.
+
+**Solution**: Implemented vendor prefix support using regex pattern `([^:]+):(.*)` to parse model names:
+- `"openai:gpt-4o-mini"` → OpenAI API with `gpt-4o-mini`
+- `"google:gemini-2.5-flash"` → Gemini API with `gemini-2.5-flash`
+- Legacy patterns like `"gpt-4o-mini"` and `"gemini-2.5-flash"` continue to work for backward compatibility
+- Defaults to Gemini when no vendor prefix is specified
 
 ### Response Object Unification
 Extended the existing `Response` dataclass to work with both providers, ensuring the same fields are available regardless of which API was used.

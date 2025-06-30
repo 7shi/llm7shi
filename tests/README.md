@@ -36,6 +36,13 @@ Unit tests for the compatibility layer in `llm7shi/compat.py`.
 
 **Key Features**: Model selection, multi-provider generation, schema processing, error handling.
 
+#### [test_compat_vendor.py](test_compat_vendor.py) - Vendor Prefix Routing Tests
+Unit tests for vendor prefix functionality in `llm7shi/compat.py`.
+
+**Documentation**: [test_compat_vendor.md](test_compat_vendor.md)
+
+**Key Features**: Vendor prefix parsing, backward compatibility, default model delegation, error boundary validation.
+
 #### [test_terminal.py](test_terminal.py) - Terminal Formatting Tests
 Unit tests for terminal output formatting in `llm7shi/terminal.py`.
 

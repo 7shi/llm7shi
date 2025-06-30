@@ -108,7 +108,7 @@ def config_from_schema(schema):
 def generate_content_retry(
     contents,
     *,
-    model=None,
+    model="",
     config=None,
     include_thoughts=True,
     thinking_budget=None,
@@ -134,7 +134,7 @@ def generate_content_retry(
         Response: Object containing thoughts, text, response, and chunks
     """
     # Use default model if none specified
-    if model is None:
+    if not model:
         model = DEFAULT_MODEL
     
     # Display parameters if requested

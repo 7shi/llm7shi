@@ -21,6 +21,15 @@ To run any example:
 
 The compatibility versions use `llm7shi.compat.generate_with_schema()` to work seamlessly with both Gemini and OpenAI models, while the original versions use Gemini-specific functions. The `compat` module provides optional API abstraction that is kept separate from the core thin wrapper functionality.
 
+### Vendor Prefix Support
+
+The compat examples demonstrate the new vendor prefix format for explicit provider selection:
+
+- **New format (recommended)**: `"openai:gpt-4o-mini"`, `"google:gemini-2.5-flash"`
+- **Legacy format (still supported)**: `"gpt-4o-mini"`, `"gemini-2.5-flash"`
+
+The vendor prefix format provides clear provider specification and better extensibility for future multi-provider support.
+
 ## Basic Usage
 
 ### [hello.py](hello.py) - Basic Text Generation

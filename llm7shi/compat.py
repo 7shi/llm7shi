@@ -1,6 +1,7 @@
 import json
 import sys
 import inspect
+import re
 from typing import Dict, Any, List, Union, Type
 from pydantic import BaseModel
 
@@ -14,7 +15,7 @@ def generate_with_schema(
     contents: List[str],
     schema: Union[Dict[str, Any], Type[BaseModel], None] = None,
     *,
-    model: str = None,
+    model: str = "",
     temperature: float = None,
     system_prompt: str = None,
     include_thoughts: bool = True,
@@ -29,7 +30,7 @@ def generate_with_schema(
     Args:
         contents: List of user content strings
         schema: JSON schema for structured output, Pydantic model, or None for plain text
-        model: Model name (e.g., "gpt-4.1-mini", "gemini-2.5-flash"). Defaults to Gemini.
+        model: Model name with optional vendor prefix (e.g., "openai:gpt-4o-mini", "google:gemini-2.5-flash"). Defaults to Gemini.
         temperature: Temperature parameter for generation (None = use model default)
         system_prompt: System prompt as string
         include_thoughts: Whether to include thinking process (Gemini only)
@@ -42,10 +43,30 @@ def generate_with_schema(
     Returns:
         Response: Response object containing generated text and metadata
     """
-    if model is None or model.startswith("gemini"):
-        return _generate_with_gemini(model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params, max_length, check_repetition)
+    # Parse vendor prefix from model name
+    actual_model = model
+    vendor_prefix = "google"  # default to Google
+    
+    if model:
+        # Check for vendor prefix using regex
+        vendor_match = re.match(r"([^:]+):(.*)", model)
+        if vendor_match:
+            vendor_prefix = vendor_match.group(1)
+            actual_model = vendor_match.group(2)
+        else:
+            # No vendor prefix - check for backward compatibility patterns
+            if model.startswith("gemini"):
+                # Backward compatibility: gemini models use Gemini
+                pass
+            else:
+                vendor_prefix = "openai"
+    
+    if vendor_prefix == "google":
+        return _generate_with_gemini(actual_model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params, max_length, check_repetition)
+    elif vendor_prefix == "openai":
+        return _generate_with_openai(actual_model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition)
     else:
-        return _generate_with_openai(model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition)
+        raise ValueError(f"Unsupported vendor prefix: {vendor_prefix}")
 
 
 def _generate_with_gemini(
@@ -104,7 +125,7 @@ def _generate_with_openai(
     check_repetition: bool = True,
 ) -> Response:
     """Generate with OpenAI API with streaming."""
-    from .openai import generate_content
+    from .openai import DEFAULT_MODEL, generate_content
     
     # Build kwargs for OpenAI API
     kwargs = {}
@@ -136,7 +157,7 @@ def _generate_with_openai(
     
     # Display parameters if requested
     if show_params and file is not None:
-        do_show_params(contents, model=model, file=file)
+        do_show_params(contents, model=(model or DEFAULT_MODEL), file=file)
     
     return generate_content(
         model=model,

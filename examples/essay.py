@@ -94,5 +94,5 @@ print(essay)
 print("=" * 60)
 
 # Evaluate with both models
-evaluate_essay("gemini-2.5-flash")
-evaluate_essay("gpt-4.1-mini")
+evaluate_essay("google:gemini-2.5-flash")
+evaluate_essay("openai:gpt-4o-mini")

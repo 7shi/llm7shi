@@ -26,3 +26,8 @@
 **Problem**: Creating a new OpenAI client instance for each API call would be inefficient and inconsistent with the library's pattern established in the Gemini module.
 
 **Solution**: Implemented a global client instance at module level, matching the pattern used in `gemini.py` for consistent resource management and efficient connection reuse across multiple API calls.
+
+### Default Model Configuration
+**Problem**: The OpenAI module required explicit model specification while the Gemini module provides a default model, creating inconsistent API design across the library.
+
+**Solution**: Added `DEFAULT_MODEL = "gpt-4o-mini"` constant and made the `model` parameter optional in `generate_content()` to match the pattern established in `gemini.py`, ensuring consistent user experience across both API modules.

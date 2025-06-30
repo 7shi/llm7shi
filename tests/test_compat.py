@@ -32,7 +32,7 @@ class TestModelSelection:
         
         result = generate_with_schema(
             contents=["Test"],
-            model="gemini-2.5-flash"
+            model="google:gemini-2.5-flash"
         )
         
         assert result == "gemini_response"
@@ -45,7 +45,7 @@ class TestModelSelection:
         
         result = generate_with_schema(
             contents=["Test"],
-            model="gpt-4-mini"
+            model="openai:gpt-4o-mini"
         )
         
         assert result == "openai_response"
@@ -60,9 +60,9 @@ class TestModelSelection:
         
         assert result == "default_response"
         mock_gemini.assert_called_once()
-        # Check that default model (None) was passed
+        # Check that default model ("") was passed
         call_args = mock_gemini.call_args
-        assert call_args[0][0] is None  # model parameter is first positional arg
+        assert call_args[0][0] == ""  # model parameter is first positional arg
 
 
 class TestGeminiIntegration:
@@ -77,7 +77,7 @@ class TestGeminiIntegration:
         
         result = generate_with_schema(
             contents=["Hello World"],
-            model="gemini-2.5-flash"
+            model="google:gemini-2.5-flash"
         )
         
         assert result.text == "Gemini response"
@@ -95,7 +95,7 @@ class TestGeminiIntegration:
         result = generate_with_schema(
             contents=["Temperature in Tokyo"],
             schema=LocationTemperature,
-            model="gemini-2.5-flash"
+            model="google:gemini-2.5-flash"
         )
         
         mock_config.assert_called_once()
@@ -116,7 +116,7 @@ class TestGeminiIntegration:
         result = generate_with_schema(
             contents=["Generate name"],
             schema=json_schema,
-            model="gemini-2.5-flash"
+            model="google:gemini-2.5-flash"
         )
         
         mock_config.assert_called_once_with(json_schema)
@@ -133,7 +133,7 @@ class TestGeminiIntegration:
         result = generate_with_schema(
             contents=["Be creative"],
             temperature=0.9,
-            model="gemini-2.5-flash"
+            model="google:gemini-2.5-flash"
         )
         
         call_args = mock_generate.call_args
@@ -151,7 +151,7 @@ class TestGeminiIntegration:
         result = generate_with_schema(
             contents=["User message"],
             system_prompt="You are helpful",
-            model="gemini-2.5-flash"
+            model="google:gemini-2.5-flash"
         )
         
         call_args = mock_generate.call_args
@@ -180,7 +180,7 @@ class TestOpenAIIntegration:
         
         result = generate_with_schema(
             contents=["Hello World"],
-            model="gpt-4-mini"
+            model="openai:gpt-4o-mini"
         )
         
         assert result.text == "OpenAI response"
@@ -207,7 +207,7 @@ class TestOpenAIIntegration:
         result = generate_with_schema(
             contents=["Temperature data"],
             schema=LocationTemperature,
-            model="gpt-4-mini"
+            model="openai:gpt-4o-mini"
         )
         
         # Verify schema processing pipeline
@@ -240,7 +240,7 @@ class TestOpenAIIntegration:
         result = generate_with_schema(
             contents=["Generate name"],
             schema=json_schema,
-            model="gpt-4-mini"
+            model="openai:gpt-4o-mini"
         )
         
         mock_add_props.assert_called_once_with(json_schema)
@@ -263,7 +263,7 @@ class TestOpenAIIntegration:
         result = generate_with_schema(
             contents=["Be creative"],
             temperature=0.8,
-            model="gpt-4-mini"
+            model="openai:gpt-4o-mini"
         )
         
         call_args = mock_client.chat.completions.create.call_args
@@ -289,7 +289,7 @@ class TestOpenAIIntegration:
         result = generate_with_schema(
             contents=["Hello"],
             system_prompt="You are helpful",
-            model="gpt-4-mini"
+            model="openai:gpt-4o-mini"
         )
         
         mock_messages.assert_called_with(["Hello"], "You are helpful")
@@ -307,7 +307,7 @@ class TestErrorHandling:
         with pytest.raises(Exception, match="API Error"):
             generate_with_schema(
                 contents=["Test"],
-                model="gpt-4-mini"
+                model="openai:gpt-4o-mini"
             )
     
     @patch('llm7shi.openai.client')
@@ -345,7 +345,7 @@ class TestSchemaProcessing:
             generate_with_schema(
                 contents=["Test"],
                 schema=LocationTemperature,
-                model="gemini-2.5-flash"
+                model="google:gemini-2.5-flash"
             )
             
             # Should use config_from_schema path
@@ -360,7 +360,7 @@ class TestSchemaProcessing:
             result = generate_with_schema(
                 contents=["Test"],
                 schema=json_schema,
-                model="gemini-2.5-flash"
+                model="google:gemini-2.5-flash"
             )
             
             # Should call _generate_with_gemini once
@@ -374,7 +374,7 @@ class TestSchemaProcessing:
             
             generate_with_schema(
                 contents=["Test"],
-                model="gemini-2.5-flash"
+                model="google:gemini-2.5-flash"
             )
             
             call_args = mock_gemini.call_args

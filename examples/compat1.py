@@ -8,11 +8,11 @@ with open(Path(__file__).parent / "schema1.json") as f:
 generate_with_schema(
     ["The temperature in Tokyo is 90 degrees Fahrenheit."],
     schema=schema,
-    model="gemini-2.5-flash",
+    model="google:gemini-2.5-flash",
 )
-print("=" * 40)
+print("", "=" * 60, "", sep="\n")
 generate_with_schema(
     ["The temperature in Tokyo is 90 degrees Fahrenheit."],
     schema=schema,
-    model="gpt-4.1-mini",
+    model="openai:gpt-4o-mini",
 )

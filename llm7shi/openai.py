@@ -9,16 +9,22 @@ from .monitor import StreamMonitor
 # Initialize OpenAI client
 client = OpenAI()
 
+DEFAULT_MODEL = "gpt-4o-mini"
+
 
 def generate_content(
-    model: str,
     messages: List[Dict[str, Any]],
+    model: str = "",
     file=sys.stdout,
     max_length=None,
     check_repetition: bool = True,
     **kwargs
 ) -> Response:
     """Generate with OpenAI API with streaming and monitoring."""
+    
+    # Use default model if not provided
+    if not model:
+        model = DEFAULT_MODEL
     
     # Call API with streaming
     response = client.chat.completions.create(
