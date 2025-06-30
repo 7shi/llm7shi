@@ -163,14 +163,13 @@ class TestGeminiIntegration:
 class TestOpenAIIntegration:
     """Test integration with OpenAI API"""
     
-    @patch('openai.OpenAI')
+    @patch('llm7shi.openai.client')
     @patch('llm7shi.compat.contents_to_openai_messages')
-    def test_basic_openai_generation(self, mock_messages, mock_openai_class):
+    def test_basic_openai_generation(self, mock_messages, mock_client):
         """Test basic text generation with OpenAI"""
         mock_messages.return_value = [{"role": "user", "content": "Hello"}]
         
-        mock_client = MagicMock()
-        mock_openai_class.return_value = mock_client
+        # mock_client is already the mocked client object
         
         # Mock streaming response
         mock_chunk = MagicMock()
@@ -187,18 +186,17 @@ class TestOpenAIIntegration:
         assert result.text == "OpenAI response"
         mock_client.chat.completions.create.assert_called_once()
     
-    @patch('openai.OpenAI')
+    @patch('llm7shi.openai.client')
     @patch('llm7shi.compat.contents_to_openai_messages')
     @patch('llm7shi.compat.add_additional_properties_false')
     @patch('llm7shi.compat.inline_defs')
-    def test_openai_with_pydantic_schema(self, mock_inline, mock_add_props, mock_messages, mock_openai_class):
+    def test_openai_with_pydantic_schema(self, mock_inline, mock_add_props, mock_messages, mock_client):
         """Test OpenAI generation with Pydantic schema"""
         mock_messages.return_value = [{"role": "user", "content": "Test"}]
         mock_add_props.return_value = {"processed": "schema"}
         mock_inline.return_value = {"final": "schema"}
         
-        mock_client = MagicMock()
-        mock_openai_class.return_value = mock_client
+        # mock_client is already the mocked client object
         
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -220,19 +218,18 @@ class TestOpenAIIntegration:
         call_args = mock_client.chat.completions.create.call_args
         assert call_args[1]['response_format']['json_schema']['schema'] == {"processed": "schema"}
     
-    @patch('openai.OpenAI')
+    @patch('llm7shi.openai.client')
     @patch('llm7shi.compat.contents_to_openai_messages')
     @patch('llm7shi.compat.add_additional_properties_false')
     @patch('llm7shi.compat.inline_defs')
-    def test_openai_with_json_schema(self, mock_inline, mock_add_props, mock_messages, mock_openai_class):
+    def test_openai_with_json_schema(self, mock_inline, mock_add_props, mock_messages, mock_client):
         """Test OpenAI generation with JSON schema"""
         json_schema = {"type": "object", "properties": {"name": {"type": "string"}}}
         mock_messages.return_value = [{"role": "user", "content": "Test"}]
         mock_add_props.return_value = {"processed": "schema"}
         mock_inline.return_value = {"final": "schema"}
         
-        mock_client = MagicMock()
-        mock_openai_class.return_value = mock_client
+        # mock_client is already the mocked client object
         
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -249,14 +246,13 @@ class TestOpenAIIntegration:
         mock_add_props.assert_called_once_with(json_schema)
         # inline_defs is not called for non-Pydantic schemas in current implementation
     
-    @patch('openai.OpenAI')
+    @patch('llm7shi.openai.client')
     @patch('llm7shi.compat.contents_to_openai_messages')
-    def test_openai_with_temperature(self, mock_messages, mock_openai_class):
+    def test_openai_with_temperature(self, mock_messages, mock_client):
         """Test OpenAI generation with temperature parameter"""
         mock_messages.return_value = [{"role": "user", "content": "Test"}]
         
-        mock_client = MagicMock()
-        mock_openai_class.return_value = mock_client
+        # mock_client is already the mocked client object
         
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -273,17 +269,16 @@ class TestOpenAIIntegration:
         call_args = mock_client.chat.completions.create.call_args
         assert call_args[1]['temperature'] == 0.8
     
-    @patch('openai.OpenAI')
+    @patch('llm7shi.openai.client')
     @patch('llm7shi.compat.contents_to_openai_messages')
-    def test_openai_with_system_prompt(self, mock_messages, mock_openai_class):
+    def test_openai_with_system_prompt(self, mock_messages, mock_client):
         """Test OpenAI generation with system prompt"""
         mock_messages.return_value = [
             {"role": "system", "content": "You are helpful"},
             {"role": "user", "content": "Hello"}
         ]
         
-        mock_client = MagicMock()
-        mock_openai_class.return_value = mock_client
+        # mock_client is already the mocked client object
         
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -303,11 +298,10 @@ class TestOpenAIIntegration:
 class TestErrorHandling:
     """Test error handling scenarios"""
     
-    @patch('openai.OpenAI')
-    def test_openai_api_error(self, mock_openai_class):
+    @patch('llm7shi.openai.client')
+    def test_openai_api_error(self, mock_client):
         """Test handling of OpenAI API errors"""
-        mock_client = MagicMock()
-        mock_openai_class.return_value = mock_client
+        # mock_client is already the mocked client object
         mock_client.chat.completions.create.side_effect = Exception("API Error")
         
         with pytest.raises(Exception, match="API Error"):
@@ -316,15 +310,14 @@ class TestErrorHandling:
                 model="gpt-4-mini"
             )
     
-    @patch('openai.OpenAI')
+    @patch('llm7shi.openai.client')
     @patch('llm7shi.compat.contents_to_openai_messages')
-    def test_unsupported_model(self, mock_messages, mock_openai_class):
+    def test_unsupported_model(self, mock_messages, mock_client):
         """Test error handling for unsupported model names"""
         # Unsupported models go to OpenAI path, so mock it properly
         mock_messages.return_value = [{"role": "user", "content": "Test"}]
         
-        mock_client = MagicMock()
-        mock_openai_class.return_value = mock_client
+        # mock_client is already the mocked client object
         
         mock_chunk = MagicMock()
         mock_chunk.choices = [MagicMock()]

@@ -49,6 +49,22 @@ Helper functions for parameter display, message formatting, and schema transform
 - `add_additional_properties_false()` - Add OpenAI schema requirements
 - `inline_defs()` - Inline $defs references in JSON schemas
 
+### [openai.py](openai.py) - OpenAI API Client
+Direct OpenAI API wrapper with streaming support and monitoring capabilities.
+
+**Documentation**: [openai.md](openai.md)
+
+**Key Features**:
+- `generate_content()` - Pure OpenAI API wrapper with streaming
+- Accepts pre-converted OpenAI message format
+- Streaming output with terminal formatting
+- Repetition detection and length monitoring
+
+**Note**: This module is optional and not exported in `__init__.py`. Import explicitly:
+```python
+from llm7shi.openai import generate_content
+```
+
 ### [compat.py](compat.py) - API Compatibility Layer
 Unified interface for both OpenAI and Gemini APIs, enabling seamless switching between providers.
 
@@ -59,9 +75,9 @@ Unified interface for both OpenAI and Gemini APIs, enabling seamless switching b
 - Automatic API selection based on model name
 - Support for JSON schemas, Pydantic models, or plain text
 - Preserves provider-specific features
-- Consistent repetition detection across providers
+- Delegates OpenAI processing to `openai.py` module
 
-**Note**: This module is not exported in `__init__.py`. Import explicitly:
+**Note**: This module is optional and not exported in `__init__.py`. Import explicitly:
 ```python
 from llm7shi.compat import generate_with_schema
 ```
@@ -128,6 +144,7 @@ The package follows a modular design with clear separation of concerns:
 llm7shi/
 ├── __init__.py      # Public API exports
 ├── gemini.py        # Gemini-specific implementation
+├── openai.py        # OpenAI-specific implementation
 ├── response.py      # Response data class
 ├── utils.py         # Shared utility functions
 ├── compat.py        # Multi-provider compatibility
@@ -156,7 +173,7 @@ export OPENAI_API_KEY="your-api-key"
 ## Dependencies
 
 - `google-genai` - Google's Gemini API client
-- `openai` - OpenAI API client (optional, for compat.py)
-- `pydantic` - Data validation (optional, for schema support)
+- `openai` - OpenAI API client (for compat.py)
+- `pydantic` - Data validation (for schema support)
 
 See the main project README for installation instructions.

@@ -104,24 +104,10 @@ def _generate_with_openai(
     check_repetition: bool = True,
 ) -> Response:
     """Generate with OpenAI API with streaming."""
-    from openai import OpenAI
+    from .openai import generate_content
     
-    # Display parameters if requested
-    if show_params and file is not None:
-        do_show_params(contents, model=model, file=file)
-    
-    # Initialize client
-    client = OpenAI()
-    
-    # Convert contents to OpenAI format messages
-    openai_messages = contents_to_openai_messages(contents, system_prompt)
-
-    # Build kwargs
-    kwargs = {
-        "model": model,
-        "messages": openai_messages,
-        "stream": True
-    }
+    # Build kwargs for OpenAI API
+    kwargs = {}
     
     if schema is not None:
         # Convert Pydantic model to JSON schema
@@ -145,47 +131,18 @@ def _generate_with_openai(
     if temperature is not None:
         kwargs["temperature"] = temperature
     
-    # Call API with structured output and streaming
-    response = client.chat.completions.create(**kwargs)
+    # Convert contents to OpenAI format messages
+    openai_messages = contents_to_openai_messages(contents, system_prompt)
     
-    # Collect streamed response and chunks
-    collected_content = ""
-    chunks = []
-    converter = MarkdownStreamConverter()  # For terminal formatting
-    monitor = StreamMonitor(converter, max_length=max_length, check_repetition=check_repetition)
+    # Display parameters if requested
+    if show_params and file is not None:
+        do_show_params(contents, model=model, file=file)
     
-    for chunk in response:
-        chunks.append(chunk)
-        if chunk.choices[0].delta.content is not None:
-            content = chunk.choices[0].delta.content
-            collected_content += content
-            # Stream formatted output to terminal
-            if file:
-                print(converter.feed(content), end='', flush=True, file=file)
-            
-            # Check for repetition and max length
-            if not monitor.check(collected_content, file):
-                response.close()  # Close stream connection
-                break
-    
-    # Flush any remaining markdown formatting
-    remaining = converter.flush()
-    if remaining and file:
-        print(remaining, end='', flush=True, file=file)
-    
-    # Ensure output ends with newline
-    if file and not collected_content.endswith("\n"):
-        print(flush=True, file=file)
-    
-    # Create Response object for OpenAI
-    return Response(
+    return generate_content(
         model=model,
-        config=kwargs,
-        contents=contents,
-        response=response,
-        chunks=chunks,
-        thoughts="",    # OpenAI doesn't have thinking process
-        text=collected_content,
-        repetition=monitor.repetition_detected,
-        max_length=monitor.max_length_exceeded,
+        messages=openai_messages,
+        file=file,
+        max_length=max_length,
+        check_repetition=check_repetition,
+        **kwargs
     )

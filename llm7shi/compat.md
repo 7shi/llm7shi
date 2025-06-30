@@ -34,7 +34,7 @@ Used model name prefixes for automatic API routing rather than explicit provider
 Extended the existing `Response` dataclass to work with both providers, ensuring the same fields are available regardless of which API was used.
 
 ### Non-Breaking Integration
-The compatibility layer imports and uses existing library functions rather than reimplementing them. This ensures consistency and reduces maintenance burden.
+The compatibility layer imports and uses existing library functions rather than reimplementing them. For OpenAI support, it delegates to the optional `openai.py` module while handling schema transformations and message conversion locally.
 
 ### Schema Transformation Pipeline
 Created a series of transformation functions that modify schemas step-by-step to meet each API's requirements, making the process debuggable and extensible.
@@ -42,6 +42,6 @@ Created a series of transformation functions that modify schemas step-by-step to
 ## Quality Control Integration
 
 ### Unified Stream Monitoring
-**Problem**: OpenAI and Gemini implementations had duplicated repetition detection and max length logic.
+**Problem**: OpenAI and Gemini implementations could have duplicated repetition detection and max length logic.
 
-**Solution**: Both providers now use the shared `StreamMonitor` class (see [monitor.md](monitor.md)) for consistent quality control while respecting provider-specific connection management requirements.
+**Solution**: Both providers use the shared `StreamMonitor` class (see [monitor.md](monitor.md)) for consistent quality control. The OpenAI implementation is handled by the dedicated `openai.py` module while maintaining the same monitoring capabilities.

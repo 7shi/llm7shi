@@ -20,6 +20,6 @@ Testing the compatibility layer required solving unique challenges around multi-
 **Solution**: End-to-end tests that verify schema transformations preserve semantic meaning while meeting each provider's specific format requirements.
 
 ### Import and Mocking Complexity
-**Problem**: The compat module uses relative imports from the main package, which created challenges for mocking during testing. Standard module-level mocking didn't work as expected.
+**Problem**: The compat module delegates OpenAI processing to the dedicated `openai.py` module, which uses a global client instance. This required specific mocking strategies to properly intercept API calls without triggering actual OpenAI authentication.
 
-**Solution**: Root-level mocking strategy (`llm7shi.generate_content_retry`) rather than module-level imports to properly intercept the function calls made by the compatibility layer.
+**Solution**: Direct mocking of the global client (`llm7shi.openai.client`) rather than the OpenAI class constructor, ensuring tests work with the modular architecture while avoiding real API calls.
