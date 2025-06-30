@@ -19,64 +19,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Documentation Guidelines
 - **Two-tier documentation structure**: Each Python module has a paired `.md` file (1:1 pairing)
-- See [DOCUMENTATION.md](DOCUMENTATION.md) for detailed documentation creation guidelines
+- Focus on "why" rather than "how" in module documentation
+- See [DOCUMENTATION.md](DOCUMENTATION.md) for detailed guidelines
 
-## Project Overview
+## Quick Project Context
 
-llm7shi is a simplified Python library for interacting with large language models. Currently supports Google's Gemini AI models, with potential for future expansion to other LLM providers.
+llm7shi is a thin wrapper around the Gemini API that provides production-ready error handling, retry logic, and streaming support. The project uses `uv` as the package manager and follows a simplicity-first design philosophy.
 
-## Development Setup
+## Architecture Overview
 
-### Package Management
-This project uses `uv` as the package manager (evident from `uv.lock`). To install dependencies:
-```bash
-uv sync
-```
+The project follows a modular architecture with clear separation of concerns. Each module has a specific purpose documented in its paired `.md` file. The core library remains a thin wrapper while optional modules provide additional functionality.
 
-### Environment Configuration
-Set your API keys:
-```bash
-export GEMINI_API_KEY="your-api-key-here"
-export OPENAI_API_KEY="your-api-key-here"
-```
-
-## Architecture
-
-### Design Philosophy
-
-The library follows a **simplicity-first approach** with **optional complexity**:
-
-- **Core simplicity**: Basic text generation requires minimal configuration
-- **Layered functionality**: Advanced features (schemas, multi-provider) are opt-in
-- **Streaming by default**: Real-time output for better user experience
-- **Error resilience**: Automatic retry logic handles transient API failures
-- **Provider independence**: Optional compatibility layer enables vendor flexibility
-
-### Module Organization
-
-Each module addresses specific architectural concerns:
-
-- **gemini.py**: Core API interaction and reliability
-- **terminal.py**: User experience and cross-platform output formatting  
-- **utils.py**: Cross-cutting concerns and provider compatibility
-- **compat.py**: Optional multi-provider abstraction layer
-- **response.py**: Unified data structure for all generation results
-
-## Common Development Tasks
-
-### Running Examples
-```bash
-uv run examples/hello.py        # Basic text generation
-uv run examples/schema1.py      # JSON schema-based generation
-uv run examples/schema2.py      # Pydantic schema-based generation
-```
-
-### Running Tests
-```bash
-uv run pytest                   # Run all tests
-uv run pytest -v              # Verbose output
-uv run pytest tests/test_hello.py  # Run specific test
-```
+## Development Guidelines
 
 ### Testing Philosophy
 - **Mock-first approach**: No real API calls to ensure fast, reliable CI/CD
@@ -87,10 +41,10 @@ uv run pytest tests/test_hello.py  # Run specific test
 - **Simplicity first**: New features should maintain the library's ease-of-use
 - **Backward compatibility**: Always maintain existing API contracts
 - **Streaming support**: New features should work with real-time output where applicable
-- **Documentation**: Follow guidelines in [DOCUMENTATION.md](DOCUMENTATION.md)
 
-## Key Decisions
-
+### Key Architectural Decisions
 - **Gemini 2.5 focus**: Primary support for latest models with thinking capabilities
 - **Extensible architecture**: Designed for future multi-provider expansion
 - **User experience priority**: Streaming output and terminal formatting included by default
+
+For setup instructions, API reference, and examples, see the main [README.md](README.md).
