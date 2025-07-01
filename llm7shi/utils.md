@@ -22,6 +22,11 @@ These utility functions solve specific cross-cutting concerns that emerged while
 
 **Solution**: Created transformation functions that modify schemas to meet each API's specific requirements while preserving the original structure.
 
+### Schema Description Extraction for Prompt Enhancement (`extract_descriptions`)
+**Problem**: Some LLM systems ignore or don't properly utilize the `description` fields in JSON schemas, leading to poor structured output quality. To improve results, these descriptions need to be extracted and embedded directly into prompts as context.
+
+**Solution**: Created a function that extracts all property descriptions from nested JSON schemas into a flat key-value mapping, enabling automatic prompt enhancement with schema context for systems that don't natively support schema descriptions.
+
 
 ## Key Design Decisions
 

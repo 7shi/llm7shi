@@ -27,7 +27,7 @@ Unit tests for schema processing functions in `llm7shi/utils.py`.
 
 **Documentation**: [test_utils_schema.md](test_utils_schema.md)
 
-**Key Features**: Schema modification, reference resolution, OpenAI compatibility, circular reference handling.
+**Key Features**: Schema modification, reference resolution, OpenAI compatibility, circular reference handling, description extraction for prompt enhancement.
 
 #### [test_monitor_repetition.py](test_monitor_repetition.py) - Repetition Detection Tests
 Unit tests for the `detect_repetition()` function in `llm7shi/monitor.py`.

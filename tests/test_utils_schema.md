@@ -23,3 +23,8 @@ Testing schema processing functions required addressing specific multi-provider 
 **Problem**: JSON schemas can contain circular references, which the `inline_defs()` function needs to detect to avoid infinite loops during processing.
 
 **Solution**: Explicit tests for circular reference detection to ensure the function fails gracefully with `RecursionError` rather than hanging indefinitely.
+
+### Schema Description Extraction for Prompt Enhancement
+**Problem**: Some LLM systems ignore or don't properly utilize JSON schema `description` fields, resulting in poor structured output quality. To compensate, these descriptions need to be extracted and injected into prompts as explicit context.
+
+**Solution**: The `extract_descriptions()` function extracts all property descriptions from nested schemas into a flat mapping, enabling automatic prompt enhancement with schema context. Tests ensure reliable extraction across various schema patterns including nested objects, arrays, and edge cases where descriptions may be missing.

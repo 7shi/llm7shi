@@ -48,6 +48,7 @@ Helper functions for parameter display, message formatting, and schema transform
 - `contents_to_openai_messages()` - Convert to OpenAI message format
 - `add_additional_properties_false()` - Add OpenAI schema requirements
 - `inline_defs()` - Inline $defs references in JSON schemas
+- `extract_descriptions()` - Extract property descriptions for prompt enhancement
 
 ### [openai.py](openai.py) - OpenAI API Client
 Direct OpenAI API wrapper with streaming support and monitoring capabilities.

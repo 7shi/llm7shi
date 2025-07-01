@@ -118,3 +118,41 @@ def inline_defs(schema: Dict[str, Any]) -> Dict[str, Any]:
     return resolve_ref(schema)
 
 
+def extract_descriptions(schema: Dict[str, Any]) -> Dict[str, str]:
+    """Extract description values with their parent keys from JSON schema.
+    
+    Args:
+        schema: JSON schema dictionary
+        
+    Returns:
+        Dictionary mapping parent keys to their description values
+    """
+    descriptions = {}
+    
+    def traverse_schema(obj: Any, parent_key: str = None) -> None:
+        if isinstance(obj, dict):
+            # If this object has a description and we have a parent key
+            if "description" in obj and parent_key:
+                descriptions[parent_key] = obj["description"]
+            
+            # Traverse properties
+            if "properties" in obj and isinstance(obj["properties"], dict):
+                for prop_key, prop_value in obj["properties"].items():
+                    traverse_schema(prop_value, prop_key)
+            
+            # Handle array items separately - don't pass parent_key to avoid overwriting
+            if "items" in obj and isinstance(obj["items"], dict):
+                traverse_schema(obj["items"], None)
+            
+            # Traverse other nested structures (excluding properties, items, and description)
+            for key, value in obj.items():
+                if key not in ["properties", "items", "description"]:
+                    if isinstance(value, (dict, list)):
+                        traverse_schema(value, None)
+        
+        elif isinstance(obj, list):
+            for item in obj:
+                traverse_schema(item, parent_key)
+    
+    traverse_schema(schema)
+    return descriptions
