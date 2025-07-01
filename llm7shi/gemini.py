@@ -58,7 +58,7 @@ def build_schema_from_json(json_data):
             # String type with optional enum values
             schema = types.Schema(
                 type=types.Type.STRING,
-                description=json_data.get("description", "")
+                description=json_data.get("description")
             )
             # Add enum constraint if specified
             if "enum" in json_data:
@@ -67,23 +67,29 @@ def build_schema_from_json(json_data):
         case "boolean":
             return types.Schema(
                 type=types.Type.BOOLEAN,
-                description=json_data.get("description", "")
+                description=json_data.get("description")
             )
         case "number":
-            return types.Schema(
+            schema = types.Schema(
                 type=types.Type.NUMBER,
-                description=json_data.get("description", "")
+                minimum=json_data.get("minimum"),
+                maximum=json_data.get("maximum"),
+                description=json_data.get("description")
             )
+            return schema
         case "integer":
-            return types.Schema(
+            schema = types.Schema(
                 type=types.Type.INTEGER,
-                description=json_data.get("description", "")
+                minimum=json_data.get("minimum"),
+                maximum=json_data.get("maximum"),
+                description=json_data.get("description")
             )
+            return schema
         case "array":
             # Array type with recursive item schema
             return types.Schema(
                 type=types.Type.ARRAY,
-                description=json_data.get("description", ""),
+                description=json_data.get("description"),
                 items=build_schema_from_json(json_data["items"])
             )
         case _:
