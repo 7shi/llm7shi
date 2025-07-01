@@ -20,7 +20,14 @@ Unit tests for helper functions in `llm7shi/utils.py`.
 
 **Documentation**: [test_utils.md](test_utils.md)
 
-**Key Features**: Parameter display, OpenAI message conversion, schema modification, reference resolution.
+**Key Features**: Parameter display, OpenAI message conversion.
+
+#### [test_utils_schema.py](test_utils_schema.py) - Schema Processing Tests
+Unit tests for schema processing functions in `llm7shi/utils.py`.
+
+**Documentation**: [test_utils_schema.md](test_utils_schema.md)
+
+**Key Features**: Schema modification, reference resolution, OpenAI compatibility, circular reference handling.
 
 #### [test_monitor_repetition.py](test_monitor_repetition.py) - Repetition Detection Tests
 Unit tests for the `detect_repetition()` function in `llm7shi/monitor.py`.
