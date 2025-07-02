@@ -1,6 +1,6 @@
 from typing import List
 from pydantic import BaseModel, Field
-from llm7shi.compat import generate_with_schema
+from llm7shi.compat import generate_with_schema, VENDOR_PREFIXES
 
 class LocationTemperature(BaseModel):
     location: str
@@ -9,13 +9,7 @@ class LocationTemperature(BaseModel):
 class LocationsAndTemperatures(BaseModel):
     locations_and_temperatures: List[LocationTemperature]
 
-models = [
-    "google:gemini-2.5-flash",
-    "openai:gpt-4o-mini",
-    "ollama:qwen3:4b"
-]
-
-for i, model in enumerate(models):
+for i, model in enumerate(VENDOR_PREFIXES):
     if i:
         print("", "=" * 60, "", sep="\n")
     generate_with_schema(

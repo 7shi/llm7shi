@@ -30,4 +30,4 @@
 ### Default Model Configuration
 **Problem**: The OpenAI module required explicit model specification while the Gemini module provides a default model, creating inconsistent API design across the library.
 
-**Solution**: Added `DEFAULT_MODEL = "gpt-4o-mini"` constant and made the `model` parameter optional in `generate_content()` to match the pattern established in `gemini.py`, ensuring consistent user experience across both API modules.
+**Solution**: Added `DEFAULT_MODEL = "gpt-4.1-mini"` constant and made the `model` parameter optional in `generate_content()` to match the pattern established in `gemini.py`, ensuring consistent user experience across both API modules.

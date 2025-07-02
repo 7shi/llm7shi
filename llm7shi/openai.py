@@ -9,7 +9,7 @@ from .monitor import StreamMonitor
 # Initialize OpenAI client
 client = OpenAI()
 
-DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_MODEL = "gpt-4.1-mini"
 
 
 def generate_content(

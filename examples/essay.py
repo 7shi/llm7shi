@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from llm7shi.compat import generate_with_schema
+from llm7shi.compat import generate_with_schema, VENDOR_PREFIXES
 
 # Define evaluation criteria and their descriptions
 CRITERIA = {
@@ -89,11 +89,5 @@ print(essay)
 print("=" * 60)
 
 # Evaluate with all models
-models = [
-    "google:gemini-2.5-flash",
-    "openai:gpt-4o-mini",
-    "ollama:qwen3:4b"
-]
-
-for model in models:
+for model in VENDOR_PREFIXES:
     evaluate_essay(model)

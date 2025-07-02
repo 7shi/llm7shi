@@ -10,7 +10,7 @@ The vendor prefix feature required dedicated testing to ensure robust multi-prov
 **Solution**: Comprehensive tests covering regex-based parsing (`([^:]+):(.*)`) to verify correct vendor identification and model name extraction across all supported patterns and error conditions.
 
 ### Backward Compatibility Assurance
-**Problem**: Existing code using legacy model names (`"gpt-4o-mini"`, `"gemini-2.5-flash"`) must continue working seamlessly after vendor prefix introduction, requiring validation that the fallback detection logic works correctly.
+**Problem**: Existing code using legacy model names (`"gpt-4.1-mini"`, `"gemini-2.5-flash"`) must continue working seamlessly after vendor prefix introduction, requiring validation that the fallback detection logic works correctly.
 
 **Solution**: Specific tests ensuring legacy patterns are correctly identified and routed to appropriate providers without requiring code changes in existing applications.
 

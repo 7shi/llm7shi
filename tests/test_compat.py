@@ -45,7 +45,7 @@ class TestModelSelection:
         
         result = generate_with_schema(
             contents=["Test"],
-            model="openai:gpt-4o-mini"
+            model="openai:gpt-4.1-mini"
         )
         
         assert result == "openai_response"
@@ -180,7 +180,7 @@ class TestOpenAIIntegration:
         
         result = generate_with_schema(
             contents=["Hello World"],
-            model="openai:gpt-4o-mini"
+            model="openai:gpt-4.1-mini"
         )
         
         assert result.text == "OpenAI response"
@@ -207,7 +207,7 @@ class TestOpenAIIntegration:
         result = generate_with_schema(
             contents=["Temperature data"],
             schema=LocationTemperature,
-            model="openai:gpt-4o-mini"
+            model="openai:gpt-4.1-mini"
         )
         
         # Verify schema processing pipeline
@@ -240,7 +240,7 @@ class TestOpenAIIntegration:
         result = generate_with_schema(
             contents=["Generate name"],
             schema=json_schema,
-            model="openai:gpt-4o-mini"
+            model="openai:gpt-4.1-mini"
         )
         
         mock_add_props.assert_called_once_with(json_schema)
@@ -263,7 +263,7 @@ class TestOpenAIIntegration:
         result = generate_with_schema(
             contents=["Be creative"],
             temperature=0.8,
-            model="openai:gpt-4o-mini"
+            model="openai:gpt-4.1-mini"
         )
         
         call_args = mock_client.chat.completions.create.call_args
@@ -289,7 +289,7 @@ class TestOpenAIIntegration:
         result = generate_with_schema(
             contents=["Hello"],
             system_prompt="You are helpful",
-            model="openai:gpt-4o-mini"
+            model="openai:gpt-4.1-mini"
         )
         
         mock_messages.assert_called_with(["Hello"], "You are helpful")
@@ -307,7 +307,7 @@ class TestErrorHandling:
         with pytest.raises(Exception, match="API Error"):
             generate_with_schema(
                 contents=["Test"],
-                model="openai:gpt-4o-mini"
+                model="openai:gpt-4.1-mini"
             )
     
     @patch('llm7shi.openai.client')

@@ -19,14 +19,14 @@ class TestVendorPrefixSelection:
         
         result = generate_with_schema(
             contents=["Test"],
-            model="openai:gpt-4o-mini"
+            model="openai:gpt-4.1-mini"
         )
         
         assert result == "prefix_response"
         mock_openai.assert_called_once()
         # Check that vendor prefix was removed
         call_args = mock_openai.call_args
-        assert call_args[0][0] == "gpt-4o-mini"
+        assert call_args[0][0] == "gpt-4.1-mini"
     
     @patch('llm7shi.compat._generate_with_gemini')
     def test_google_vendor_prefix(self, mock_gemini):
@@ -138,13 +138,13 @@ class TestVendorPrefixSelection:
         
         result = generate_with_schema(
             contents=["Test"],
-            model="gpt-4o-mini"
+            model="gpt-4.1-mini"
         )
         
         assert result == "compat_openai_response"
         mock_openai.assert_called_once()
         call_args = mock_openai.call_args
-        assert call_args[0][0] == "gpt-4o-mini"
+        assert call_args[0][0] == "gpt-4.1-mini"
     
     @patch('llm7shi.compat._generate_with_openai')
     def test_unknown_model_defaults_to_openai(self, mock_openai):

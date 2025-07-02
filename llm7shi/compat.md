@@ -33,10 +33,10 @@ As the library evolved, we realized that different LLM providers have significan
 **Problem**: Users needed a clear way to specify which API to use while maintaining backward compatibility with existing model names.
 
 **Solution**: Implemented vendor prefix support using regex pattern `([^:]+):(.*)` to parse model names:
-- `"openai:gpt-4o-mini"` → OpenAI API with `gpt-4o-mini`
+- `"openai:gpt-4.1-mini"` → OpenAI API with `gpt-4.1-mini`
 - `"google:gemini-2.5-flash"` → Gemini API with `gemini-2.5-flash`
 - `"ollama:qwen3:4b"` → Ollama API with `qwen3:4b`
-- Legacy patterns like `"gpt-4o-mini"` and `"gemini-2.5-flash"` continue to work for backward compatibility
+- Legacy patterns like `"gpt-4.1-mini"` and `"gemini-2.5-flash"` continue to work for backward compatibility
 - Defaults to Gemini when no vendor prefix is specified
 
 ### Response Object Unification

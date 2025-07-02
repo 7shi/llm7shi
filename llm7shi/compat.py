@@ -10,6 +10,9 @@ from .response import Response
 from .terminal import MarkdownStreamConverter
 from .monitor import StreamMonitor
 
+# Vendor prefixes for examples (use vendor prefix only for easier maintenance)
+VENDOR_PREFIXES = ["google:", "openai:", "ollama:"]
+
 
 def generate_with_schema(
     contents: List[str],
@@ -30,7 +33,7 @@ def generate_with_schema(
     Args:
         contents: List of user content strings
         schema: JSON schema for structured output, Pydantic model, or None for plain text
-        model: Model name with optional vendor prefix (e.g., "openai:gpt-4o-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b"). Defaults to Gemini.
+        model: Model name with optional vendor prefix (e.g., "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b"). Defaults to Gemini.
         temperature: Temperature parameter for generation (None = use model default)
         system_prompt: System prompt as string
         include_thoughts: Whether to include thinking process (Gemini and Ollama only)
