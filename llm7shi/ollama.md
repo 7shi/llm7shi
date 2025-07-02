@@ -21,3 +21,8 @@
 **Problem**: Ollama supports numerous models but users needed a sensible default for getting started quickly without configuration overhead.
 
 **Solution**: Selected Qwen3:4b as the default model due to its balance of performance, thinking capabilities, and reasonable resource requirements for local deployment.
+
+### Capability-Aware Thinking Control
+**Problem**: Not all Ollama models support thinking capabilities (e.g., Gemma3 models lack "thinking" in their capabilities), but users might request thinking mode without knowing model limitations.
+
+**Solution**: Implemented automatic capability detection using `ollama.show()` to check model capabilities before enabling thinking mode. When `think=True` is requested but the model doesn't support thinking, the parameter is automatically set to `False` to prevent API errors while maintaining functionality.

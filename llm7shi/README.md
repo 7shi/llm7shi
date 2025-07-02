@@ -74,6 +74,7 @@ Local Ollama API wrapper with streaming support and thinking process visualizati
 **Key Features**:
 - `generate_content()` - Ollama API wrapper with streaming
 - Thinking process extraction via `chunk.message.thinking`
+- Automatic capability detection for thinking support
 - Consistent interface matching OpenAI and Gemini modules
 - Default model: qwen3:4b for balanced performance
 - Real-time thinking and answer display
@@ -84,17 +85,17 @@ from llm7shi.ollama import generate_content
 ```
 
 ### [compat.py](compat.py) - API Compatibility Layer
-Unified interface for both OpenAI and Gemini APIs, enabling seamless switching between providers.
+Unified interface for OpenAI, Gemini, and Ollama APIs, enabling seamless switching between providers.
 
 **Documentation**: [compat.md](compat.md)
 
 **Key Features**:
 - `generate_with_schema()` - Unified generation function
-- Vendor prefix support (e.g., "openai:gpt-4o-mini", "google:gemini-2.5-flash")
+- Vendor prefix support (e.g., "openai:gpt-4o-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b")
 - Backward compatible automatic API selection based on model name
 - Support for JSON schemas, Pydantic models, or plain text
 - Preserves provider-specific features
-- Delegates OpenAI processing to `openai.py` module
+- Delegates OpenAI and Ollama processing to respective modules
 
 **Note**: This module is optional and not exported in `__init__.py`. Import explicitly:
 ```python
@@ -146,11 +147,11 @@ response = generate_content_retry(contents, config=config)
 ```python
 from llm7shi.compat import generate_with_schema
 
-# Works with both providers
+# Works with all three providers
 response = generate_with_schema(
     contents=["Your prompt"],
     schema=YourModel,
-    model="openai:gpt-4o-mini"  # or "google:gemini-2.5-flash"
+    model="openai:gpt-4o-mini"  # or "google:gemini-2.5-flash" or "ollama:qwen3:4b"
 )
 print(response.text)
 

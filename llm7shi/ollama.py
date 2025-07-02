@@ -1,6 +1,6 @@
 import sys
 from typing import List, Dict, Any
-from ollama import chat
+from ollama import chat, show
 
 from .response import Response
 from .terminal import MarkdownStreamConverter
@@ -12,6 +12,7 @@ DEFAULT_MODEL = "qwen3:4b"
 def generate_content(
     messages: List[Dict[str, Any]],
     model: str = "",
+    think: bool = False,
     file=sys.stdout,
     max_length=None,
     check_repetition: bool = True,
@@ -23,11 +24,18 @@ def generate_content(
     if not model:
         model = DEFAULT_MODEL
     
+    # Check if model supports thinking when requested
+    if think:
+        model_info = show(model)
+        if "thinking" not in model_info.capabilities:
+            think = False
+    
     # Call API with streaming
     response = chat(
         model=model,
         messages=messages,
         stream=True,
+        think=think,
         **kwargs
     )
     
@@ -44,11 +52,11 @@ def generate_content(
         chunks.append(chunk)
         
         # Handle thinking content
-        if hasattr(chunk.message, 'thinking') and chunk.message.thinking is not None:
+        if getattr(chunk.message, 'thinking', None) is not None:
             thinking_content = chunk.message.thinking
             if not thoughts_shown:
                 if file:
-                    print(converter.feed("\n🤔 **Thinking...**\n"), file=file)
+                    print(converter.feed("🤔 **Thinking...**\n"), file=file)
                 thoughts_shown = True
             thoughts += thinking_content
             # Stream formatted thinking output to terminal
@@ -56,11 +64,11 @@ def generate_content(
                 print(converter.feed(thinking_content), end='', flush=True, file=file)
         
         # Handle regular content
-        if chunk.message.content is not None:
+        if chunk.message.content:
             content = chunk.message.content
             if thoughts_shown and not answer_shown:
                 if file:
-                    print(converter.feed("💡 **Answer:**\n"), file=file)
+                    print(converter.feed("\n💡 **Answer:**\n"), file=file)
                 answer_shown = True
             collected_content += content
             # Stream formatted output to terminal
