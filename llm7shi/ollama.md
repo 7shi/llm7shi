@@ -26,3 +26,8 @@
 **Problem**: Not all Ollama models support thinking capabilities (e.g., Gemma3 models lack "thinking" in their capabilities), but users might request thinking mode without knowing model limitations.
 
 **Solution**: Implemented automatic capability detection using `ollama.show()` to check model capabilities before enabling thinking mode. When `think=True` is requested but the model doesn't support thinking, the parameter is automatically set to `False` to prevent API errors while maintaining functionality.
+
+### Structured Output Compatibility
+**Problem**: Combining thinking mode with structured output (JSON format) caused malformed JSON responses due to Ollama API behavior, where extra characters were inserted at the beginning of responses.
+
+**Solution**: Automatically disable thinking functionality when `format` parameter is present (structured output mode). This ensures JSON validity while preserving thinking capabilities for plain text generation. For detailed investigation and technical analysis, see [docs/20250702-ollama-thinking.md](../docs/20250702-ollama-thinking.md).

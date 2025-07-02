@@ -92,13 +92,14 @@ uv run pytest -k "schema"
 ### Mock Implementation
 - **No API Calls**: Most tests use `unittest.mock.patch` to mock API clients and methods
 - **Dummy Credentials**: API tests set `GEMINI_API_KEY=dummy` and `OPENAI_API_KEY=dummy` to avoid requiring real API keys
-- **Realistic Responses**: Mock data simulates actual API response patterns for both Gemini and OpenAI
+- **Realistic Responses**: Mock data simulates actual API response patterns for Gemini, OpenAI, and Ollama
 - **Pure I/O Testing**: Terminal formatting tests use actual colorama output without mocking for realistic validation
 - **Isolated Testing**: Complete separation from external dependencies
 
 ### Mock Patterns
 - **Gemini API**: Mock `genai.Client` and `client.models.generate_content_stream()`
 - **OpenAI API**: Mock `openai.OpenAI` and `client.chat.completions.create()`
+- **Ollama API**: Mock `ollama.chat()` function for local model interactions
 - **File Operations**: Mock file upload/delete operations and processing state polling
 - **Environment Variables**: Use `monkeypatch.setenv()` for API key setup
 - **Streaming Responses**: `MockChunk` class simulates realistic streaming chunks

@@ -12,30 +12,33 @@ DEFAULT_MODEL = "qwen3:4b"
 def generate_content(
     messages: List[Dict[str, Any]],
     model: str = "",
-    think: bool = False,
     file=sys.stdout,
     max_length=None,
     check_repetition: bool = True,
     **kwargs
 ) -> Response:
     """Generate with Ollama API with streaming and monitoring."""
-    
     # Use default model if not provided
     if not model:
         model = DEFAULT_MODEL
     
-    # Check if model supports thinking when requested
+    # Extract think parameter from kwargs
+    think = kwargs.get("think", False)
     if think:
-        model_info = show(model)
-        if "thinking" not in model_info.capabilities:
-            think = False
+        # Disable thinking for structured output due to Ollama API formatting issues
+        if "format" in kwargs:
+            kwargs["think"] = False  # Workaround: prevents malformed JSON output
+        else:
+            # Check if model supports thinking when requested
+            model_info = show(model)
+            if "thinking" not in model_info.capabilities:
+                kwargs["think"] = False  # Workaround: graceful fallback for unsupported models
     
     # Call API with streaming
     response = chat(
         model=model,
         messages=messages,
         stream=True,
-        think=think,
         **kwargs
     )
     

@@ -1,6 +1,6 @@
 # llm7shi
 
-A simplified Python library for interacting with large language models. Currently supports Google's Gemini AI models.
+A simplified Python library for interacting with large language models. Supports Google's Gemini AI, OpenAI, and local Ollama models.
 
 ## Why llm7shi?
 
@@ -10,20 +10,20 @@ The name is admittedly a personal project identifier. If you find the name off-p
 
 ## Design Philosophy
 
-llm7shi is intentionally a **thin wrapper** around the Gemini API - it doesn't attempt to abstract away the underlying API or create a universal LLM interface. However, it does provide some API abstractions for specific workflows where they add clear value, which are isolated in the optional `compat` module. The core library focuses on:
+llm7shi is intentionally a **thin wrapper** around LLM APIs - it doesn't attempt to abstract away the underlying APIs or create a complex universal interface. However, it does provide unified API access for specific workflows where they add clear value, which are isolated in the optional `compat` module. The core library focuses on:
 
-- **Preserving Gemini's capabilities**: Access all Gemini-specific features like thinking process visualization
+- **Preserving provider capabilities**: Access provider-specific features like thinking process visualization
 - **Solving real-world problems**: Built-in retry logic, error handling, and streaming support
-- **Minimal learning curve**: If you know the Gemini API, you know llm7shi
+- **Minimal learning curve**: If you know the underlying APIs, you know llm7shi
 - **Production-ready**: Handle the tedious but essential aspects like rate limiting and error recovery
 
 ## Features
 
-- **Minimal Wrapper**: Thin layer over Gemini API without complex abstraction
-- **Optional Abstraction**: Multi-provider compatibility available through separate `compat` module
+- **Minimal Wrapper**: Thin layer over LLM APIs without complex abstraction
+- **Multi-Provider Support**: Works with Gemini, OpenAI, and Ollama through separate modules and unified `compat` interface
 - **Production-Ready Error Handling**: Built-in retry logic for API errors (429, 500, 502, 503) respecting API-suggested retry delays
 - **Streaming Output**: Both text and schema-based generation support real-time streaming
-- **Thinking Process Visualization**: Leverage Gemini 2.5's thinking capabilities with automatic budget optimization
+- **Thinking Process Visualization**: Leverage thinking capabilities in Gemini 2.5 and Ollama models
 - **Schema-based Generation**: JSON schema and Pydantic model support for structured outputs
 - **Terminal Formatting**: Convert Markdown formatting to colored terminal output
 - **Repetition Detection**: Automatic detection and stopping of repetitive output patterns (configurable)
@@ -32,7 +32,10 @@ llm7shi is intentionally a **thin wrapper** around the Gemini API - it doesn't a
 ## Requirements
 
 - Python >= 3.10
-- Gemini API key from Google AI Studio
+- API keys for desired providers:
+  - Gemini API key from Google AI Studio
+  - OpenAI API key (optional, for OpenAI models)
+  - Local Ollama installation (optional, for local models)
 
 ## Installation
 
@@ -66,6 +69,13 @@ For OpenAI API compatibility (via compat module):
 
 ```bash
 export OPENAI_API_KEY="your-openai-api-key-here"
+```
+
+For Ollama (local models, no API key needed):
+
+```bash
+# Install and start Ollama first: https://ollama.ai/
+ollama pull qwen3:4b  # or your preferred model
 ```
 
 ## API Reference

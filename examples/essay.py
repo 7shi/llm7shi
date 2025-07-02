@@ -37,10 +37,11 @@ def generate_schema(criteria):
 
 def generate_prompt(criteria, essay_text):
     """Generate prompt from criteria dictionary and essay text."""
-    criteria_list = "\n".join([f"- {key.replace('_', ' ').title()}: {desc}" 
+    criteria_list = "\n".join([f"- {key}: {desc}" 
                               for key, desc in criteria.items()])
     
     return f"""Evaluate the following argumentative essay on each criterion using a 5-point scale:
+
 {criteria_list}
 
 For each criterion, provide a score (1-5) and reasoning. Also provide an overall reasoning summary.
@@ -70,22 +71,16 @@ def evaluate_essay(model_name):
     )
     
     # Calculate and display individual scores
-    if result and hasattr(result, 'text'):
-        try:
-            evaluation = json.loads(result.text)
-            scores = []
-            print("\nDetailed Scores:")
-            for key, desc in CRITERIA.items():
-                score = evaluation[key]["score"]
-                scores.append(score)
-                print(f"- {key.replace('_', ' ').title()}: {score}/5")
-            
-            avg_score = sum(scores) / len(scores)
-            print(f"\nOverall Score: {avg_score:.2f}/5")
-        except:
-            pass
+    evaluation = json.loads(result.text)
+    scores = []
+    print("\nDetailed Scores:")
+    for key, desc in CRITERIA.items():
+        score = evaluation[key]["score"]
+        scores.append(score)
+        print(f"- {key.replace('_', ' ').title()}: {score}/5")
     
-    return result
+    avg_score = sum(scores) / len(scores)
+    print(f"\nOverall Score: {avg_score:.2f}/5")
 
 # Display the essay to be evaluated
 print("Essay to be evaluated:")
@@ -93,6 +88,12 @@ print("=" * 60)
 print(essay)
 print("=" * 60)
 
-# Evaluate with both models
-evaluate_essay("google:gemini-2.5-flash")
-evaluate_essay("openai:gpt-4o-mini")
+# Evaluate with all models
+models = [
+    "google:gemini-2.5-flash",
+    "openai:gpt-4o-mini",
+    "ollama:qwen3:4b"
+]
+
+for model in models:
+    evaluate_essay(model)

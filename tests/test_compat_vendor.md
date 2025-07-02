@@ -5,7 +5,7 @@
 The vendor prefix feature required dedicated testing to ensure robust multi-provider routing without breaking existing functionality:
 
 ### Vendor Prefix Parsing Validation
-**Problem**: The new vendor prefix format (`"openai:model"`, `"google:model"`) needed reliable parsing logic that could handle edge cases like empty prefixes, unknown vendors, and malformed input without affecting system stability.
+**Problem**: The new vendor prefix format (`"openai:model"`, `"google:model"`, `"ollama:model"`) needed reliable parsing logic that could handle edge cases like empty prefixes, unknown vendors, and malformed input without affecting system stability.
 
 **Solution**: Comprehensive tests covering regex-based parsing (`([^:]+):(.*)`) to verify correct vendor identification and model name extraction across all supported patterns and error conditions.
 
@@ -15,7 +15,7 @@ The vendor prefix feature required dedicated testing to ensure robust multi-prov
 **Solution**: Specific tests ensuring legacy patterns are correctly identified and routed to appropriate providers without requiring code changes in existing applications.
 
 ### Default Model Delegation Testing
-**Problem**: Empty vendor prefixes (`"openai:"`, `"google:"`) should delegate to each provider's default model system, but this delegation needed verification to ensure the empty string correctly triggers default model selection.
+**Problem**: Empty vendor prefixes (`"openai:"`, `"google:"`, `"ollama:"`) should delegate to each provider's default model system, but this delegation needed verification to ensure the empty string correctly triggers default model selection.
 
 **Solution**: Tests validating that empty model names are passed through to underlying providers where existing default model logic can handle them appropriately.
 

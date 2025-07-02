@@ -25,14 +25,29 @@ Key topics:
 - Python-idiomatic alternatives (decorators, classes)
 - Generation order considerations for better LLM output
 
+### [20250702-ollama-thinking.md](20250702-ollama-thinking.md) - Ollama Thinking and JSON Format Conflict
+Investigation and resolution of JSON malformation when combining Ollama's thinking functionality with structured output.
+
+Key topics:
+- Systematic debugging methodology for multi-provider issues
+- Ollama API behavior with think=True and format parameters
+- Automatic thinking disabling for structured output scenarios
+- API limitation workarounds and design trade-offs
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`
 
+Where:
+- `YYYYMMDD` is the date of creation or primary investigation
+- `topic-name` should be 2 words maximum, using hyphens to separate words
+- Examples: `ollama-thinking`, `schema-jsx`, `repetition-detection`
+
 This convention ensures:
 - Chronological ordering of ideas
 - Easy tracking of when concepts were explored
-- Clear topic identification
+- Clear, concise topic identification
+- Consistent filename lengths
 
 ## Purpose
 

@@ -9,14 +9,17 @@ class LocationTemperature(BaseModel):
 class LocationsAndTemperatures(BaseModel):
     locations_and_temperatures: List[LocationTemperature]
 
-generate_with_schema(
-    ["The temperature in Tokyo is 90 degrees Fahrenheit."],
-    schema=LocationsAndTemperatures,
-    model="google:gemini-2.5-flash",
-)
-print("", "=" * 60, "", sep="\n")
-generate_with_schema(
-    ["The temperature in Tokyo is 90 degrees Fahrenheit."],
-    schema=LocationsAndTemperatures,
-    model="openai:gpt-4o-mini",
-)
+models = [
+    "google:gemini-2.5-flash",
+    "openai:gpt-4o-mini",
+    "ollama:qwen3:4b"
+]
+
+for i, model in enumerate(models):
+    if i:
+        print("", "=" * 60, "", sep="\n")
+    generate_with_schema(
+        ["The temperature in Tokyo is 90 degrees Fahrenheit."],
+        schema=LocationsAndTemperatures,
+        model=model,
+    )

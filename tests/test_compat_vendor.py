@@ -76,6 +76,38 @@ class TestVendorPrefixSelection:
         call_args = mock_gemini.call_args
         assert call_args[0][0] == ""
     
+    @patch('llm7shi.compat._generate_with_ollama')
+    def test_ollama_vendor_prefix(self, mock_ollama):
+        """Test Ollama vendor prefix routing"""
+        mock_ollama.return_value = "ollama_response"
+        
+        result = generate_with_schema(
+            contents=["Test"],
+            model="ollama:qwen3:4b"
+        )
+        
+        assert result == "ollama_response"
+        mock_ollama.assert_called_once()
+        # Check that vendor prefix was removed
+        call_args = mock_ollama.call_args
+        assert call_args[0][0] == "qwen3:4b"
+    
+    @patch('llm7shi.compat._generate_with_ollama')
+    def test_empty_ollama_prefix(self, mock_ollama):
+        """Test empty Ollama prefix uses default model"""
+        mock_ollama.return_value = "empty_ollama_response"
+        
+        result = generate_with_schema(
+            contents=["Test"],
+            model="ollama:"
+        )
+        
+        assert result == "empty_ollama_response"
+        mock_ollama.assert_called_once()
+        # Check that empty string was passed (will use default model)
+        call_args = mock_ollama.call_args
+        assert call_args[0][0] == ""
+    
     def test_unsupported_vendor_prefix(self):
         """Test unsupported vendor prefix raises ValueError"""
         with pytest.raises(ValueError, match="Unsupported vendor prefix: unknown"):

@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Quick Project Context
 
-llm7shi is a thin wrapper around the Gemini API that provides production-ready error handling, retry logic, and streaming support. The project uses `uv` as the package manager and follows a simplicity-first design philosophy.
+llm7shi is a thin wrapper around multiple LLM APIs (Gemini, OpenAI, Ollama) that provides production-ready error handling, retry logic, and streaming support. The project uses `uv` as the package manager and follows a simplicity-first design philosophy.
 
 ## Architecture Overview
 
@@ -43,8 +43,8 @@ The project follows a modular architecture with clear separation of concerns. Ea
 - **Streaming support**: New features should work with real-time output where applicable
 
 ### Key Architectural Decisions
-- **Gemini 2.5 focus**: Primary support for latest models with thinking capabilities
-- **Extensible architecture**: Designed for future multi-provider expansion
+- **Multi-provider support**: Gemini, OpenAI, and Ollama with unified interface through compat module
+- **Thinking capabilities**: Support for reasoning process visualization in capable models
 - **User experience priority**: Streaming output and terminal formatting included by default
 
 For setup instructions, API reference, and examples, see the main [README.md](README.md).
