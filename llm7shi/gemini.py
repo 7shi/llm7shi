@@ -189,7 +189,7 @@ def generate_content_retry(
                             # Handle thinking process output
                             if not thoughts_shown:
                                 if file:
-                                    print(converter.feed("\n🤔 **Thinking...**\n"), file=file)
+                                    print(converter.feed("🤔 **Thinking...**\n"), file=file)
                                 thoughts_shown = True
                             thoughts += part.text
                         else:
