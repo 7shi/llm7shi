@@ -66,6 +66,23 @@ Direct OpenAI API wrapper with streaming support and monitoring capabilities.
 from llm7shi.openai import generate_content
 ```
 
+### [ollama.py](ollama.py) - Ollama API Client
+Local Ollama API wrapper with streaming support and thinking process visualization.
+
+**Documentation**: [ollama.md](ollama.md)
+
+**Key Features**:
+- `generate_content()` - Ollama API wrapper with streaming
+- Thinking process extraction via `chunk.message.thinking`
+- Consistent interface matching OpenAI and Gemini modules
+- Default model: qwen3:4b for balanced performance
+- Real-time thinking and answer display
+
+**Note**: This module is optional and not exported in `__init__.py`. Import explicitly:
+```python
+from llm7shi.ollama import generate_content
+```
+
 ### [compat.py](compat.py) - API Compatibility Layer
 Unified interface for both OpenAI and Gemini APIs, enabling seamless switching between providers.
 
@@ -154,6 +171,7 @@ llm7shi/
 ├── __init__.py      # Public API exports
 ├── gemini.py        # Gemini-specific implementation
 ├── openai.py        # OpenAI-specific implementation
+├── ollama.py        # Ollama-specific implementation
 ├── response.py      # Response data class
 ├── utils.py         # Shared utility functions
 ├── compat.py        # Multi-provider compatibility
@@ -183,6 +201,7 @@ export OPENAI_API_KEY="your-api-key"
 
 - `google-genai` - Google's Gemini API client
 - `openai` - OpenAI API client (for compat.py)
+- `ollama` - Ollama API client (for ollama.py)
 - `pydantic` - Data validation (for schema support)
 
 See the main project README for installation instructions.
