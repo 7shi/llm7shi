@@ -24,15 +24,12 @@ def generate_schema(criteria):
             "required": ["reasoning", "score"]
         }
     
-    properties["overall_reasoning"] = {
-        "type": "string",
-        "description": "Summary of the overall evaluation"
-    }
+    properties["overall_reasoning"] = {"type": "string"}
     
     return {
         "type": "object",
         "properties": properties,
-        "required": list(criteria.keys()) + ["overall_reasoning"]
+        "required": list(properties.keys())
     }
 
 def generate_prompt(criteria, essay_text):
@@ -44,7 +41,7 @@ def generate_prompt(criteria, essay_text):
 
 {criteria_list}
 
-For each criterion, provide a score (1-5) and reasoning. Also provide an overall reasoning summary.
+For each criterion, first provide reasoning that considers the evaluation process, then assign a score (1-5). Also provide an overall reasoning summary.
 
 Essay:
 {essay_text}"""

@@ -14,6 +14,11 @@ This example demonstrates automated essay evaluation using structured output gen
 
 **Solution**: Structured the schema to require reasoning before score for each criterion, leveraging the sequential generation nature of LLMs to produce more considered evaluations.
 
+### Schema Description Independence
+**Problem**: Schema description fields are ignored by some providers (particularly Ollama), leading to inconsistent behavior across providers and potential evaluation failures.
+
+**Solution**: Moved all evaluation criteria descriptions into the prompt text using key-value mapping, ensuring consistent behavior across all providers regardless of their schema description support.
+
 ### Multi-Provider Comparison
 **Problem**: Different LLM providers may have varying evaluation tendencies and biases, making it important to compare assessments across models.
 
