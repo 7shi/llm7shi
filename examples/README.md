@@ -111,7 +111,8 @@ Demonstrates multi-criteria essay evaluation with dynamic schema generation and 
 
 Features:
 - Dynamic schema generation from evaluation criteria
-- Reasoning-first evaluation approach
+- Reasoning-first evaluation approach for better quality
+- Schema description independence for multi-provider compatibility
 - Multi-model comparison using compat module
 - Automatic score calculation and aggregation
 
