@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-07-03
+
+### Added
+- **Ollama integration** with full multi-provider support through compat module
+- **Schema description prompts** via `create_json_descriptions_prompt()` utility
+
+### Changed
+- **Three-provider compatibility** - Gemini, OpenAI, and Ollama with unified interface
+- **Improved examples** demonstrating consistent behavior across all providers
+
 ## [0.3.0] - 2025-06-30
 
 ### Added
