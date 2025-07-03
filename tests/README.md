@@ -23,11 +23,18 @@ Unit tests for helper functions in `llm7shi/utils.py`.
 **Key Features**: Parameter display, OpenAI message conversion.
 
 #### [test_utils_schema.py](test_utils_schema.py) - Schema Processing Tests
-Unit tests for schema processing functions in `llm7shi/utils.py`.
+Unit tests for schema transformation functions in `llm7shi/utils.py`.
 
 **Documentation**: [test_utils_schema.md](test_utils_schema.md)
 
-**Key Features**: Schema modification, reference resolution, OpenAI compatibility, circular reference handling, description extraction for prompt enhancement.
+**Key Features**: Schema modification for OpenAI compatibility, reference resolution and inlining, circular reference handling.
+
+#### [test_utils_descriptions.py](test_utils_descriptions.py) - Schema Description Processing Tests
+Unit tests for schema description extraction and prompt generation functions in `llm7shi/utils.py`.
+
+**Documentation**: [test_utils_descriptions.md](test_utils_descriptions.md)
+
+**Key Features**: Description extraction from JSON schemas and Pydantic models, cross-provider prompt generation, multi-provider consistency validation.
 
 #### [test_monitor_repetition.py](test_monitor_repetition.py) - Repetition Detection Tests
 Unit tests for the `detect_repetition()` function in `llm7shi/monitor.py`.

@@ -156,3 +156,24 @@ def extract_descriptions(schema: Dict[str, Any]) -> Dict[str, str]:
     
     traverse_schema(schema)
     return descriptions
+
+
+def create_json_descriptions_prompt(schema: Union[Dict[str, Any], Type[BaseModel]]) -> str:
+    """Create a prompt with JSON field descriptions for better schema compliance.
+    
+    Args:
+        schema: JSON schema dictionary or Pydantic model class
+        
+    Returns:
+        String prompt with field descriptions
+    """
+    # Convert Pydantic model to JSON schema if needed
+    if inspect.isclass(schema) and issubclass(schema, BaseModel):
+        schema = schema.model_json_schema()
+    
+    descriptions = extract_descriptions(schema)
+    if not descriptions:
+        return ""
+    
+    description_text = "\n".join([f"- {key}: {value}" for key, value in descriptions.items()])
+    return f"Please extract information to the following JSON fields.\n{description_text}"

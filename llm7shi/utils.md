@@ -27,6 +27,11 @@ These utility functions solve specific cross-cutting concerns that emerged while
 
 **Solution**: Created a function that extracts all property descriptions from nested JSON schemas into a flat key-value mapping, enabling automatic prompt enhancement with schema context for systems that don't natively support schema descriptions.
 
+### Client-Side Schema Description Prompting (`create_json_descriptions_prompt`)
+**Problem**: Multi-provider applications needed a consistent way to ensure schema field meanings were conveyed to all LLM providers, particularly Ollama which completely ignores schema `description` fields. Manual extraction and prompt formatting was repetitive and error-prone.
+
+**Solution**: Created a utility function that automatically extracts schema descriptions and formats them into standardized prompt text. This provides a client-side solution that works across all providers while maintaining user control over when enhanced prompts are applied. The implementation supports both JSON schema dictionaries and Pydantic models, making it compatible with the library's existing structured output features.
+
 
 ## Key Design Decisions
 
@@ -38,3 +43,8 @@ Schema transformations handle deeply nested structures automatically, ensuring t
 
 ### Conditional Output
 The parameter display function respects file output settings, allowing it to be easily disabled for silent operation modes.
+
+### Client-Side vs Automatic Enhancement
+**Problem**: Schema description enhancement could be implemented automatically within provider-specific code, but this would reduce transparency and user control.
+
+**Solution**: Chose explicit client-side implementation where users call `create_json_descriptions_prompt()` when needed. This approach maintains transparency about what additional instructions are being sent to models, provides flexibility for users who don't need description enhancement, and ensures consistent behavior across all providers rather than provider-specific automatic modifications.

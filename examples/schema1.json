@@ -6,6 +6,9 @@
       "items": {
         "type": "object",
         "properties": {
+          "reasoning": {
+            "type": "string"
+          },
           "location": {
             "type": "string"
           },
@@ -14,7 +17,7 @@
             "description": "Temperature in Celsius"
           }
         },
-        "required": ["location", "temperature"]
+        "required": ["reasoning", "location", "temperature"]
       }
     }
   },

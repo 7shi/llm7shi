@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from llm7shi import config_from_schema, generate_content_retry
 
 class LocationTemperature(BaseModel):
+    reasoning: str
     location: str
     temperature: float = Field(description="Temperature in Celsius")
 

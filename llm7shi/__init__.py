@@ -50,6 +50,7 @@ from .utils import (
     add_additional_properties_false,
     inline_defs,
     extract_descriptions,
+    create_json_descriptions_prompt,
 )
 
 from .monitor import (
@@ -78,6 +79,7 @@ __all__ = [
     "add_additional_properties_false",
     "inline_defs",
     "extract_descriptions",
+    "create_json_descriptions_prompt",
     # monitor.py
     "StreamMonitor",
     "detect_repetition",

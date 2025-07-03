@@ -4,12 +4,12 @@
 
 This example demonstrates the ultimate goal of the compatibility layer - making modern Python development patterns work seamlessly across LLM providers.
 
-### Modern Python Development Integration
-**Problem**: Using Pydantic models for type-safe development is a best practice in modern Python, but these models couldn't easily be used for structured LLM output across different providers due to incompatible schema generation and format requirements.
+### Cross-Provider Pydantic Schema Portability
+**Problem**: Pydantic models generate different JSON schemas for different APIs - OpenAI requires `additionalProperties: false` and doesn't support `$defs` references that Pydantic generates, while Gemini and Ollama have their own format requirements.
 
-**Solution**: Shows how the same Pydantic models can work across cloud providers (Gemini, OpenAI) and local models (Ollama), with automatic handling of provider-specific schema transformations (like `$defs` inlining and `additionalProperties` requirements).
+**Solution**: Demonstrates automatic schema transformation that preserves Pydantic model semantics while meeting each provider's technical requirements. The same Python model definition works across all three backends without modification, with the compatibility layer handling provider-specific schema conversions transparently.
 
-### Developer Experience Unification
-**Problem**: Developers want to use familiar Python patterns and tooling (type hints, IDE support, validation) for LLM interactions, but provider differences forced them to choose between better DX and provider flexibility.
+### Pydantic Model Compatibility with Enhancement Patterns
+**Problem**: While Pydantic models provide excellent type safety and IDE support, they still face the same cross-provider compatibility challenges as raw JSON schemas when it comes to field description handling.
 
-**Solution**: Demonstrates that with the right abstraction layer, developers can have both - modern Python patterns with the ability to use any LLM provider (cloud or local) without changing their code.
+**Solution**: Shows that the same enhancement techniques used for JSON schemas (see [compat1.md](compat1.md)) work seamlessly with Pydantic models. The `create_json_descriptions_prompt()` function automatically extracts field descriptions from Pydantic models' generated JSON schema, maintaining the benefits of both type-safe development and cross-provider reliability without requiring developers to abandon modern Python patterns.

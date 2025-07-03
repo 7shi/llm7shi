@@ -34,6 +34,15 @@ Key topics:
 - Automatic thinking disabling for structured output scenarios
 - API limitation workarounds and design trade-offs
 
+### [20250703-schema-descriptions.md](20250703-schema-descriptions.md) - Schema Descriptions and Multi-Provider Compatibility
+Exploration of challenges and solutions for consistent schema-based structured output across different LLM providers.
+
+Key topics:
+- Provider-specific handling of schema metadata and descriptions
+- Systematic evaluation of instruction formats for schema compliance
+- Client-side solution for Ollama's schema description limitations
+- Best practices for multi-provider structured output reliability
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`

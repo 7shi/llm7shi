@@ -54,3 +54,17 @@ Created a series of transformation functions that modify schemas step-by-step to
 **Problem**: OpenAI, Gemini, and Ollama implementations could have duplicated repetition detection and max length logic.
 
 **Solution**: All providers use the shared `StreamMonitor` class (see [monitor.md](monitor.md)) for consistent quality control. The OpenAI and Ollama implementations are handled by the dedicated `openai.py` and `ollama.py` modules while maintaining the same monitoring capabilities.
+
+## Schema Description Compatibility
+
+### Provider-Specific Schema Handling
+**Problem**: Different providers handle JSON schema `description` fields inconsistently:
+- OpenAI and Gemini partially respect schema descriptions but may still misinterpret instructions
+- Ollama completely ignores schema `description` fields, making structured output unreliable when field meanings are crucial
+
+**Solution**: Rather than attempting automatic enhancement at the API level, we provide the `create_json_descriptions_prompt()` utility function (see [utils.md](utils.md)) that allows client-side explicit inclusion of schema descriptions in prompts. This approach maintains transparency and gives users control over when enhanced prompts are needed.
+
+### Multi-Provider Structured Output Strategy
+**Problem**: Applications requiring consistent structured output across providers faced reliability issues, particularly with models that needed explicit field explanations (like temperature unit conversions).
+
+**Solution**: Adopted a client-side approach where users can explicitly extract and include schema descriptions in their prompts using `create_json_descriptions_prompt()`. This ensures all providers receive the same field explanations while maintaining the flexibility to omit them when not needed. The solution is documented in detail in [20250703-schema-descriptions.md](../docs/20250703-schema-descriptions.md).

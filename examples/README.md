@@ -83,7 +83,7 @@ uv run examples/compat0.py
 ```
 
 ### [compat1.py](compat1.py) - Multi-Provider JSON Schema
-Compatibility version of schema1.py using the same JSON schema with both providers.
+Compatibility version of schema1.py using the same JSON schema with both providers. Demonstrates schema description enhancement for better cross-provider compliance.
 
 **Documentation**: [compat1.md](compat1.md)  
 **Schema**: [schema1.json](schema1.json)
@@ -93,7 +93,7 @@ uv run examples/compat1.py
 ```
 
 ### [compat2.py](compat2.py) - Multi-Provider Pydantic Schema
-Compatibility version of schema2.py using Pydantic models with both providers.
+Compatibility version of schema2.py using Pydantic models with both providers. Demonstrates cross-provider schema description enhancement and automatic schema transformation.
 
 **Documentation**: [compat2.md](compat2.md)
 

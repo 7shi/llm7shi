@@ -47,4 +47,10 @@ The project follows a modular architecture with clear separation of concerns. Ea
 - **Thinking capabilities**: Support for reasoning process visualization in capable models
 - **User experience priority**: Streaming output and terminal formatting included by default
 
+### Schema Design Guidelines
+- **Include reasoning fields**: When creating JSON schemas or Pydantic models for structured output, include `reasoning` fields to capture the model's thought process
+- **Reasoning-first placement**: Position `reasoning` as the first property in objects to ensure models think before deciding values, improving output quality
+- **Item-level reasoning**: For multi-item processing (arrays), place reasoning at the item level rather than top-level to enable contextual thinking for each data item
+- **Cross-provider descriptions**: Use `create_json_descriptions_prompt()` to explicitly include schema field descriptions in prompts for consistent behavior across providers
+
 For setup instructions, API reference, and examples, see the main [README.md](README.md).

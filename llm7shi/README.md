@@ -49,6 +49,7 @@ Helper functions for parameter display, message formatting, and schema transform
 - `add_additional_properties_false()` - Add OpenAI schema requirements
 - `inline_defs()` - Inline $defs references in JSON schemas
 - `extract_descriptions()` - Extract property descriptions for prompt enhancement
+- `create_json_descriptions_prompt()` - Generate enhanced prompts with schema field descriptions
 
 ### [openai.py](openai.py) - OpenAI API Client
 Direct OpenAI API wrapper with streaming support and monitoring capabilities.
@@ -141,6 +142,15 @@ from llm7shi import build_schema_from_json, config_from_schema
 schema = build_schema_from_json(json_schema_dict)
 config = config_from_schema(schema)
 response = generate_content_retry(contents, config=config)
+```
+
+### Enhanced Schema Prompts
+```python
+from llm7shi import create_json_descriptions_prompt
+
+# Automatically extract schema descriptions for better model compliance
+enhanced_prompt = create_json_descriptions_prompt(your_schema)
+response = generate_content_retry([user_input, enhanced_prompt], config=config)
 ```
 
 ### Multi-Provider Support
