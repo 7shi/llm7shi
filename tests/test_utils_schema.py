@@ -263,9 +263,9 @@ class TestInlineDefs:
             }
         }
         
-        # This will cause infinite recursion in current implementation
-        # We should catch the RecursionError
-        with pytest.raises(RecursionError):
+        # This will cause circular reference detection
+        # We should catch the ValueError
+        with pytest.raises(ValueError, match="Circular reference detected in schema: Node"):
             inline_defs(schema)
 
 

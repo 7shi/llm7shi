@@ -95,27 +95,35 @@ def inline_defs(schema: Dict[str, Any]) -> Dict[str, Any]:
         
     Returns:
         JSON schema with $defs inlined and titles removed
+        
+    Raises:
+        ValueError: If a circular reference is detected in the schema.
     """
     schema = schema.copy()
     defs = schema.pop("$defs", {})
     
-    def resolve_ref(obj: Any) -> Any:
+    def resolve_ref(obj: Any, seen_defs: set) -> Any:
         if isinstance(obj, dict):
             if "$ref" in obj:
                 ref = obj["$ref"]
                 if ref.startswith("#/$defs/"):
-                    def_name = ref[8:]  # Remove "#/$defs/" prefix
+                    def_name = ref[8:]
+                    if def_name in seen_defs:
+                        # Cycle detected, raise an error
+                        raise ValueError(f"Circular reference detected in schema: {def_name}")
                     if def_name in defs:
-                        return resolve_ref(defs[def_name])
+                        # Add current def to seen set for this path and recurse
+                        return resolve_ref(defs[def_name], seen_defs | {def_name})
             
             # Recursively resolve in all values, excluding 'title'
-            return {k: resolve_ref(v) for k, v in obj.items() if k != "title"}
+            return {k: resolve_ref(v, seen_defs) for k, v in obj.items() if k != "title"}
         elif isinstance(obj, list):
-            return [resolve_ref(item) for item in obj]
+            return [resolve_ref(item, seen_defs) for item in obj]
         else:
             return obj
     
-    return resolve_ref(schema)
+    # Start resolution with an empty set of seen definitions
+    return resolve_ref(schema, set())
 
 
 def extract_descriptions(schema: Dict[str, Any]) -> Dict[str, str]:

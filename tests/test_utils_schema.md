@@ -22,5 +22,5 @@ Testing schema processing functions required addressing specific multi-provider 
 ### Circular Reference Handling
 **Problem**: JSON schemas can contain circular references, which the `inline_defs()` function needs to detect to avoid infinite loops during processing.
 
-**Solution**: Explicit tests for circular reference detection to ensure the function fails gracefully with `RecursionError` rather than hanging indefinitely.
+**Solution**: Explicit tests for circular reference detection to ensure the function fails gracefully with `ValueError` rather than hanging indefinitely, providing clear error messages about which schema definition contains the circular reference.
 

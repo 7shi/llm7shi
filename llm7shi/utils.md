@@ -19,8 +19,9 @@ These utility functions solve specific cross-cutting concerns that emerged while
 - OpenAI requires `additionalProperties: false` for strict mode
 - Pydantic generates schemas with `$defs` references that OpenAI doesn't accept
 - Title fields from Pydantic can cause validation issues
+- Circular references in schemas can cause infinite recursion
 
-**Solution**: Created transformation functions that modify schemas to meet each API's specific requirements while preserving the original structure.
+**Solution**: Created transformation functions that modify schemas to meet each API's specific requirements while preserving the original structure. The `inline_defs` function includes circular reference detection to prevent infinite recursion and raises a `ValueError` when cycles are detected.
 
 ### Schema Description Extraction for Prompt Enhancement (`extract_descriptions`)
 **Problem**: Some LLM systems ignore or don't properly utilize the `description` fields in JSON schemas, leading to poor structured output quality. To improve results, these descriptions need to be extracted and embedded directly into prompts as context.
