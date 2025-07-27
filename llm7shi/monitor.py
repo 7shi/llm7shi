@@ -1,4 +1,5 @@
 """Stream output monitor for detecting repetition and max length."""
+from typing import Optional
 
 
 def _calculate_required_reps(pattern_len: int) -> int:
@@ -18,7 +19,7 @@ def _calculate_required_reps(pattern_len: int) -> int:
         return total_len // pattern_len
 
 
-def detect_repetition(text: str, threshold: int = 200) -> bool:
+def detect_repetition(text: str, threshold: Optional[int] = None) -> bool:
     """Detect if text has repetitive patterns.
     
     Checks for patterns of 1-threshold characters that repeat based on
@@ -27,11 +28,14 @@ def detect_repetition(text: str, threshold: int = 200) -> bool:
     
     Args:
         text: Text to check for repetitions
-        threshold: Maximum pattern length to check (default: 200)
+        threshold: Maximum pattern length to check (default: len(text)/10)
         
     Returns:
         bool: True if repetition detected, False otherwise
     """
+    # Set default threshold based on text length
+    if threshold is None:
+        threshold = len(text) // 10
     # Check patterns from 1 to 10 characters
     for pattern_len in range(1, min(10, threshold) + 1):
         # Calculate required repetitions

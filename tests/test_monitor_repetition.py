@@ -38,12 +38,34 @@ def test_detect_repetition_edge_cases():
     assert detect_repetition(pattern50 * 10) == True
     assert detect_repetition(pattern50 * 9 + "different") == False
     
-    # Pattern longer than threshold=200 (should not be checked)
+    # Pattern longer than explicit threshold (should not be checked)
     # Create a truly unique 201-char pattern
     base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
     pattern201 = base * 3 + base[:201 - len(base) * 3]  # Exactly 201 chars
     assert len(pattern201) == 201  # Verify length
-    assert detect_repetition(pattern201 * 100) == False
+    assert detect_repetition(pattern201 * 100, threshold=200) == False
+
+
+def test_detect_repetition_adaptive_threshold():
+    """Test adaptive threshold calculation."""
+    # Short text: threshold = len(text) // 10
+    short_text = "a" * 100  # threshold = 100 // 10 = 10
+    assert detect_repetition(short_text) == True  # 100 'a's detected
+    
+    # Medium text: adaptive threshold allows longer patterns
+    medium_text = "abc" * 100  # 300 chars, threshold = 300 // 10 = 30
+    assert detect_repetition(medium_text) == True  # 100 repetitions of "abc"
+    
+    # Long text: large adaptive threshold
+    long_pattern = "x" * 50  # 50-char pattern
+    long_text = long_pattern * 20  # 1000 chars, threshold = 1000 // 10 = 100
+    assert detect_repetition(long_text) == True  # 20 repetitions of 50-char pattern
+    
+    # Explicit threshold overrides adaptive calculation
+    # Create a pattern that only repeats 5 times (not enough for detection)
+    base_pattern = "abcdefghij" * 5  # 50 unique chars
+    unique_text = base_pattern * 5 + "different_ending"  # Only 5 repetitions
+    assert detect_repetition(unique_text, threshold=40) == False  # 50 > 40, not checked
 
 
 def test_detect_repetition_mixed_content():

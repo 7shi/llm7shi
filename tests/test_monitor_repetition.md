@@ -19,6 +19,11 @@ Testing repetition detection required addressing a critical production problem w
 
 **Solution**: Specific tests verifying detection only triggers for patterns at text end, with mixed content scenarios to ensure middle repetitions don't trigger false alarms.
 
+### Adaptive Threshold Testing
+**Problem**: Fixed threshold values don't scale appropriately with text length - short texts need smaller search windows for efficiency, while long texts need larger windows for comprehensive detection.
+
+**Solution**: Added `test_detect_repetition_adaptive_threshold()` to validate that when `threshold=None`, the function calculates `len(text) // 10` dynamically, ensuring optimal detection performance across varying text lengths while maintaining explicit threshold override capability.
+
 ### Performance and Integration Validation
 **Problem**: The function runs every 1KB during LLM generation, so it must be fast and reliable. Any bugs could break ongoing generation or cause false stops.
 

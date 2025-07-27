@@ -22,6 +22,22 @@ This resulted in O(threshold × pattern_length) complexity, causing performance 
 
 The new implementation uses a two-phase approach that leverages mathematical properties of repetition patterns.
 
+### Adaptive Threshold Calculation
+
+The function now supports dynamic threshold calculation when no explicit threshold is provided:
+
+```python
+def detect_repetition(text: str, threshold: Optional[int] = None) -> bool:
+    # Set default threshold based on text length
+    if threshold is None:
+        threshold = len(text) // 10
+```
+
+This adaptive approach ensures that:
+- **Short texts** get proportionally smaller search windows, improving performance
+- **Long texts** get larger search windows for comprehensive detection
+- **Memory usage** scales appropriately with input size
+
 ### Phase 1: Short Patterns (1-10 characters)
 
 For patterns of length 1-10, we use direct sequential checking with early termination:
@@ -102,12 +118,15 @@ Given text ending with: `"...the quick brown fox jumps the quick brown fox jumps
 
 ### Example 1: Short Text (100 characters)
 - **Old algorithm**: Checks patterns 1-100
-- **New algorithm**: Checks patterns 1-10 only (Phase 1 early termination)
+- **New algorithm**: 
+  - Adaptive threshold: 100 // 10 = 10
+  - Checks patterns 1-10 only (Phase 1 early termination)
 - **Improvement**: 90% reduction in iterations
 
 ### Example 2: Long Text (1000 characters) with no repetition
 - **Old algorithm**: Checks all patterns 1-200
 - **New algorithm**: 
+  - Adaptive threshold: 1000 // 10 = 100
   - Phase 1: Checks patterns 1-10
   - Phase 2: Typically finds < 5 occurrences of suffix marker
 - **Improvement**: ~95% reduction in iterations
@@ -115,6 +134,7 @@ Given text ending with: `"...the quick brown fox jumps the quick brown fox jumps
 ### Example 3: Text with 50-character repetition pattern
 - **Old algorithm**: Checks patterns 1-50 before finding match
 - **New algorithm**: 
+  - Adaptive threshold: Varies based on text length
   - Phase 1: Checks patterns 1-10 (no match)
   - Phase 2: Finds match in first occurrence of suffix marker
 - **Improvement**: ~80% reduction in iterations
