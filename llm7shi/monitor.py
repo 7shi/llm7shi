@@ -1,5 +1,6 @@
 """Stream output monitor for detecting repetition and max length."""
 from typing import Optional
+import re
 
 
 def _calculate_required_reps(pattern_len: int) -> int:
@@ -86,18 +87,20 @@ def detect_repetition(text: str, threshold: Optional[int] = None) -> bool:
 
 class StreamMonitor:
     """Monitors streaming text output for repetition patterns and max length."""
-    
-    def __init__(self, converter, max_length=None, check_repetition=True):
+
+    def __init__(self, converter, max_length=None, check_repetition=True, filter=None):
         """Initialize the stream monitor.
-        
+
         Args:
             converter: MarkdownStreamConverter instance for formatting output
             max_length: Maximum length of generated text (None for no limit)
             check_repetition: Whether to check for repetitive patterns
+            filter: Optional filter for processing content (e.g., GptOssTemplateFilter)
         """
         self.converter = converter
         self.max_length = max_length
         self.check_repetition = check_repetition
+        self.filter = filter
         self.repetition_detected = False
         self.max_length_exceeded = None
         self.check_interval = 128  # Check trailing whitespace every 128 characters
@@ -142,5 +145,155 @@ class StreamMonitor:
                         print(self.converter.feed("\n\n⚠️ **Repetition detected, stopping generation**\n"), file=file)
                     return False
                 self.rep_check_count = 0
-        
+
         return True
+
+
+class GptOssTemplateFilter:
+    """Filter for parsing gpt-oss template format with channel-based output.
+
+    Parses control tokens like <|channel|>analysis/final<|message|> to separate
+    thoughts (analysis channel) from final text (final channel).
+    """
+
+    def __init__(self):
+        """Initialize the filter."""
+        self.thoughts = ""
+        self.text = ""
+        self.buffer = ""
+        self.channel = None  # None, 'analysis', or 'final'
+        self.expecting_channel_name = False  # True after <|channel|> token
+        self.expecting_role_name = False  # True after <|start|> token
+
+        # Control tokens to detect
+        self.control_tokens = [
+            '<|channel|>',
+            '<|message|>',
+            '<|start|>',
+            '<|end|>',
+        ]
+
+    def feed(self, content: str) -> str:
+        """Process content and extract thoughts/text based on channels.
+
+        Args:
+            content: Raw content chunk from stream
+
+        Returns:
+            str: Filtered content for display (final channel only)
+        """
+        self.buffer += content
+        output = ""
+
+        # Process buffer to detect control tokens and channel switches
+        while self.buffer:
+            # If we're expecting a role name, extract and discard it
+            if self.expecting_role_name:
+                # Common role names: 'assistant', 'user', 'system'
+                role_names = ['assistant', 'user', 'system']
+                role_found = False
+                for role in role_names:
+                    if self.buffer.startswith(role):
+                        self.buffer = self.buffer[len(role):]
+                        self.expecting_role_name = False
+                        role_found = True
+                        break
+
+                if role_found:
+                    continue
+                else:
+                    # Buffer might be too short, wait for more content
+                    if any(role.startswith(self.buffer) for role in role_names):
+                        break
+                    else:
+                        # Not a valid role name, treat as normal content
+                        self.expecting_role_name = False
+
+            # If we're expecting a channel name, extract it
+            if self.expecting_channel_name:
+                # Try to extract channel name
+                if self.buffer.startswith('analysis'):
+                    self.channel = 'analysis'
+                    self.buffer = self.buffer[len('analysis'):]
+                    self.expecting_channel_name = False
+                    continue
+                elif self.buffer.startswith('final'):
+                    self.channel = 'final'
+                    self.buffer = self.buffer[len('final'):]
+                    self.expecting_channel_name = False
+                    continue
+                else:
+                    # Buffer might be too short, wait for more content
+                    # Check if buffer could be start of 'analysis' or 'final'
+                    if ('analysis'.startswith(self.buffer) or
+                        'final'.startswith(self.buffer)):
+                        break
+                    else:
+                        # Not a valid channel name, treat as normal content
+                        self.expecting_channel_name = False
+
+            # Check for control tokens
+            token_found = False
+            for token in self.control_tokens:
+                if self.buffer.startswith(token):
+                    self.buffer = self.buffer[len(token):]
+                    token_found = True
+
+                    # Handle channel token
+                    if token == '<|channel|>':
+                        self.expecting_channel_name = True
+                    elif token == '<|start|>':
+                        self.expecting_role_name = True
+
+                    break
+
+            if token_found:
+                continue
+
+            # No control token found, process regular content
+            # Look ahead to see if a control token is starting
+            min_pos = len(self.buffer)
+            for token in self.control_tokens:
+                # Check if buffer might be starting a control token
+                for i in range(1, min(len(token), len(self.buffer)) + 1):
+                    if token.startswith(self.buffer[-i:]):
+                        min_pos = len(self.buffer) - i
+                        break
+
+            if min_pos == 0:
+                # Entire buffer might be start of a control token
+                break
+
+            # Extract content up to potential control token
+            content_chunk = self.buffer[:min_pos]
+            self.buffer = self.buffer[min_pos:]
+
+            # Route to appropriate channel
+            if self.channel == 'analysis':
+                self.thoughts += content_chunk
+            elif self.channel == 'final':
+                self.text += content_chunk
+                output += content_chunk
+            else:
+                # No channel set, assume it's final text
+                self.text += content_chunk
+                output += content_chunk
+
+        return output
+
+    def flush(self) -> str:
+        """Flush any remaining buffer content.
+
+        Returns:
+            str: Any remaining filtered content
+        """
+        if self.buffer:
+            output = ""
+            if self.channel == 'final' or self.channel is None:
+                self.text += self.buffer
+                output = self.buffer
+            elif self.channel == 'analysis':
+                self.thoughts += self.buffer
+            self.buffer = ""
+            return output
+        return ""

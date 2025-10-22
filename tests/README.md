@@ -64,6 +64,13 @@ Unit tests for terminal output formatting in `llm7shi/terminal.py`.
 
 **Key Features**: Bold formatting, markdown conversion, streaming processing, Windows compatibility.
 
+#### [test_gpt_oss.py](test_gpt_oss.py) - gpt-oss Template Filter Tests
+Unit tests for the gpt-oss template filter in `llm7shi/monitor.py`.
+
+**Documentation**: [test_gpt_oss.md](test_gpt_oss.md)
+
+**Key Features**: Control token parsing, channel-based routing, role filtering, filter activation logic, stream chunk boundary handling.
+
 ## Running Tests
 
 Execute all tests with:

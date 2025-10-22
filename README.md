@@ -20,10 +20,10 @@ llm7shi is intentionally a **thin wrapper** around LLM APIs - it doesn't attempt
 ## Features
 
 - **Minimal Wrapper**: Thin layer over LLM APIs without complex abstraction
-- **Multi-Provider Support**: Works with Gemini, OpenAI, and Ollama through separate modules and unified `compat` interface
+- **Multi-Provider Support**: Works with Gemini, OpenAI, Ollama, and OpenAI-compatible endpoints (llama.cpp, LocalAI, etc.) through separate modules and unified `compat` interface
 - **Production-Ready Error Handling**: Built-in retry logic for API errors (429, 500, 502, 503) respecting API-suggested retry delays
 - **Streaming Output**: Both text and schema-based generation support real-time streaming
-- **Thinking Process Visualization**: Leverage thinking capabilities in Gemini 2.5 and Ollama models
+- **Thinking Process Visualization**: Leverage thinking capabilities in Gemini 2.5, Ollama models, and reasoning-capable custom endpoints
 - **Schema-based Generation**: JSON schema and Pydantic model support for structured outputs
 - **Terminal Formatting**: Convert Markdown formatting to colored terminal output
 - **Repetition Detection**: Automatic detection and stopping of repetitive output patterns (configurable)

@@ -131,7 +131,12 @@ def _generate_with_openai(
 ) -> Response:
     """Generate with OpenAI API with streaming."""
     from .openai import DEFAULT_MODEL, generate_content
-    
+
+    # Extract base_url from model if present (format: model@base_url)
+    base_url = None
+    if model and "@" in model:
+        model, base_url = model.rsplit("@", 1)
+
     # Build kwargs for OpenAI API
     kwargs = {}
     
@@ -163,13 +168,14 @@ def _generate_with_openai(
     # Display parameters if requested
     if show_params and file is not None:
         do_show_params(contents, model=(model or DEFAULT_MODEL), file=file)
-    
+
     return generate_content(
         model=model,
         messages=openai_messages,
         file=file,
         max_length=max_length,
         check_repetition=check_repetition,
+        base_url=base_url,
         **kwargs
     )
 
