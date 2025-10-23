@@ -44,6 +44,8 @@
 
 **Design Rationale**: The model name `"llama.cpp/gpt-oss"` serves as a template identifier rather than an actual model name. Since llama-server (llama.cpp's server component) provides only one model at a time and ignores the model name parameter in API requests, the model name string is repurposed as a client-side marker to activate the appropriate template filter. This design allows users to signal which template parser should be used based on the server's prompt template configuration, independent of the actual model being served.
 
+**Structured Output Behavior**: The filter is automatically disabled when `response_format` is specified in kwargs (structured output mode). llama.cpp server does not emit control tokens in JSON mode, instead returning direct JSON output only. This optimization avoids unnecessary filter processing. Note that in JSON mode, the separation between reasoning and final answer via control tokens is not available; users who want to capture reasoning should include dedicated fields (e.g., `reasoning`) in their JSON schema.
+
 ### Thoughts Capture and Display
 **Problem**: Models with reasoning capabilities (like those using gpt-oss template) emit both thinking process and final answer, but previous implementation discarded the thinking portion.
 

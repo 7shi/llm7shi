@@ -26,7 +26,10 @@ def generate_content(
 
     # Detect if model uses gpt-oss template (needs filtering)
     # Only activate filter for exact match of "llama.cpp/gpt-oss"
-    needs_gpt_oss_filter = (model == "llama.cpp/gpt-oss")
+    # Skip filter for structured output (response_format specified) as llama.cpp
+    # does not emit control tokens in JSON mode
+    has_response_format = 'response_format' in kwargs
+    needs_gpt_oss_filter = (model == "llama.cpp/gpt-oss") and not has_response_format
 
     # Create OpenAI client (with optional base_url for custom endpoints)
     client = OpenAI(base_url=base_url) if base_url else OpenAI()

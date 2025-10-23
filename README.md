@@ -114,6 +114,30 @@ generate_content_retry(
 )
 ```
 
+## Important Notes
+
+### llama.cpp Structured Output Behavior
+
+When using llama.cpp server with the gpt-oss template and structured output (JSON schema), the server behaves differently from plain text mode:
+
+- **Plain text mode**: Server emits control tokens (`<|channel|>`, `<|message|>`, etc.) to separate reasoning from final answer
+- **Structured output mode** (when `response_format` is specified): Server returns direct JSON output **without control tokens**
+
+This means:
+- The `GptOssTemplateFilter` is automatically disabled for structured output (no control tokens to parse)
+- Separation between reasoning and final answer via control tokens is not available in JSON mode
+- If you want to capture reasoning in structured output, include dedicated fields (e.g., `reasoning`) in your JSON schema
+
+Example schema with reasoning field:
+```python
+class LocationTemperature(BaseModel):
+    reasoning: str  # Explicitly include reasoning field
+    location: str
+    temperature: float
+```
+
+See [llm7shi/openai.md](llm7shi/openai.md) for detailed information about gpt-oss template filter behavior.
+
 ## Testing
 
 Run the test suite with:
