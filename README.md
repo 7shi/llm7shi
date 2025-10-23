@@ -20,10 +20,10 @@ llm7shi is intentionally a **thin wrapper** around LLM APIs - it doesn't attempt
 ## Features
 
 - **Minimal Wrapper**: Thin layer over LLM APIs without complex abstraction
-- **Multi-Provider Support**: Works with Gemini, OpenAI, and Ollama through separate modules and unified `compat` interface
+- **Multi-Provider Support**: Works with Gemini, OpenAI, Ollama, and OpenAI-compatible endpoints (llama.cpp, LocalAI, etc.) through separate modules and unified `compat` interface
 - **Production-Ready Error Handling**: Built-in retry logic for API errors (429, 500, 502, 503) respecting API-suggested retry delays
 - **Streaming Output**: Both text and schema-based generation support real-time streaming
-- **Thinking Process Visualization**: Leverage thinking capabilities in Gemini 2.5 and Ollama models
+- **Thinking Process Visualization**: Leverage thinking capabilities in Gemini 2.5, Ollama models, and reasoning-capable custom endpoints
 - **Schema-based Generation**: JSON schema and Pydantic model support for structured outputs
 - **Terminal Formatting**: Convert Markdown formatting to colored terminal output
 - **Repetition Detection**: Automatic detection and stopping of repetitive output patterns (configurable)
@@ -113,6 +113,30 @@ generate_content_retry(
     config=config_from_schema(LocationsAndTemperatures),
 )
 ```
+
+## Important Notes
+
+### llama.cpp Structured Output Behavior
+
+When using llama.cpp server with the gpt-oss template and structured output (JSON schema), the server behaves differently from plain text mode:
+
+- **Plain text mode**: Server emits control tokens (`<|channel|>`, `<|message|>`, etc.) to separate reasoning from final answer
+- **Structured output mode** (when `response_format` is specified): Server returns direct JSON output **without control tokens**
+
+This means:
+- The `GptOssTemplateFilter` is automatically disabled for structured output (no control tokens to parse)
+- Separation between reasoning and final answer via control tokens is not available in JSON mode
+- If you want to capture reasoning in structured output, include dedicated fields (e.g., `reasoning`) in your JSON schema
+
+Example schema with reasoning field:
+```python
+class LocationTemperature(BaseModel):
+    reasoning: str  # Explicitly include reasoning field
+    location: str
+    temperature: float
+```
+
+See [llm7shi/openai.md](llm7shi/openai.md) for detailed information about gpt-oss template filter behavior.
 
 ## Testing
 

@@ -44,3 +44,39 @@ This module was created to eliminate code duplication between Gemini and OpenAI 
 **Solution**: Implemented a pattern detection algorithm that checks for repeating sequences at the end of generated text. The algorithm uses a two-phase approach optimized for performance while maintaining accuracy, with adaptive threshold calculation that scales with text length for optimal detection efficiency.
 
 For detailed information about the algorithm, optimization strategy, and implementation details, see [Repetition Detection Algorithm](../docs/20250629-repetition-detection.md).
+
+## Template Filter Integration
+
+### gpt-oss Template Parsing Challenge
+**Problem**: Some OpenAI-compatible servers (particularly llama.cpp with gpt-oss template) emit control tokens that structure the output into channels, mixing reasoning process with final answer in a single stream that needs real-time parsing.
+
+**Solution**: Created `GptOssTemplateFilter` class that parses control tokens and separates content into appropriate channels during streaming, enabling clean separation of thoughts from final text without buffering the entire response.
+
+**Design Context**: llama-server provides only one model at a time and ignores the model name in API requests. The filter activates based on the exact model name `"llama.cpp/gpt-oss"`, which serves as a client-side template identifier rather than an actual model name. This allows users to signal which template parser to use based on their server's prompt template configuration, independent of which model is actually being served.
+
+### Control Token Protocol
+**Problem**: The gpt-oss template uses multiple control tokens (`<|channel|>`, `<|message|>`, `<|start|>`, `<|end|>`) that can arrive split across multiple stream chunks, making naive string matching unreliable.
+
+**Solution**: Implemented stateful buffer-based parsing that handles partial tokens across chunk boundaries:
+- Maintains a buffer to handle tokens split across chunks
+- Uses state machine pattern to track expectations (channel name, role name, content)
+- Supports look-ahead to detect potential control token starts without premature output
+
+### Channel-Based Content Routing
+**Problem**: gpt-oss template directs content to different channels (`analysis` for reasoning, `final` for output), but the streaming API provides no built-in way to separate these logically distinct content types.
+
+**Solution**: Implemented channel routing that accumulates content into separate properties:
+- `thoughts` property: Accumulates all content from `analysis` channel
+- `text` property: Accumulates all content from `final` channel
+- `feed()` method returns only `final` channel content for display
+- `flush()` method ensures remaining buffer content is properly routed
+
+### Role Token Filtering
+**Problem**: The `<|start|>` token is followed by role names (`assistant`, `user`, `system`) that are part of the protocol structure but should not appear in the final output.
+
+**Solution**: Implemented role name detection and filtering that activates after `<|start|>` tokens, discarding the role name while allowing subsequent content to flow through normally.
+
+### Incremental Display Support
+**Problem**: Users expect real-time streaming output, but channel parsing requires buffering to detect control tokens, potentially delaying visible output.
+
+**Solution**: Designed the filter to output `final` channel content immediately while only buffering enough to detect potential control token starts, ensuring minimal display latency while maintaining correct parsing.

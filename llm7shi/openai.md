@@ -22,12 +22,31 @@
 
 **Solution**: Designed the module to accept pre-converted OpenAI messages format directly, establishing a policy where format conversion is the caller's responsibility, making this a pure OpenAI API wrapper.
 
-### Global Client Management
-**Problem**: Creating a new OpenAI client instance for each API call would be inefficient and inconsistent with the library's pattern established in the Gemini module.
+### Dynamic Client Creation
+**Problem**: Using a global client instance prevented support for custom endpoints (via `base_url`) and made testing more difficult due to singleton state management.
 
-**Solution**: Implemented a global client instance at module level, matching the pattern used in `gemini.py` for consistent resource management and efficient connection reuse across multiple API calls.
+**Solution**: Changed from global client singleton to dynamic client creation per request, allowing `base_url` parameter to specify custom OpenAI-compatible endpoints while maintaining efficient resource usage through connection pooling at the HTTP level.
 
 ### Default Model Configuration
 **Problem**: The OpenAI module required explicit model specification while the Gemini module provides a default model, creating inconsistent API design across the library.
 
 **Solution**: Added `DEFAULT_MODEL = "gpt-4.1-mini"` constant and made the `model` parameter optional in `generate_content()` to match the pattern established in `gemini.py`, ensuring consistent user experience across both API modules.
+
+### Custom Endpoint Support
+**Problem**: Users wanted to connect to OpenAI-compatible endpoints (like llama.cpp server, LocalAI, or private deployments) without changing code structure.
+
+**Solution**: Added optional `base_url` parameter to `generate_content()`, enabling seamless switching between OpenAI's official API and compatible alternatives while maintaining the same interface.
+
+### gpt-oss Template Filter Support
+**Problem**: Some OpenAI-compatible servers (particularly llama.cpp with gpt-oss template) emit special control tokens (`<|channel|>`, `<|message|>`, etc.) that separate reasoning process from final output, but these tokens would appear in raw output without filtering.
+
+**Solution**: Integrated `GptOssTemplateFilter` from `monitor.py` that activates only for the exact model name `"llama.cpp/gpt-oss"`, parsing control tokens to separate thoughts (analysis channel) from final text (final channel) with real-time incremental display.
+
+**Design Rationale**: The model name `"llama.cpp/gpt-oss"` serves as a template identifier rather than an actual model name. Since llama-server (llama.cpp's server component) provides only one model at a time and ignores the model name parameter in API requests, the model name string is repurposed as a client-side marker to activate the appropriate template filter. This design allows users to signal which template parser should be used based on the server's prompt template configuration, independent of the actual model being served.
+
+**Structured Output Behavior**: The filter is automatically disabled when `response_format` is specified in kwargs (structured output mode). llama.cpp server does not emit control tokens in JSON mode, instead returning direct JSON output only. This optimization avoids unnecessary filter processing. Note that in JSON mode, the separation between reasoning and final answer via control tokens is not available; users who want to capture reasoning should include dedicated fields (e.g., `reasoning`) in their JSON schema.
+
+### Thoughts Capture and Display
+**Problem**: Models with reasoning capabilities (like those using gpt-oss template) emit both thinking process and final answer, but previous implementation discarded the thinking portion.
+
+**Solution**: Extended response handling to capture and display thoughts separately with visual indicators (🤔 **Thinking...** / 💡 **Answer:**), matching the user experience pattern established in `gemini.py` and `ollama.py` for models with thinking capabilities.

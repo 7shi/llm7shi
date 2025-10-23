@@ -39,6 +39,17 @@ As the library evolved, we realized that different LLM providers have significan
 - Legacy patterns like `"gpt-4.1-mini"` and `"gemini-2.5-flash"` continue to work for backward compatibility
 - Defaults to Gemini when no vendor prefix is specified
 
+### Base URL Embedding in Model String
+**Problem**: Users running OpenAI-compatible servers (llama.cpp, LocalAI, etc.) needed a way to specify custom endpoints without adding separate configuration parameters to every function call.
+
+**Solution**: Extended model string format to support `@base_url` suffix using `rsplit("@", 1)` parsing:
+- `"openai:gpt-4.1-mini@http://localhost:8080/v1"` → OpenAI API with custom endpoint
+- `"openai:llama.cpp/gpt-oss@http://192.168.0.8:8080/v1"` → Custom server with gpt-oss template
+- Base URL is extracted and passed to the underlying `generate_content()` function
+- This approach keeps model selection and endpoint configuration in a single string parameter
+
+**llama-server Design Pattern**: Since llama-server provides only one model at a time and ignores the model name parameter in API requests, the model name portion (e.g., `"llama.cpp/gpt-oss"`) serves as a client-side template identifier rather than selecting a specific model on the server. This design enables users to signal which prompt template parser should be activated (like `GptOssTemplateFilter`) based on the server's configuration, independent of which model is actually being served. The server address is specified via `@base_url`, while the model name controls client-side behavior such as filter activation.
+
 ### Response Object Unification
 Extended the existing `Response` dataclass to work with all providers, ensuring the same fields are available regardless of which API was used.
 

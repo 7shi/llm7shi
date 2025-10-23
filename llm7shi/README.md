@@ -61,6 +61,9 @@ Direct OpenAI API wrapper with streaming support and monitoring capabilities.
 - Accepts pre-converted OpenAI message format
 - Streaming output with terminal formatting
 - Repetition detection and length monitoring
+- Custom endpoint support via `base_url` parameter
+- gpt-oss template filter for reasoning-capable models (model name `"llama.cpp/gpt-oss"` serves as client-side template identifier)
+- Thoughts capture and real-time display
 
 **Note**: This module is optional and not exported in `__init__.py`. Import explicitly:
 ```python
@@ -93,6 +96,7 @@ Unified interface for OpenAI, Gemini, and Ollama APIs, enabling seamless switchi
 **Key Features**:
 - `generate_with_schema()` - Unified generation function
 - Vendor prefix support (e.g., "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b")
+- Base URL embedding support (e.g., "openai:model@http://localhost:8080/v1") - model name acts as client-side template identifier for llama-server
 - Backward compatible automatic API selection based on model name
 - Support for JSON schemas, Pydantic models, or plain text
 - Preserves provider-specific features
@@ -124,6 +128,8 @@ Stream monitoring for output quality control, including repetition detection and
 - `detect_repetition()` - Detect repetitive patterns in text output
 - Real-time pattern and whitespace detection
 - Provider-agnostic design for unified quality control
+- `GptOssTemplateFilter` - Parser for gpt-oss template control tokens
+- Channel-based content routing (analysis/final separation)
 
 ## Usage Examples
 
