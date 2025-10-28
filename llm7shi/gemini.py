@@ -247,9 +247,10 @@ def generate_content_retry(
                 if e.code == 429:  # Rate limit error
                     # Extract retry delay from error details if available
                     details = e.details["error"]["details"]
-                    if [rd for d in details if (rd := d.get("retryDelay"))]:
-                        if m := re.match(r"^(\d+)s$", rd):
+                    for d in details:
+                        if (rd := d.get("retryDelay")) and (m := re.match(r"^(\d+)s$", rd)):
                             delay = int(m.group(1)) or delay
+                            break
                 
                 # Countdown with progress display
                 for i in range(delay, -1, -1):
