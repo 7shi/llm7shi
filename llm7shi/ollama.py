@@ -1,6 +1,6 @@
 import sys
+import ollama
 from typing import List, Dict, Any
-from ollama import chat, show
 
 from .response import Response
 from .terminal import MarkdownStreamConverter
@@ -18,6 +18,8 @@ def generate_content(
     **kwargs
 ) -> Response:
     """Generate with Ollama API with streaming and monitoring."""
+    client = ollama.Client()
+    
     # Use default model if not provided
     if not model:
         model = DEFAULT_MODEL
@@ -30,12 +32,12 @@ def generate_content(
             kwargs["think"] = False  # Workaround: prevents malformed JSON output
         else:
             # Check if model supports thinking when requested
-            model_info = show(model)
+            model_info = client.show(model)
             if "thinking" not in model_info.capabilities:
                 kwargs["think"] = False  # Workaround: graceful fallback for unsupported models
     
     # Call API with streaming
-    response = chat(
+    response = client.chat(
         model=model,
         messages=messages,
         stream=True,
@@ -80,6 +82,7 @@ def generate_content(
             
             # Check for repetition and max length
             if not monitor.check(collected_content, file):
+                client._client.close()
                 break
     
     # Flush any remaining markdown formatting

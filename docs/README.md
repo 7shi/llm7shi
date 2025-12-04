@@ -43,6 +43,15 @@ Key topics:
 - Client-side solution for Ollama's schema description limitations
 - Best practices for multi-provider structured output reliability
 
+### [20251204-ollama-cleanup.md](20251204-ollama-cleanup.md) - Ollama Streaming Cleanup and Connection Management
+Investigation and resolution of persistent server-side sessions when interrupting Ollama streaming responses.
+
+Key topics:
+- HTTP client connection pooling and session persistence issues
+- Ollama API limitations for server-side cancellation
+- Explicit client cleanup with try...finally pattern
+- Implementation changes in llm7shi for proper resource cleanup
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`

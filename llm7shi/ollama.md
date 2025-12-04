@@ -31,3 +31,8 @@
 **Problem**: Combining thinking mode with structured output (JSON format) caused malformed JSON responses due to Ollama API behavior, where extra characters were inserted at the beginning of responses.
 
 **Solution**: Automatically disable thinking functionality when `format` parameter is present (structured output mode). This ensures JSON validity while preserving thinking capabilities for plain text generation. For detailed investigation and technical analysis, see [docs/20250702-ollama-thinking.md](../docs/20250702-ollama-thinking.md).
+
+### Connection Cleanup on Stream Interruption
+**Problem**: When streaming is interrupted due to quality control checks (repetition detection, max length limits), the server-side computing session persists because httpx connection pooling keeps the TCP connection alive. This causes unnecessary resource consumption on the Ollama server.
+
+**Solution**: Changed from convenience functions (`ollama.chat()`) to explicit `ollama.Client()` instantiation. This provides access to the internal httpx client, allowing forced connection closure via `client._client.close()` when breaking out of the streaming loop (ollama.py:85). While this accesses an internal API, it's the only practical way to terminate server-side sessions given Ollama's lack of cancellation endpoints. For detailed investigation and technical analysis, see [docs/20251204-ollama-cleanup.md](../docs/20251204-ollama-cleanup.md).
