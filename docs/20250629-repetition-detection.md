@@ -170,6 +170,33 @@ This formula ensures:
 - Longer patterns need proportionally fewer repetitions
 - Patterns of 31+ characters need at least 10 repetitions
 
+### Design Rationale
+
+The formula coefficients (100 and 8) were chosen to maintain consistency with whitespace detection thresholds at the time of implementation:
+
+**Coordination with Whitespace Detection:**
+- Whitespace detection threshold: 128 characters
+- Repetition detection at 5 characters: ~130 total characters (5 × 26 reps)
+- Design intent: 5-character repetition patterns align with whitespace detection threshold
+
+This coordination ensures balanced detection sensitivity across different pattern types, preventing either detection mechanism from being significantly more or less sensitive than the other.
+
+**Monotonic Increase Constraint:**
+
+The formula must ensure that `pattern_len × required_reps` increases monotonically with pattern length. This property is critical for the early termination optimization in Phase 1 (lines 52-54 of monitor.py):
+
+```python
+if pattern_len * required_reps > len(text):
+    break
+```
+
+Without monotonic increase, this optimization would incorrectly skip pattern lengths that should be checked, causing false negatives.
+
+**Formula Properties:**
+- Linear interpolation: `total_len = 100 + (pattern_len - 1) × 8`
+- Results in increasing total length as pattern length grows
+- Provides smooth transition from short to long patterns
+
 ## Conclusion
 
 This optimization significantly improves performance while maintaining the same detection accuracy. The two-phase approach efficiently handles both short and long repetition patterns, making the function suitable for real-time use during text generation.
