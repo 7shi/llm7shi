@@ -2,6 +2,8 @@
 
 This document describes the optimization of the `detect_repetition` function in llm7shi, implemented on 2025-06-29.
 
+> **Note**: The threshold values described in this document reflect the implementation at the time of writing (2025-06-29). These values were later adjusted on 2025-12-06 to coordinate with weighted whitespace detection. For the current threshold values and implementation details, see [20251206-repetition-threshold.md](20251206-repetition-threshold.md).
+
 ## Background
 
 Large language models occasionally get stuck in repetitive output loops, generating the same pattern repeatedly. This wastes tokens and provides poor user experience. The `detect_repetition` function identifies these patterns to enable early termination of generation.

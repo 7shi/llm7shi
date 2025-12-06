@@ -50,6 +50,13 @@ This module was created to eliminate code duplication between Gemini and OpenAI 
 
 For detailed information about the algorithm, optimization strategy, and implementation details, see [Repetition Detection Algorithm](../docs/20250629-repetition-detection.md).
 
+### Threshold Adjustment for Coordination
+**Problem**: The original repetition detection threshold (base=100, requiring 100 repetitions for single characters) was too low in production use, triggering false positives on legitimate repetitive content. Additionally, when weighted whitespace detection was enhanced (threshold increased from 128 to 512), the repetition threshold became misaligned, breaking the original design's balanced detection sensitivity.
+
+**Solution**: Adjusted repetition detection thresholds using dynamic base algorithm (base=340) to maintain coordination with weighted whitespace detection. The new implementation uses a lookup table for pattern lengths 1-20 and a fixed value of 20 repetitions for patterns ≥ 21 characters, ensuring monotonic non-decreasing behavior for early termination optimization while reducing false positives. This maintains the original design philosophy of balanced detection across different pattern types.
+
+For detailed threshold selection rationale and algorithm investigation, see [Repetition Detection Threshold Adjustment](../docs/20251206-repetition-threshold.md).
+
 ## Template Filter Integration
 
 ### gpt-oss Template Parsing Challenge

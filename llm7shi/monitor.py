@@ -7,24 +7,63 @@ Whitespace detection uses weighted calculation:
 - Threshold: 512 weighted units
 """
 from typing import Optional
+from math import ceil
 import re
+
+# Lookup table for required repetitions (pattern_len 1-20)
+# Generated dynamically by _initialize_required_reps_table()
+_REQUIRED_REPS_TABLE = {}
+
+
+def _initialize_required_reps_table():
+    """Initialize the required repetitions lookup table using dynamic base algorithm.
+
+    Uses base=340 with monotonic non-decreasing constraint to generate
+    required repetitions for pattern lengths 1-20.
+    """
+    global _REQUIRED_REPS_TABLE
+
+    base = 340
+    prev_total = 0
+
+    for pattern_len in range(1, 21):
+        required_reps = base // pattern_len
+        total = required_reps * pattern_len
+
+        # Ensure monotonic non-decreasing
+        if total < prev_total:
+            total = prev_total
+            required_reps = ceil(total / pattern_len)
+            total = required_reps * pattern_len
+
+        _REQUIRED_REPS_TABLE[pattern_len] = required_reps
+
+        base = total
+        prev_total = total
 
 
 def _calculate_required_reps(pattern_len: int) -> int:
     """Calculate required repetitions for a given pattern length.
-    
+
+    Uses lookup table for pattern lengths 1-20 (generated from base=340),
+    then returns fixed value of 20 for longer patterns.
+
     Args:
         pattern_len: Length of the pattern to check
-        
+
     Returns:
         int: Number of repetitions required for this pattern length
     """
-    if pattern_len >= 31:
-        return 10
-    else:
-        # Linear interpolation
-        total_len = 100 + (pattern_len - 1) * 8
-        return total_len // pattern_len
+    # Initialize table on first use
+    if not _REQUIRED_REPS_TABLE:
+        _initialize_required_reps_table()
+
+    # For patterns >= 21 characters, use fixed repetition count
+    if pattern_len >= 21:
+        return 20
+
+    # For patterns < 21, use lookup table
+    return _REQUIRED_REPS_TABLE[pattern_len]
 
 
 def detect_repetition(text: str, threshold: Optional[int] = None) -> bool:
