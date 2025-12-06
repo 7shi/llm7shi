@@ -1,4 +1,11 @@
-"""Stream output monitor for detecting repetition and max length."""
+"""Stream output monitor for detecting repetition and max length.
+
+Whitespace detection uses weighted calculation:
+- Newlines (\n, \r\n, \r): weight 8
+- Tabs (\t): weight 4
+- Spaces and other whitespace: weight 1
+- Threshold: 512 weighted units
+"""
 from typing import Optional
 import re
 
@@ -85,6 +92,45 @@ def detect_repetition(text: str, threshold: Optional[int] = None) -> bool:
     return False
 
 
+def _calculate_trailing_whitespace_weight(text: str) -> int:
+    """Calculate weighted count of trailing whitespace.
+
+    Different whitespace types have different weights:
+    - Newlines (\n, \r\n, \r): weight 8 each
+    - Tabs (\t): weight 4 each
+    - Spaces and other whitespace: weight 1 each
+
+    Args:
+        text: Text to analyze
+
+    Returns:
+        int: Total weighted count of trailing whitespace
+    """
+    stripped_len = len(text.rstrip())
+    diff = len(text) - stripped_len
+
+    if diff == 0:
+        return 0
+
+    trailing = text[stripped_len:]
+
+    # Start with base weight (all characters have at least weight 1)
+    weight = diff
+
+    # Add extra weight for special characters
+    weight += trailing.count("\n") * 7  # Newlines: 8 - 1 = 7 extra
+    weight += trailing.count("\t") * 3  # Tabs: 4 - 1 = 3 extra
+
+    # Standalone \r (not part of \r\n)
+    standalone_r = trailing.count("\r") - trailing.count("\r\n")
+    weight += standalone_r * 7  # Standalone \r: 8 - 1 = 7 extra
+
+    # Adjust for \r\n pairs (2 chars but should be weight 8, not 9)
+    weight -= trailing.count("\r\n")
+
+    return weight
+
+
 class StreamMonitor:
     """Monitors streaming text output for repetition patterns and max length."""
 
@@ -104,6 +150,7 @@ class StreamMonitor:
         self.repetition_detected = False
         self.max_length_exceeded = None
         self.check_interval = 128  # Check trailing whitespace every 128 characters
+        self.whitespace_threshold = self.check_interval * 4  # 512 weighted units for detection
         self.next_check = self.check_interval  # Initial whitespace check
         self.rep_check_interval = 4  # Check repetition every check_interval * 4 = 512 characters
         self.rep_check_count = 0  # Counter for repetition check frequency
@@ -127,8 +174,8 @@ class StreamMonitor:
         
         # Check for repetition if enabled
         if self.check_repetition and len(text) >= self.next_check:
-            # Check for trailing whitespace
-            if len(text) - len(text.rstrip()) >= self.check_interval:
+            # Check for weighted trailing whitespace (newlines: 8×, tabs: 4×, spaces: 1×)
+            if _calculate_trailing_whitespace_weight(text) >= self.whitespace_threshold:
                 self.repetition_detected = True
                 if file:
                     print(self.converter.feed("\n\n⚠️ **Excessive whitespace detected, stopping generation**\n"), file=file)

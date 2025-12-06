@@ -43,6 +43,13 @@ Unit tests for the `detect_repetition()` function in `llm7shi/monitor.py`.
 
 **Key Features**: Pattern detection algorithms, threshold validation, edge case handling, LLM loop prevention.
 
+#### [test_monitor_whitespace.py](test_monitor_whitespace.py) - Whitespace Detection Tests
+Unit tests for the `_calculate_trailing_whitespace_weight()` function in `llm7shi/monitor.py`.
+
+**Documentation**: [test_monitor_whitespace.md](test_monitor_whitespace.md)
+
+**Key Features**: Weighted whitespace calculation, \r\n pair handling, threshold validation, edge case coverage, mixed whitespace combinations.
+
 #### [test_compat.py](test_compat.py) - Multi-Provider Compatibility Tests
 Unit tests for the compatibility layer in `llm7shi/compat.py`.
 

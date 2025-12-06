@@ -12,7 +12,7 @@ This module was created to eliminate code duplication between Gemini and OpenAI 
 ### Real-time Pattern Detection
 **Problem**: LLMs can sometimes generate repetitive patterns or excessive whitespace during streaming, requiring immediate detection and interruption to avoid wasting tokens and time.
 
-**Solution**: Implemented incremental checking that monitors output every 128 characters for whitespace and every 512 characters for repetition patterns, enabling early termination of problematic generations.
+**Solution**: Implemented incremental checking that monitors output every 128 characters for weighted whitespace and every 512 characters for repetition patterns, enabling early termination of problematic generations.
 
 ### Provider-agnostic Design
 **Problem**: Different LLM providers have different streaming APIs and response structures, but output quality concerns are universal.
@@ -26,8 +26,13 @@ This module was created to eliminate code duplication between Gemini and OpenAI 
 
 **Solution**: Optimized detection based on improved algorithm efficiency:
 - **Pattern detection**: Every 512 characters using the optimized `detect_repetition` algorithm
-- **Whitespace detection**: Every 128 characters for excessive trailing whitespace (≥128 spaces)
+- **Whitespace detection**: Every 128 characters using weighted whitespace calculation (newlines: 8×, tabs: 4×, spaces: 1×; threshold: 512 weighted units)
 - **Rationale**: The optimized algorithm (see [docs/20250629-repetition-detection.md](../docs/20250629-repetition-detection.md)) is efficient enough to run more frequently without performance impact
+
+### Weighted Whitespace Detection
+**Problem**: Different types of trailing whitespace have different severity levels. Tabs and newlines are more problematic than spaces as they can continue repeating, but a uniform threshold treats all whitespace equally.
+
+**Solution**: Implemented weighted whitespace calculation with threshold of 512 (checked every 128 characters). Weights: newlines (\n, \r\n, \r) = 8, tabs = 4, spaces = 1. This catches 512 spaces OR 128 tabs OR 64 newlines OR equivalent combinations, providing nuanced detection while maintaining frequent checking.
 
 ### Stream Interruption Handling
 **Problem**: Different providers have different mechanisms for closing streaming connections when stopping generation early.
