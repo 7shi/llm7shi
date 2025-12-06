@@ -52,6 +52,15 @@ Key topics:
 - Explicit client cleanup with try...finally pattern
 - Implementation changes in llm7shi for proper resource cleanup
 
+### [20251206-repetition-threshold.md](20251206-repetition-threshold.md) - Repetition Detection Threshold Adjustment
+Adjustment of repetition detection thresholds following weighted whitespace detection enhancement.
+
+Key topics:
+- Dynamic base algorithm for threshold calculation
+- Monotonic non-decreasing constraint for early termination
+- Coordination with whitespace detection thresholds
+- Selection of base=340 and pattern_len>=21 threshold
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`
