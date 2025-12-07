@@ -66,68 +66,127 @@ def _calculate_required_reps(pattern_len: int) -> int:
     return _REQUIRED_REPS_TABLE[pattern_len]
 
 
+def _check_quasi_repetition(text: str, pattern: str, required_reps: int) -> bool:
+    """Check if text ends with pattern repeating with valid gaps.
+
+    A pattern is considered repeating if it appears multiple times at the end
+    of the text, with gaps between occurrences that are shorter than the pattern
+    itself. This allows detection of quasi-repetition like "foo1foo2foo3..."
+    where gaps ("1", "2", "3") are shorter than the pattern ("foo").
+
+    Args:
+        text: Text to check
+        pattern: The pattern to look for
+        required_reps: Minimum number of pattern occurrences needed
+
+    Returns:
+        bool: True if quasi-repetition detected, False otherwise
+    """
+    pattern_len = len(pattern)
+    text_len = len(text)
+
+    # Must end with pattern
+    if not text.endswith(pattern):
+        return False
+
+    # Quick check: exact repetition (fastest path)
+    if text.endswith(pattern * required_reps):
+        return True
+
+    # Scan backward for quasi-repetition
+    reps = 1
+    pos = text_len - pattern_len
+
+    while reps < required_reps and pos > 0:
+        # Search for previous pattern occurrence
+        # Gap must be < pattern_len
+        found = False
+        max_gap = pattern_len - 1
+
+        for gap in range(max_gap + 1):
+            prev_start = pos - gap - pattern_len
+            if prev_start < 0:
+                break
+
+            if text[prev_start:prev_start + pattern_len] == pattern:
+                reps += 1
+                pos = prev_start
+                found = True
+                break
+
+        if not found:
+            break
+
+    return reps >= required_reps
+
+
 def detect_repetition(text: str, threshold: Optional[int] = None) -> bool:
-    """Detect if text has repetitive patterns.
-    
+    """Detect if text has repetitive patterns (including quasi-repetition).
+
     Checks for patterns of 1-threshold characters that repeat based on
     pattern length: shorter patterns need more repetitions, longer patterns
-    need fewer (minimum 10 repetitions for patterns >= 31 chars).
-    
+    need fewer (minimum 20 repetitions for patterns >= 21 chars).
+
+    Also detects quasi-repetition where patterns repeat with gaps shorter
+    than the pattern length (e.g., "foo1foo2foo3..." where gaps "1", "2", "3"
+    are shorter than pattern "foo").
+
     Args:
         text: Text to check for repetitions
         threshold: Maximum pattern length to check (default: len(text)/10)
-        
+
     Returns:
         bool: True if repetition detected, False otherwise
     """
     # Set default threshold based on text length
     if threshold is None:
         threshold = len(text) // 10
-    # Check patterns from 1 to 10 characters
+
+    # Phase 1: Check patterns from 1 to 10 characters
     for pattern_len in range(1, min(10, threshold) + 1):
         # Calculate required repetitions
         required_reps = _calculate_required_reps(pattern_len)
-        
+
         # Break early if text is too short based on pattern length
         if pattern_len * required_reps > len(text):
             break
-        
+
         # Extract pattern from the end
         pattern = text[-pattern_len:]
-        
-        # Check if text ends with required repetitions
-        if text.endswith(pattern * required_reps):
+
+        # Check for exact or quasi-repetition
+        if _check_quasi_repetition(text, pattern, required_reps):
             return True
-    
-    # Handle patterns > 10 characters
+
+    # Phase 2: Handle patterns > 10 characters
     if threshold <= 10:
         return False
-    
+
     # For patterns > 10, they must contain the 10-char pattern
     # Use rfind optimization
     suffix_marker = text[-10:]  # Last 10 characters as a marker
-    
+
     # Find all occurrences of suffix_marker and check patterns
     search_end = len(text) - 10
     min_search_pos = max(search_end - threshold, 0)
     while True:
         pos = text[:search_end].rfind(suffix_marker)
-        
+
         # Stop if we've gone beyond the threshold limit
         if pos < min_search_pos:
             break
-        
+
         # Extract the candidate pattern from this position to end
         candidate_pattern = text[pos + 10:]
-        
-        # Check if text ends with candidate_pattern repeated required times
+
+        # Check for exact or quasi-repetition
         required_reps = _calculate_required_reps(len(candidate_pattern))
-        if text.endswith(candidate_pattern * required_reps):
+        if _check_quasi_repetition(text, candidate_pattern, required_reps):
             return True
-        
+
         # Continue searching before this position
         search_end = pos
-    
+
     return False
 
 

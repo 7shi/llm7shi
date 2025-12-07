@@ -43,12 +43,10 @@ def test_detect_repetition_edge_cases():
     assert detect_repetition(pattern50 * 20) == True
     assert detect_repetition(pattern50 * 19 + "different") == False
 
-    # Pattern longer than explicit threshold (should not be checked)
-    # Create a truly unique 201-char pattern
-    base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-    pattern201 = base * 3 + base[:201 - len(base) * 3]  # Exactly 201 chars
-    assert len(pattern201) == 201  # Verify length
-    assert detect_repetition(pattern201 * 100, threshold=200) == False
+    # Note: With quasi-repetition detection, long pattern repetitions may be
+    # detected as shorter patterns with gaps. The threshold limits the pattern
+    # length checked directly, but quasi-repetition can still find shorter
+    # patterns within longer repeating sequences.
 
 
 def test_detect_repetition_adaptive_threshold():
@@ -97,13 +95,18 @@ def test_detect_repetition_custom_threshold():
     assert detect_repetition("ab" * 170, threshold=10) == True   # pattern_len=2 needs 170 reps
     assert detect_repetition("abc" * 114, threshold=10) == True  # pattern_len=3 needs 114 reps
 
-    # Pattern longer than threshold won't be detected
+    # Note: With quasi-repetition detection, patterns longer than threshold
+    # may still be detected as shorter patterns with gaps.
+    # "abcdefghijk" * 100 contains "efghijk" (7 chars) with gap "abcd" (4 chars)
+    # Since 4 < 7, it's detected as quasi-repetition
     pattern11 = "abcdefghijk"  # 11 chars
-    assert detect_repetition(pattern11 * 100, threshold=10) == False
+    assert detect_repetition(pattern11 * 100, threshold=10) == True
 
     # Edge case: threshold=1 (only checks single chars)
     assert detect_repetition("a" * 340, threshold=1) == True
-    assert detect_repetition("ab" * 100, threshold=1) == False  # pattern_len=2 > threshold
+    # "ab" * 100 has pattern "b" (1 char) with gap "a" (1 char)
+    # Since 1 is not < 1, not detected
+    assert detect_repetition("ab" * 100, threshold=1) == False
 
 
 def test_detect_repetition_formula():
@@ -126,3 +129,95 @@ def test_detect_repetition_formula():
     pattern40 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN"  # Unique 40-char pattern
     assert detect_repetition(pattern40 * 20) == True
     assert detect_repetition(pattern40 * 19 + "different") == False
+
+
+def test_detect_quasi_repetition_basic():
+    """Test quasi-repetition detection with gaps shorter than pattern."""
+    # Pattern "foo" (3 chars) with single-char gaps
+    # Gap 1 char < pattern 3 chars, should detect
+    text = "foo" + "1foo2foo3foo4foo" * 28 + "5foo"  # 114 occurrences
+    assert detect_repetition(text) == True
+
+    # Pattern "hello" (5 chars) with single-char gaps
+    # Gap 1 char < pattern 5 chars, should detect
+    text = "hello" + "_hello" * 68  # 69 occurrences (needs 69 for 5-char pattern)
+    assert detect_repetition(text) == True
+
+    # Variable-length gaps (all shorter than pattern)
+    # "item" (4 chars) with gaps "1", "2", "10", "100" etc.
+    text = "item" + "".join([str(i) + "item" for i in range(1, 86)])  # 86 occurrences
+    assert detect_repetition(text) == True
+
+
+def test_detect_quasi_repetition_gap_boundary():
+    """Test gap boundary conditions."""
+    # Gap equal to pattern length - no subpattern can have smaller gap
+    # Pattern "ab" (2 chars), gap "cd" (2 chars) - forms "abcd" which repeats exactly
+    # This will be detected as exact repetition of "abcd"
+    text = "abcd" * 200
+    assert detect_repetition(text) == True  # Exact repetition of "abcd"
+
+    # Gap one less than pattern length should detect
+    # Pattern "abc" (3 chars), gap "XY" (2 chars) - 2 < 3
+    text = "abc" + "XYabc" * 113  # 114 occurrences
+    assert detect_repetition(text) == True
+
+    # Gap longer than pattern length should NOT detect as that pattern
+    # But may be detected as a different pattern if subpatterns exist
+    # Use a pattern where no subpattern+gap combo works
+    # Pattern "ab" with gap "cdef" (4 chars) - "ab" cannot be detected (4 >= 2)
+    # But "fab" (3 chars) with gap "cde" (3 chars) - also no (3 >= 3)
+    # And "efab" (4 chars) with gap "cd" (2 chars) - 2 < 4, so detected!
+    # Use truly uniform gaps that prevent any subpattern detection
+    text = "x" * 340  # 1-char pattern with gap 0, exact repetition
+    assert detect_repetition(text) == True
+
+    # Test with gap >= pattern for ALL possible subpatterns
+    # "ab" repeated with "cdef" gaps - creates "abcdefabcdef..."
+    # This is just exact repetition of "abcdef" (6 chars)
+    # 6-char pattern needs 58 reps
+    text = "abcdef" * 57  # Only 57 reps, not enough
+    assert detect_repetition(text) == False
+
+
+def test_detect_quasi_repetition_not_enough_reps():
+    """Test that quasi-repetition requires enough repetitions."""
+    # Pattern "foo" (3 chars) needs 114 reps, but only 10
+    text = "foo" + "1foo2foo3foo4foo5foo6foo7foo8foo9foo"  # 11 occurrences
+    assert detect_repetition(text) == False
+
+    # Pattern "ab" (2 chars) needs 170 reps, but only 50
+    text = "ab" + "_ab" * 49  # 50 occurrences
+    assert detect_repetition(text) == False
+
+
+def test_detect_quasi_repetition_must_end_with_pattern():
+    """Test that pattern must appear at the end of text."""
+    # Pattern "foo" with gaps, but doesn't end with "foo"
+    text = "foo1foo2foo3foo4foo5X"  # Ends with "X", not "foo"
+    assert detect_repetition(text) == False
+
+    # Same pattern but ending with pattern
+    text = "foo1foo2foo3foo4foo5" + "foo"  # Ends with "foo"
+    # Still only 6 occurrences, not enough
+    assert detect_repetition(text) == False
+
+
+def test_detect_quasi_repetition_mixed_exact_and_gaps():
+    """Test detection of patterns with mixed exact repetitions and gaps."""
+    # Mix of exact repetition and gaps
+    # "abc" repeats with some gaps, some without
+    # 3-char pattern needs 114 reps
+    text = "abc" * 50 + "1abc" * 30 + "abc" * 34  # 114 occurrences total
+    assert detect_repetition(text) == True
+
+    # Start with gaps, end with exact
+    # Need 114 total: "1abc2abc3abc" = 3 "abc" per unit
+    # 38 * 3 = 114, so we need 38 repetitions of the pattern
+    text = "1abc2abc3abc" * 38  # 114 occurrences
+    assert detect_repetition(text) == True
+
+    # Note: "1abc2abc3abc" * 37 = 111 "abc" occurrences, which is < 114 required
+    # However, the 12-char pattern "1abc2abc3abc" itself is detected as exact
+    # repetition (12-char pattern needs 28 reps, and 37 > 28)
+    # This is expected behavior - quasi-repetition detection is more sensitive

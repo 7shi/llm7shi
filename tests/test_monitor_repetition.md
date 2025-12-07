@@ -32,4 +32,21 @@ Testing repetition detection required addressing a critical production problem w
 ### Threshold Adjustment Validation
 **Problem**: The original threshold (base=100) triggered false positives in production use, and when weighted whitespace detection was enhanced (threshold increased to 512), the repetition threshold became misaligned. Test values needed comprehensive updating to reflect the new dynamic base algorithm (base=340) while ensuring all detection behaviors remained correct.
 
-**Solution**: Updated all test cases to reflect new threshold values (1-char: 340 reps, 5-char: 69 reps, 21+ chars: 20 reps) and verified that the algorithm maintains monotonic non-decreasing property for early termination optimization. All 145 tests continue to pass, validating that the threshold adjustment successfully reduces false positives while maintaining effective detection of genuine repetitive patterns.
+**Solution**: Updated all test cases to reflect new threshold values (1-char: 340 reps, 5-char: 69 reps, 21+ chars: 20 reps) and verified that the algorithm maintains monotonic non-decreasing property for early termination optimization.
+
+### Quasi-Repetition Detection Testing
+**Problem**: LLMs sometimes produce patterns with small variations like "foo1foo2foo3...foo100..." where the numeric counter changes. Traditional exact-match detection misses these patterns, allowing degenerate output to continue.
+
+**Solution**: Added comprehensive tests for quasi-repetition detection (`test_detect_quasi_repetition_*`):
+- **Basic detection**: Validates patterns with single-char gaps and variable-length gaps (e.g., "1", "10", "100")
+- **Gap boundary conditions**: Verifies the constraint `gap_length < pattern_length` is correctly enforced
+- **Repetition count requirements**: Confirms that quasi-patterns still need to meet the required repetition threshold
+- **End-of-text constraint**: Ensures detection only triggers when the pattern appears at text end
+- **Mixed patterns**: Tests combinations of exact repetition and gap-separated patterns
+
+The tests validate that the gap-tolerant algorithm correctly identifies:
+- Incrementing counters: "item1item2item3..."
+- Sequential markers: "step_a step_b step_c..."
+- Variable-length numbers: "data9data10data100..."
+
+While avoiding false positives when gaps are equal to or larger than the pattern length.

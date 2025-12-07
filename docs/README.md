@@ -61,6 +61,15 @@ Key topics:
 - Coordination with whitespace detection thresholds
 - Selection of base=340 and pattern_len>=21 threshold
 
+### [20251207-quasi-repetition.md](20251207-quasi-repetition.md) - Quasi-Repetition Detection Algorithm
+Gap-tolerant detection for patterns with small variations like "foo1foo2foo3...".
+
+Key topics:
+- Gap constraint: `gap_length < pattern_length` for valid quasi-repetition
+- Backward scanning algorithm for efficient detection
+- Integration with existing exact-match algorithm
+- Variable-length gap handling (e.g., "9", "10", "100")
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`

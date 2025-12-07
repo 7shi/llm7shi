@@ -57,6 +57,26 @@ For detailed information about the algorithm, optimization strategy, and impleme
 
 For detailed threshold selection rationale and algorithm investigation, see [Repetition Detection Threshold Adjustment](../docs/20251206-repetition-threshold.md).
 
+### Quasi-Repetition Detection
+**Problem**: LLMs sometimes produce patterns that are almost identical but have small variations, such as "foo1foo2foo3...foo100..." where the numeric counter changes. Traditional exact-match detection misses these patterns because each "foo1", "foo2", etc. is technically different.
+
+**Solution**: Extended the repetition detection to recognize "quasi-repetition" patterns where a base pattern repeats with gaps shorter than the pattern length. The algorithm scans backward from the end of text, counting pattern occurrences where the gap between consecutive occurrences satisfies `gap_length < pattern_length`.
+
+**Example**: In "foo1foo2foo3...", the pattern "foo" (3 chars) repeats with gaps "1", "2", "3" (1 char each). Since 1 < 3, this is detected as quasi-repetition of "foo".
+
+**Key Design Decisions**:
+- **Gap constraint**: `gap_length < pattern_length` (strictly less than)
+- **Backward scanning**: Start from end of text, find previous pattern within gap constraint
+- **Fast path preserved**: Exact repetition is checked first (existing optimized algorithm)
+- **No normalization required**: Works directly on original text, supporting any type of gap content
+
+This enhancement detects common LLM degeneration patterns like:
+- Incrementing counters: "item1item2item3..."
+- Sequential markers: "step_a step_b step_c..."
+- Variable-length numbers: "data9data10data100..."
+
+For detailed algorithm design and edge case analysis, see [Quasi-Repetition Detection Algorithm](../docs/20251207-quasi-repetition.md).
+
 ## Template Filter Integration
 
 ### gpt-oss Template Parsing Challenge
