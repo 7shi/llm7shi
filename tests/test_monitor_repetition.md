@@ -43,10 +43,11 @@ Testing repetition detection required addressing a critical production problem w
 - **Repetition count requirements**: Confirms that quasi-patterns still need to meet the required repetition threshold
 - **End-of-text constraint**: Ensures detection only triggers when the pattern appears at text end
 - **Mixed patterns**: Tests combinations of exact repetition and gap-separated patterns
+- **Empty pattern handling**: Validates that empty patterns are handled correctly
 
-The tests validate that the gap-tolerant algorithm correctly identifies:
+The tests validate that the `rfind()`-based gap-tolerant algorithm correctly identifies:
 - Incrementing counters: "item1item2item3..."
 - Sequential markers: "step_a step_b step_c..."
 - Variable-length numbers: "data9data10data100..."
 
-While avoiding false positives when gaps are equal to or larger than the pattern length.
+While avoiding false positives when gaps are equal to or larger than the pattern length. The implementation uses Python's optimized `str.rfind()` method for efficient backward pattern searching.

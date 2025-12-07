@@ -83,6 +83,8 @@ def _check_quasi_repetition(text: str, pattern: str, required_reps: int) -> bool
         bool: True if quasi-repetition detected, False otherwise
     """
     pattern_len = len(pattern)
+    if not pattern_len:
+        return False
     text_len = len(text)
 
     # Must end with pattern
@@ -93,29 +95,29 @@ def _check_quasi_repetition(text: str, pattern: str, required_reps: int) -> bool
     if text.endswith(pattern * required_reps):
         return True
 
-    # Scan backward for quasi-repetition
+    # Scan backward for quasi-repetition using rfind()
     reps = 1
     pos = text_len - pattern_len
 
     while reps < required_reps and pos > 0:
-        # Search for previous pattern occurrence
-        # Gap must be < pattern_len
-        found = False
-        max_gap = pattern_len - 1
+        # Use rfind to find the previous occurrence of the pattern
+        prev_pos = text.rfind(pattern, 0, pos)
 
-        for gap in range(max_gap + 1):
-            prev_start = pos - gap - pattern_len
-            if prev_start < 0:
-                break
-
-            if text[prev_start:prev_start + pattern_len] == pattern:
-                reps += 1
-                pos = prev_start
-                found = True
-                break
-
-        if not found:
+        if prev_pos == -1:
+            # No more occurrences found
             break
+
+        # Calculate the gap between the current and previous pattern
+        gap_len = pos - (prev_pos + pattern_len)
+
+        # The gap must be shorter than the pattern itself
+        if gap_len >= pattern_len:
+            # Invalid gap, repetition chain is broken
+            break
+
+        # Valid quasi-repetition found, continue searching from the new position
+        reps += 1
+        pos = prev_pos
 
     return reps >= required_reps
 

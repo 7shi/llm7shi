@@ -60,15 +60,16 @@ For detailed threshold selection rationale and algorithm investigation, see [Rep
 ### Quasi-Repetition Detection
 **Problem**: LLMs sometimes produce patterns that are almost identical but have small variations, such as "foo1foo2foo3...foo100..." where the numeric counter changes. Traditional exact-match detection misses these patterns because each "foo1", "foo2", etc. is technically different.
 
-**Solution**: Extended the repetition detection to recognize "quasi-repetition" patterns where a base pattern repeats with gaps shorter than the pattern length. The algorithm scans backward from the end of text, counting pattern occurrences where the gap between consecutive occurrences satisfies `gap_length < pattern_length`.
+**Solution**: Extended the repetition detection to recognize "quasi-repetition" patterns where a base pattern repeats with gaps shorter than the pattern length. The algorithm uses `str.rfind()` to efficiently scan backward from the end of text, counting pattern occurrences where the gap between consecutive occurrences satisfies `gap_length < pattern_length`.
 
 **Example**: In "foo1foo2foo3...", the pattern "foo" (3 chars) repeats with gaps "1", "2", "3" (1 char each). Since 1 < 3, this is detected as quasi-repetition of "foo".
 
 **Key Design Decisions**:
 - **Gap constraint**: `gap_length < pattern_length` (strictly less than)
-- **Backward scanning**: Start from end of text, find previous pattern within gap constraint
+- **Efficient backward scanning**: Uses `rfind()` for optimized pattern search from end of text
 - **Fast path preserved**: Exact repetition is checked first (existing optimized algorithm)
 - **No normalization required**: Works directly on original text, supporting any type of gap content
+- **Empty pattern handling**: Returns False immediately for empty patterns
 
 This enhancement detects common LLM degeneration patterns like:
 - Incrementing counters: "item1item2item3..."

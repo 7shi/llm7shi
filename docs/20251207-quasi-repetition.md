@@ -66,7 +66,13 @@ All gaps are shorter than pattern → quasi-repetition detected.
 
 ```python
 def _check_quasi_repetition(text: str, pattern: str, required_reps: int) -> bool:
+    """Check for quasi-repetition pattern at the end of text.
+
+    This implementation uses `rfind()` for efficient backward searching.
+    """
     pattern_len = len(pattern)
+    if not pattern_len:
+        return False
     text_len = len(text)
 
     # Must end with pattern
@@ -77,40 +83,41 @@ def _check_quasi_repetition(text: str, pattern: str, required_reps: int) -> bool
     if text.endswith(pattern * required_reps):
         return True
 
-    # Scan backward for quasi-repetition
+    # Scan backward for quasi-repetition using rfind()
     reps = 1
     pos = text_len - pattern_len
 
     while reps < required_reps and pos > 0:
-        # Search for previous pattern occurrence
-        # Gap must be < pattern_len
-        found = False
-        max_gap = pattern_len - 1
+        # Use rfind to find the previous occurrence of the pattern
+        prev_pos = text.rfind(pattern, 0, pos)
 
-        for gap in range(max_gap + 1):
-            prev_start = pos - gap - pattern_len
-            if prev_start < 0:
-                break
-
-            if text[prev_start:prev_start + pattern_len] == pattern:
-                reps += 1
-                pos = prev_start
-                found = True
-                break
-
-        if not found:
+        if prev_pos == -1:
+            # No more occurrences found
             break
+
+        # Calculate the gap between the current and previous pattern
+        gap_len = pos - (prev_pos + pattern_len)
+
+        # The gap must be shorter than the pattern itself
+        if gap_len >= pattern_len:
+            # Invalid gap, repetition chain is broken
+            break
+
+        # Valid quasi-repetition found, continue searching from the new position
+        reps += 1
+        pos = prev_pos
 
     return reps >= required_reps
 ```
 
 ### How It Works
 
-1. **End check**: Pattern must appear at the very end of text
-2. **Fast path**: Try exact repetition first (existing optimized algorithm)
-3. **Backward scan**: Starting from end, find previous pattern occurrence within gap constraint
-4. **Gap search**: For each position, try gap lengths 0, 1, 2, ..., (pattern_len - 1)
-5. **Count repetitions**: Continue until required count reached or no valid pattern found
+1. **Empty pattern check**: Return False immediately for empty patterns
+2. **End check**: Pattern must appear at the very end of text
+3. **Fast path**: Try exact repetition first (existing optimized algorithm)
+4. **Backward scan with rfind()**: Starting from end, use `str.rfind()` to find previous pattern occurrence
+5. **Gap validation**: Verify that gap between current and previous pattern satisfies `gap_len < pattern_len`
+6. **Count repetitions**: Continue until required count reached or no valid pattern found (gap too large or no more patterns)
 
 ### Integration with Existing Algorithm
 
@@ -137,15 +144,19 @@ def detect_repetition(text: str, threshold: Optional[int] = None) -> bool:
 
 **Per pattern length check:**
 - Exact match check: O(pattern_len × required_reps)
-- Quasi-repetition scan: O(pattern_len × required_reps)
-  - For each pattern occurrence: try up to `pattern_len` gap lengths
-  - String comparison: O(pattern_len)
+- Quasi-repetition scan: O(n) where n = text length
+  - `rfind()` search: O(n) in worst case
+  - Repeated for up to `required_reps` iterations
+  - Total: O(n × required_reps)
 
 **Overall:**
-- Phase 1 (patterns 1-10): O(10 × pattern_len × required_reps)
-- Phase 2 (patterns 11+): O(k × pattern_len × required_reps) where k = suffix marker occurrences
+- Phase 1 (patterns 1-10): O(10 × n × required_reps)
+- Phase 2 (patterns 11+): O(k × n × required_reps) where k = suffix marker occurrences
 
-**Worst case**: O(n) where n = text length
+**Worst case**: O(n × required_reps) per pattern length
+**Practical case**: Much faster due to early termination when gap constraint fails
+
+**Optimization benefit**: Using `rfind()` eliminates the nested loop over gap lengths, replacing O(pattern_len) gap search with O(n) pattern search. While this appears worse asymptotically, `rfind()` is a highly optimized C function that typically performs better than Python loops in practice.
 
 ### Space Complexity
 
