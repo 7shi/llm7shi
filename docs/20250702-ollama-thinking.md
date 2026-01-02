@@ -121,3 +121,14 @@ After implementation:
 - `llm7shi/ollama.py` - Implementation of the fix
 - `llm7shi/ollama.md` - Documentation of capability-aware thinking control
 - `tests/test_ollama_*.py` - Various test files created during investigation
+
+## Resolution Update (January 2026)
+
+The incompatibility between thinking mode and structured output documented in this investigation has been **resolved in later Ollama versions**. After confirming stable operation with updated Ollama releases, the automatic thinking disabling logic for structured output mode was removed from `llm7shi/ollama.py`.
+
+**Current Behavior**:
+- Thinking and structured output (JSON format) can now be used concurrently
+- The workaround code that disabled thinking when `format` parameter was present has been removed
+- Only the capability detection logic remains to ensure graceful fallback for models that don't support thinking
+
+This document is preserved as a historical record of the debugging process and the temporary workaround that was necessary during the transition period.

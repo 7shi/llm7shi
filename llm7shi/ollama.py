@@ -27,14 +27,10 @@ def generate_content(
     # Extract think parameter from kwargs
     think = kwargs.get("think", False)
     if think:
-        # Disable thinking for structured output due to Ollama API formatting issues
-        if "format" in kwargs:
-            kwargs["think"] = False  # Workaround: prevents malformed JSON output
-        else:
-            # Check if model supports thinking when requested
-            model_info = client.show(model)
-            if "thinking" not in model_info.capabilities:
-                kwargs["think"] = False  # Workaround: graceful fallback for unsupported models
+        # Check if model supports thinking when requested
+        model_info = client.show(model)
+        if "thinking" not in model_info.capabilities:
+            kwargs["think"] = False  # Workaround: graceful fallback for unsupported models
     
     # Call API with streaming
     response = client.chat(

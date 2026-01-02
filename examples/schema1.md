@@ -17,7 +17,7 @@ This example addresses the need for structured data extraction from LLM outputs 
 ### Reasoning Field for Quality and Debugging
 **Problem**: Structured output tasks can fail silently or produce incorrect results without visibility into the model's thought process, making debugging and quality assurance difficult.
 
-**Solution**: Includes a `reasoning` field in the schema that captures the model's step-by-step thought process. This serves multiple purposes: enables debugging of incorrect outputs, improves output quality by encouraging the model to think through the problem, and provides transparency into how the model arrived at its conclusions. For providers like Ollama that disable thinking in structured output mode, the reasoning field acts as a substitute for the thinking process.
+**Solution**: Includes a `reasoning` field in the schema that captures the model's step-by-step thought process. This serves multiple purposes: enables debugging of incorrect outputs, improves output quality by encouraging the model to think through the problem, and provides transparency into how the model arrived at its conclusions.
 
 ### Item-Level Reasoning Strategy
 **Problem**: When processing multiple data items (like multiple locations with temperatures), placing reasoning at the top level creates a disconnect between the thought process and specific item processing, potentially leading to generic or post-hoc explanations.

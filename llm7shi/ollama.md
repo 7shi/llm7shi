@@ -27,10 +27,12 @@
 
 **Solution**: Implemented automatic capability detection using `ollama.show()` to check model capabilities before enabling thinking mode. When `think=True` is requested but the model doesn't support thinking, the parameter is automatically set to `False` to prevent API errors while maintaining functionality.
 
-### Structured Output Compatibility
-**Problem**: Combining thinking mode with structured output (JSON format) caused malformed JSON responses due to Ollama API behavior, where extra characters were inserted at the beginning of responses.
+### Structured Output Compatibility (Historical)
+**Problem**: In earlier Ollama versions, combining thinking mode with structured output (JSON format) caused malformed JSON responses due to Ollama API behavior, where extra characters were inserted at the beginning of responses.
 
-**Solution**: Automatically disable thinking functionality when `format` parameter is present (structured output mode). This ensures JSON validity while preserving thinking capabilities for plain text generation. For detailed investigation and technical analysis, see [docs/20250702-ollama-thinking.md](../docs/20250702-ollama-thinking.md).
+**Solution**: Previously implemented automatic thinking disabling when `format` parameter was present (structured output mode). This ensured JSON validity while preserving thinking capabilities for plain text generation.
+
+**Resolution**: Later Ollama versions resolved this incompatibility. The library now supports concurrent use of thinking and structured output modes. For detailed investigation of the original issue, see [docs/20250702-ollama-thinking.md](../docs/20250702-ollama-thinking.md).
 
 ### Connection Cleanup on Stream Interruption
 **Problem**: When streaming is interrupted due to quality control checks (repetition detection, max length limits), the server-side computing session persists because httpx connection pooling keeps the TCP connection alive. This causes unnecessary resource consumption on the Ollama server.

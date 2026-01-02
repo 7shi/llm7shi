@@ -138,7 +138,7 @@ Relying solely on schema `description` fields is insufficient for multi-provider
 Adding a `reasoning` field to schemas provides multiple benefits:
 - **Debugging**: Reveals the model's thought process
 - **Quality**: Encourages more thoughtful processing
-- **Thinking substitute**: For providers like Ollama that disable thinking in structured output mode
+- **Thinking substitute**: For providers like Ollama that previously disabled thinking in structured output mode
 
 ### 3. Client-Side Implementation
 

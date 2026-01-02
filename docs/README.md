@@ -31,7 +31,7 @@ Investigation and resolution of JSON malformation when combining Ollama's thinki
 Key topics:
 - Systematic debugging methodology for multi-provider issues
 - Ollama API behavior with think=True and format parameters
-- Automatic thinking disabling for structured output scenarios
+- Automatic thinking disabling for structured output scenarios (Resolved in later Ollama versions)
 - API limitation workarounds and design trade-offs
 
 ### [20250703-schema-descriptions.md](20250703-schema-descriptions.md) - Schema Descriptions and Multi-Provider Compatibility
