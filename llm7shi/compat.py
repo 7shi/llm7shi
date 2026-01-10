@@ -207,7 +207,7 @@ def _generate_with_ollama(
     
     # Add temperature only if provided
     if temperature is not None:
-        kwargs["temperature"] = temperature
+        kwargs["options"] = {"temperature": temperature}
     
     # Convert contents to OpenAI format messages (Ollama uses similar format)
     ollama_messages = contents_to_openai_messages(contents, system_prompt)
