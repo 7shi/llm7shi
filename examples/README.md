@@ -101,6 +101,21 @@ Compatibility version of schema2.py using Pydantic models with both providers. D
 uv run examples/compat2.py
 ```
 
+### [multiturn.py](multiturn.py) - Multi-Turn Conversation
+Demonstrates multi-turn conversations using OpenAI-compatible message format with role-based interactions across all providers.
+
+**Documentation**: [multiturn.md](multiturn.md)
+
+Features:
+- OpenAI-compatible message format with roles (`system`, `user`, `assistant`)
+- Conversation history support
+- System prompt integration within messages
+- Automatic role mapping (assistant → model) for Gemini compatibility
+
+```bash
+uv run examples/multiturn.py
+```
+
 ## Advanced Examples
 
 ### [essay.py](essay.py) - Automated Essay Evaluation

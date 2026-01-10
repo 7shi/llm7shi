@@ -51,6 +51,8 @@ from .utils import (
     inline_defs,
     extract_descriptions,
     create_json_descriptions_prompt,
+    is_openai_messages,
+    openai_messages_to_contents,
 )
 
 from .monitor import (
@@ -80,6 +82,8 @@ __all__ = [
     "inline_defs",
     "extract_descriptions",
     "create_json_descriptions_prompt",
+    "is_openai_messages",
+    "openai_messages_to_contents",
     # monitor.py
     "StreamMonitor",
     "detect_repetition",

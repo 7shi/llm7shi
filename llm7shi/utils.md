@@ -9,10 +9,33 @@ These utility functions solve specific cross-cutting concerns that emerged while
 
 **Solution**: Created a unified parameter display function that formats both key-value parameters and content arrays consistently, with proper alignment and quote prefixes for content.
 
-### Message Format Conversion (`contents_to_openai_messages`)
-**Problem**: Our simple content array format needed to be converted to OpenAI's message-based format for API compatibility.
+### Message Format Detection (`is_openai_messages`)
+**Problem**: The library needed to support both simple `List[str]` format and OpenAI's message-based format, requiring reliable format detection with comprehensive validation.
 
-**Solution**: Automatic conversion that handles system prompts separately and treats all content items as user messages.
+**Solution**: Created a detection function that validates message structure including role/content keys, proper types, and valid role values (`system`, `user`, `assistant`). Raises clear errors for mixed formats or invalid messages.
+
+### Message Format Conversion (`contents_to_openai_messages`)
+**Problem**: The library needed to convert between simple content arrays and OpenAI's message-based format, while handling system prompts and avoiding redundant conversions.
+
+**Solution**: Automatic conversion with format detection:
+- For `List[str]`: converts to OpenAI format with system prompt as first message if provided
+- For `List[Dict[str, str]]`: returns as-is if no system_prompt parameter, otherwise checks for conflicts and adds system message
+- Conflict detection: raises error if system prompt provided in both messages and parameter
+
+### Gemini Content Conversion with System Prompt Extraction (`openai_messages_to_contents`)
+**Problem**: Gemini API uses `Content` objects with different role naming (`user`/`model`) instead of OpenAI's message format (`user`/`assistant`). Additionally, system prompts embedded in messages needed to be extracted for Gemini's `system_instruction` config parameter.
+
+**Solution**: Single-pass conversion that simultaneously converts messages and extracts system prompt:
+- Processes all messages in one loop for efficiency
+- Role mapping: `user` → `user`, `assistant` → `model` (Gemini terminology)
+- System prompt extraction: extracts and validates (raises error if multiple system messages found)
+- Returns tuple: `(List[Content], system_prompt or None)` combining both conversion and extraction
+- Eliminates need for separate extraction step, simplifying the workflow
+
+### Parameter Display Enhancement (`do_show_params`)
+**Problem**: The original parameter display function needed to support both simple string format and the new message format with role labels for better debugging.
+
+**Solution**: Enhanced display logic that detects message format and shows role labels (e.g., `> [user]`, `> [assistant]`) for message arrays while maintaining backward compatibility with simple string display.
 
 ### Schema Compatibility (`add_additional_properties_false`, `inline_defs`)
 **Problem**: Different LLM APIs have different schema requirements:
@@ -35,6 +58,25 @@ These utility functions solve specific cross-cutting concerns that emerged while
 
 
 ## Key Design Decisions
+
+### Separation of Concerns
+**Problem**: System prompt conflict checking could be centralized or distributed across provider functions.
+
+**Solution**: Conflict detection is performed locally by each consumer (`_generate_with_gemini()` and `contents_to_openai_messages()`) rather than in a shared validation layer. This approach:
+- Allows `_generate_with_*()` functions to be called directly without mandatory validation overhead
+- Keeps validation close to where the decision matters
+- Provides clear error messages in context
+
+### Minimal Conversion Strategy
+**Problem**: Message format conversion could eagerly normalize all inputs or perform minimal transformations.
+
+**Solution**: Chose minimal conversion approach:
+- When `contents` is already in OpenAI format and no `system_prompt` parameter is provided, return as-is (no copy, no transformation)
+- Only perform transformations when necessary (format conversion or system prompt addition)
+- Reduces unnecessary object creation and preserves original data when possible
+
+### Format Detection First
+All conversion functions begin with format detection (`is_openai_messages()`) to determine the appropriate processing path. This provides comprehensive validation before any transformations occur.
 
 ### Non-Destructive Operations
 All schema transformation functions create copies rather than modifying input objects. This prevents unexpected side effects when the same schema is used multiple times.

@@ -27,6 +27,40 @@ As the library evolved, we realized that different LLM providers have significan
 
 **Solution**: Made provider-specific parameters optional and ignored when not supported, allowing code to work across providers while leveraging unique features when available. For Ollama, the `include_thoughts` parameter is passed as `think` with automatic capability detection to prevent errors on models that don't support thinking.
 
+### Multi-Format Message Support
+**Problem**: Users needed a consistent way to handle both simple prompts and multi-turn conversations with conversation history:
+- Simple use cases work well with `List[str]` format
+- Multi-turn conversations require role-based message format like OpenAI's
+- Gemini uses different Content objects while OpenAI/Ollama use message arrays
+- System prompts could be provided both as parameter and embedded in messages, causing conflicts
+
+**Solution**: Extended `generate_with_schema()` to accept both formats:
+- `List[str]` - Legacy format for simple prompts (backward compatible)
+- `List[Dict[str, str]]` - OpenAI-compatible message format with roles: `system`, `user`, `assistant`
+- Automatic format detection via `is_openai_messages()` utility
+- Role mapping: `assistant` → `model` for Gemini API compatibility
+- System prompt conflict detection: raises error if provided in both messages and parameter
+- Provider-specific handling: Gemini converts to Content objects, OpenAI/Ollama use messages directly
+
+Example:
+```python
+# Multi-turn conversation with message format
+messages = [
+    {"role": "system", "content": "You are helpful."},
+    {"role": "user", "content": "What is Python?"},
+    {"role": "assistant", "content": "Python is a programming language."},
+    {"role": "user", "content": "What makes it special?"}
+]
+response = generate_with_schema(messages, model="google:gemini-2.5-flash")
+
+# Legacy format still works
+response = generate_with_schema(
+    ["What is Python?"],
+    system_prompt="You are helpful.",
+    model="google:gemini-2.5-flash"
+)
+```
+
 ## Key Design Decisions
 
 ### Vendor Prefix Model Detection

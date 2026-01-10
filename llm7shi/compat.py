@@ -13,9 +13,12 @@ from .monitor import StreamMonitor
 # Vendor prefixes for examples (use vendor prefix only for easier maintenance)
 VENDOR_PREFIXES = ["google:", "openai:", "ollama:"]
 
+# Type alias for message content
+MessageContent = Union[List[str], List[Dict[str, str]]]
+
 
 def generate_with_schema(
-    contents: List[str],
+    contents: MessageContent,
     schema: Union[Dict[str, Any], Type[BaseModel], None] = None,
     *,
     model: str = "",
@@ -29,9 +32,9 @@ def generate_with_schema(
     check_repetition: bool = True,
 ) -> Response:
     """Generate content using OpenAI, Gemini, or Ollama API.
-    
+
     Args:
-        contents: List of user content strings
+        contents: List of user content strings OR OpenAI message format
         schema: JSON schema for structured output, Pydantic model, or None for plain text
         model: Model name with optional vendor prefix (e.g., "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b"). Defaults to Gemini.
         temperature: Temperature parameter for generation (None = use model default)
@@ -42,14 +45,14 @@ def generate_with_schema(
         show_params: Whether to display parameters before generation
         max_length: Maximum length of generated text (default: None, no limit)
         check_repetition: Whether to check for repetitive patterns (default: True)
-        
+
     Returns:
         Response: Response object containing generated text and metadata
     """
     # Parse vendor prefix from model name
     actual_model = model
     vendor_prefix = "google"  # default to Google
-    
+
     if model:
         # Check for vendor prefix using regex
         vendor_match = re.match(r"([^:]+):(.*)", model)
@@ -63,7 +66,7 @@ def generate_with_schema(
                 pass
             else:
                 vendor_prefix = "openai"
-    
+
     if vendor_prefix == "google":
         return _generate_with_gemini(actual_model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params, max_length, check_repetition)
     elif vendor_prefix == "openai":
@@ -76,7 +79,7 @@ def generate_with_schema(
 
 def _generate_with_gemini(
     model: str,
-    contents: List[str],
+    contents: MessageContent,
     schema: Union[Dict[str, Any], Type[BaseModel], None],
     temperature: float = None,
     system_prompt: str = None,
@@ -88,39 +91,63 @@ def _generate_with_gemini(
     check_repetition: bool = True,
 ) -> Response:
     """Generate with Gemini API."""
-    from . import config_from_schema, generate_content_retry, config_text
-    
+    from . import config_from_schema, generate_content_retry, config_text, DEFAULT_MODEL
+    from .utils import is_openai_messages, openai_messages_to_contents
+
+    # Convert to Gemini format if needed
+    if is_openai_messages(contents):
+        # Convert OpenAI message format to Gemini Content objects and extract system prompt
+        gemini_contents, message_system_prompt = openai_messages_to_contents(contents)
+
+        # Check for conflict between message-embedded and parameter system prompts
+        if message_system_prompt and system_prompt:
+            raise ValueError(
+                "System prompt provided in both messages (role='system') and system_prompt parameter. "
+                "Please use only one method."
+            )
+
+        # Use message-embedded system prompt if present, otherwise use parameter
+        final_system_prompt = message_system_prompt or system_prompt
+    else:
+        # Legacy List[str] format
+        gemini_contents = contents
+        final_system_prompt = system_prompt
+
     # Build config from schema or use text config
     if schema is not None:
         generate_content_config = config_from_schema(schema)
     else:
         generate_content_config = config_text
-    
+
     if temperature is not None:
         generate_content_config.temperature = temperature
-    if system_prompt:
-        generate_content_config.system_instruction = [system_prompt]
-    
+    if final_system_prompt:
+        generate_content_config.system_instruction = [final_system_prompt]
+
+    # Display parameters if requested
+    if show_params and file is not None:
+        do_show_params(contents, model=(model or DEFAULT_MODEL), file=file)
+
     # Generate content
     result = generate_content_retry(
         model=model,
         config=generate_content_config,
-        contents=contents,
-        show_params=show_params,
+        contents=gemini_contents,
+        show_params=False,
         include_thoughts=include_thoughts,
         thinking_budget=thinking_budget,
         file=file,
         max_length=max_length,
         check_repetition=check_repetition
     )
-    
+
     # Return Response object
     return result
 
 
 def _generate_with_openai(
     model: str,
-    contents: List[str],
+    contents: MessageContent,
     schema: Union[Dict[str, Any], Type[BaseModel], None],
     temperature: float = None,
     system_prompt: str = None,
@@ -161,10 +188,10 @@ def _generate_with_openai(
     # Add temperature only if provided
     if temperature is not None:
         kwargs["temperature"] = temperature
-    
+
     # Convert contents to OpenAI format messages
     openai_messages = contents_to_openai_messages(contents, system_prompt)
-    
+
     # Display parameters if requested
     if show_params and file is not None:
         do_show_params(contents, model=(model or DEFAULT_MODEL), file=file)
@@ -182,7 +209,7 @@ def _generate_with_openai(
 
 def _generate_with_ollama(
     model: str,
-    contents: List[str],
+    contents: MessageContent,
     schema: Union[Dict[str, Any], Type[BaseModel], None],
     temperature: float = None,
     system_prompt: str = None,
@@ -208,10 +235,10 @@ def _generate_with_ollama(
     # Add temperature only if provided
     if temperature is not None:
         kwargs["options"] = {"temperature": temperature}
-    
+
     # Convert contents to OpenAI format messages (Ollama uses similar format)
     ollama_messages = contents_to_openai_messages(contents, system_prompt)
-    
+
     # Display parameters if requested
     if show_params and file is not None:
         do_show_params(contents, model=(model or DEFAULT_MODEL), file=file)
