@@ -70,6 +70,17 @@ Key topics:
 - Integration with existing exact-match algorithm
 - Variable-length gap handling (e.g., "9", "10", "100")
 
+### [20260112-api-key-security.md](20260112-api-key-security.md) - API Key Security for Custom OpenAI-Compatible Endpoints
+Discovery and resolution of API key leakage vulnerability when using custom endpoints.
+
+Key topics:
+- OpenAI SDK's automatic `OPENAI_API_KEY` usage with `base_url`
+- Security risk of sending production keys to local/test servers
+- `api_key_env` parameter design with secure defaults
+- Extended syntax `model@base_url|api_key_env` for explicit control
+- Three-tier API key selection logic
+- Syntax evaluation: `$`, `|`, and `?` delimiter comparison
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`

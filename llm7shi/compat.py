@@ -159,10 +159,17 @@ def _generate_with_openai(
     """Generate with OpenAI API with streaming."""
     from .openai import DEFAULT_MODEL, generate_content
 
-    # Extract base_url from model if present (format: model@base_url)
+    # Extract base_url and api_key_env from model if present
+    # Format: model@base_url|api_key_env
     base_url = None
+    api_key_env = None
     if model and "@" in model:
-        model, base_url = model.rsplit("@", 1)
+        model, url_rest = model.rsplit("@", 1)
+        # Check for api_key_env specification
+        if "|" in url_rest:
+            base_url, api_key_env = url_rest.split("|", 1)
+        else:
+            base_url = url_rest
 
     # Build kwargs for OpenAI API
     kwargs = {}
@@ -203,6 +210,7 @@ def _generate_with_openai(
         max_length=max_length,
         check_repetition=check_repetition,
         base_url=base_url,
+        api_key_env=api_key_env,
         **kwargs
     )
 

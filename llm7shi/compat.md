@@ -79,8 +79,20 @@ response = generate_with_schema(
 **Solution**: Extended model string format to support `@base_url` suffix using `rsplit("@", 1)` parsing:
 - `"openai:gpt-4.1-mini@http://localhost:8080/v1"` → OpenAI API with custom endpoint
 - `"openai:llama.cpp/gpt-oss@http://192.168.0.8:8080/v1"` → Custom server with gpt-oss template
+- `"openai:gpt-4.1-mini@http://localhost:8080/v1|CUSTOM_API_KEY"` → OpenAI API with custom endpoint and custom API key from environment variable
 - Base URL is extracted and passed to the underlying `generate_content()` function
 - This approach keeps model selection and endpoint configuration in a single string parameter
+
+**API Key Specification**: When using custom endpoints with `@base_url`, you can specify which environment variable contains the API key using `|api_key_env` syntax:
+
+- **Without `|`**: Uses empty API key (secure default for local servers)
+  - Example: `"openai:gpt-4@http://localhost:11434/v1"`
+  - Security: Prevents leaking `OPENAI_API_KEY` to untrusted local servers
+
+- **With `|api_key_env`**: Uses specified environment variable
+  - Example: `"openai:gpt-4@http://my-proxy.com/v1|MY_PROXY_KEY"`
+  - The value from `os.environ.get("MY_PROXY_KEY")` will be used
+  - Use case: Authenticated proxy services or custom OpenAI-compatible APIs
 
 **llama-server Design Pattern**: Since llama-server provides only one model at a time and ignores the model name parameter in API requests, the model name portion (e.g., `"llama.cpp/gpt-oss"`) serves as a client-side template identifier rather than selecting a specific model on the server. This design enables users to signal which prompt template parser should be activated (like `GptOssTemplateFilter`) based on the server's configuration, independent of which model is actually being served. The server address is specified via `@base_url`, while the model name controls client-side behavior such as filter activation.
 

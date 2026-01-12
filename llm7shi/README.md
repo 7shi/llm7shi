@@ -62,6 +62,7 @@ Direct OpenAI API wrapper with streaming support and monitoring capabilities.
 - Streaming output with terminal formatting
 - Repetition detection and length monitoring
 - Custom endpoint support via `base_url` parameter
+- Secure API key management via `api_key_env` parameter with safe defaults
 - gpt-oss template filter for reasoning-capable models (model name `"llama.cpp/gpt-oss"` serves as client-side template identifier)
 - Thoughts capture and real-time display
 
@@ -97,6 +98,8 @@ Unified interface for OpenAI, Gemini, and Ollama APIs, enabling seamless switchi
 - `generate_with_schema()` - Unified generation function
 - Vendor prefix support (e.g., "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b")
 - Base URL embedding support (e.g., "openai:model@http://localhost:8080/v1") - model name acts as client-side template identifier for llama-server
+- API key environment variable specification (e.g., "openai:model@http://proxy.com/v1|MY_PROXY_KEY")
+- Secure defaults: Empty API key for custom endpoints to prevent key leakage
 - Backward compatible automatic API selection based on model name
 - Support for JSON schemas, Pydantic models, or plain text
 - Preserves provider-specific features
@@ -171,6 +174,20 @@ response = generate_with_schema(
 )
 print(response.text)
 
+# Custom endpoint with authentication
+response = generate_with_schema(
+    contents=["Your prompt"],
+    schema=YourModel,
+    model="openai:gpt-4@http://my-proxy.com/v1|MY_PROXY_KEY"
+)
+
+# Local server without authentication (secure default)
+response = generate_with_schema(
+    contents=["Your prompt"],
+    schema=YourModel,
+    model="openai:gpt-4@http://localhost:11434/v1"
+)
+
 # Backward compatibility still works
 response = generate_with_schema(
     contents=["Your prompt"],
@@ -213,6 +230,16 @@ export GEMINI_API_KEY="your-api-key"
 ```bash
 export OPENAI_API_KEY="your-api-key"
 ```
+
+### Custom OpenAI-Compatible Endpoints
+For authenticated custom endpoints, set a custom environment variable:
+```bash
+export MY_PROXY_KEY="your-proxy-api-key"
+```
+
+Then use with: `model="openai:gpt-4@http://my-proxy.com/v1|MY_PROXY_KEY"`
+
+**Security Note**: When using `@base_url` without `|api_key_env`, the library automatically uses an empty API key to prevent accidentally leaking your `OPENAI_API_KEY` to untrusted servers.
 
 ## Dependencies
 

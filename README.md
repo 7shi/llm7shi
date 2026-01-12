@@ -21,6 +21,7 @@ llm7shi is intentionally a **thin wrapper** around LLM APIs - it doesn't attempt
 
 - **Minimal Wrapper**: Thin layer over LLM APIs without complex abstraction
 - **Multi-Provider Support**: Works with Gemini, OpenAI, Ollama, and OpenAI-compatible endpoints (llama.cpp, LocalAI, etc.) through separate modules and unified `compat` interface
+- **Secure Custom Endpoint Support**: Flexible API key management with `model@base_url|api_key_env` syntax prevents accidental key leakage to local servers
 - **Production-Ready Error Handling**: Built-in retry logic for API errors (429, 500, 502, 503) respecting API-suggested retry delays
 - **Streaming Output**: Both text and schema-based generation support real-time streaming
 - **Thinking Process Visualization**: Leverage thinking capabilities in Gemini 2.5, Ollama models, and reasoning-capable custom endpoints
@@ -70,6 +71,17 @@ For OpenAI API compatibility (via compat module):
 ```bash
 export OPENAI_API_KEY="your-openai-api-key-here"
 ```
+
+For custom OpenAI-compatible endpoints with authentication:
+
+```bash
+# Set custom API key for authenticated proxy or custom endpoint
+export MY_PROXY_KEY="your-proxy-api-key"
+
+# Use in code with: model="openai:gpt-4@http://my-proxy.com/v1|MY_PROXY_KEY"
+```
+
+**Security Note**: When using `@base_url` syntax without `|api_key_env`, the library automatically uses an empty API key to prevent accidentally leaking your `OPENAI_API_KEY` to untrusted local servers.
 
 For Ollama (local models, no API key needed):
 

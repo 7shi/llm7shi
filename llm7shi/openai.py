@@ -1,4 +1,5 @@
 import sys
+import os
 from typing import List, Dict, Any
 from openai import OpenAI
 
@@ -16,9 +17,23 @@ def generate_content(
     max_length=None,
     check_repetition: bool = True,
     base_url: str = None,
+    api_key_env: str = None,
     **kwargs
 ) -> Response:
-    """Generate with OpenAI API with streaming and monitoring."""
+    """Generate with OpenAI API with streaming and monitoring.
+
+    Args:
+        messages: List of messages in OpenAI format
+        model: Model name
+        file: Output file for streaming
+        max_length: Maximum length of generated text
+        check_repetition: Whether to check for repetition
+        base_url: Custom API endpoint URL
+        api_key_env: Environment variable name containing API key.
+                     If None and base_url is specified, api_key will be set to ""
+                     to prevent leaking OPENAI_API_KEY to untrusted servers.
+        **kwargs: Additional arguments for OpenAI API
+    """
 
     # Use default model if not provided
     if not model:
@@ -31,8 +46,19 @@ def generate_content(
     has_response_format = 'response_format' in kwargs
     needs_gpt_oss_filter = (model == "llama.cpp/gpt-oss") and not has_response_format
 
-    # Create OpenAI client (with optional base_url for custom endpoints)
-    client = OpenAI(base_url=base_url) if base_url else OpenAI()
+    # Determine API key based on api_key_env and base_url
+    if api_key_env is not None:
+        # Use specified environment variable
+        api_key = os.environ.get(api_key_env, "")
+        client = OpenAI(base_url=base_url, api_key=api_key)
+    elif base_url is not None:
+        # base_url specified but api_key_env is None: use empty string for security
+        # This prevents leaking OPENAI_API_KEY to untrusted local servers
+        client = OpenAI(base_url=base_url, api_key="")
+    else:
+        # No base_url, no api_key_env: use default OpenAI client
+        # (will automatically use OPENAI_API_KEY environment variable)
+        client = OpenAI()
 
     # Call API with streaming
     response = client.chat.completions.create(

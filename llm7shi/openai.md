@@ -37,6 +37,30 @@
 
 **Solution**: Added optional `base_url` parameter to `generate_content()`, enabling seamless switching between OpenAI's official API and compatible alternatives while maintaining the same interface.
 
+### Secure API Key Management for Custom Endpoints
+**Problem**: When using custom endpoints via `base_url`, the OpenAI SDK automatically uses the `OPENAI_API_KEY` environment variable, creating a security risk where real API keys could be leaked to untrusted local servers or test endpoints.
+
+**Solution**: Implemented `api_key_env` parameter with intelligent default behavior:
+
+- **Security-first default**: When `base_url` is specified without `api_key_env`, the client is created with an empty API key (`api_key=""`) to prevent accidental key leakage
+- **Explicit environment variable selection**: When `api_key_env` is provided, the specified environment variable is read (e.g., `os.environ.get("MY_PROXY_KEY")`)
+- **Standard OpenAI behavior**: When neither `base_url` nor `api_key_env` is specified, the SDK's default behavior is preserved (automatic `OPENAI_API_KEY` usage)
+
+**Example behavior**:
+```python
+# Safe: Empty API key for local server
+client = OpenAI(base_url="http://localhost:11434/v1", api_key="")
+
+# Authenticated: Custom environment variable for proxy
+api_key = os.environ.get("MY_PROXY_KEY", "")
+client = OpenAI(base_url="http://my-proxy.com/v1", api_key=api_key)
+
+# Standard: Default OpenAI behavior
+client = OpenAI()
+```
+
+This design ensures that local testing with custom endpoints cannot accidentally expose production API keys, while still supporting authenticated custom endpoints when needed.
+
 ### gpt-oss Template Filter Support
 **Problem**: Some OpenAI-compatible servers (particularly llama.cpp with gpt-oss template) emit special control tokens (`<|channel|>`, `<|message|>`, etc.) that separate reasoning process from final output, but these tokens would appear in raw output without filtering.
 

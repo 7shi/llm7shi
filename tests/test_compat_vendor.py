@@ -150,13 +150,134 @@ class TestVendorPrefixSelection:
     def test_unknown_model_defaults_to_openai(self, mock_openai):
         """Test unknown model name defaults to OpenAI"""
         mock_openai.return_value = "unknown_model_response"
-        
+
         result = generate_with_schema(
             contents=["Test"],
             model="some-unknown-model"
         )
-        
+
         assert result == "unknown_model_response"
         mock_openai.assert_called_once()
         call_args = mock_openai.call_args
         assert call_args[0][0] == "some-unknown-model"
+
+
+class TestBaseUrlAndApiKeyEnvParsing:
+    """Test base_url and api_key_env parsing from model string"""
+
+    @patch('llm7shi.openai.generate_content')
+    def test_model_with_base_url_only(self, mock_generate):
+        """Test model@base_url syntax without api_key_env"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="openai:gpt-4@http://localhost:8080/v1"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that base_url was extracted and api_key_env is None
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["base_url"] == "http://localhost:8080/v1"
+        assert call_kwargs["api_key_env"] is None
+
+        # Check that model name was cleaned
+        assert mock_generate.call_args.kwargs["model"] == "gpt-4"
+
+    @patch('llm7shi.openai.generate_content')
+    def test_model_with_base_url_and_api_key_env(self, mock_generate):
+        """Test model@base_url|api_key_env syntax"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="openai:gpt-4@http://localhost:8080/v1|MY_API_KEY"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that both base_url and api_key_env were extracted
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["base_url"] == "http://localhost:8080/v1"
+        assert call_kwargs["api_key_env"] == "MY_API_KEY"
+
+        # Check that model name was cleaned
+        assert mock_generate.call_args.kwargs["model"] == "gpt-4"
+
+    @patch('llm7shi.openai.generate_content')
+    def test_model_without_base_url(self, mock_generate):
+        """Test model without @base_url syntax"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="openai:gpt-4.1-mini"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that base_url and api_key_env are None
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["base_url"] is None
+        assert call_kwargs["api_key_env"] is None
+
+        # Check that model name was preserved
+        assert mock_generate.call_args.kwargs["model"] == "gpt-4.1-mini"
+
+    @patch('llm7shi.openai.generate_content')
+    def test_base_url_with_port(self, mock_generate):
+        """Test base_url with port number (colon in URL)"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="openai:llama.cpp/gpt-oss@http://192.168.0.8:8080/v1|CUSTOM_KEY"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that URL with port was parsed correctly
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["base_url"] == "http://192.168.0.8:8080/v1"
+        assert call_kwargs["api_key_env"] == "CUSTOM_KEY"
+        assert mock_generate.call_args.kwargs["model"] == "llama.cpp/gpt-oss"
+
+    @patch('llm7shi.openai.generate_content')
+    def test_empty_api_key_env(self, mock_generate):
+        """Test model@base_url| with empty api_key_env"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="openai:gpt-4@http://localhost:8080/v1|"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that empty string api_key_env was extracted
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["base_url"] == "http://localhost:8080/v1"
+        assert call_kwargs["api_key_env"] == ""
+
+    @patch('llm7shi.openai.generate_content')
+    def test_api_key_env_with_underscores(self, mock_generate):
+        """Test api_key_env with underscores and numbers"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="openai:gpt-4@http://localhost:8080/v1|MY_CUSTOM_API_KEY_123"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that api_key_env with special characters was parsed
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["api_key_env"] == "MY_CUSTOM_API_KEY_123"
