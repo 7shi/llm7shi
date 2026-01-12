@@ -186,6 +186,37 @@ response = generate_with_schema(
 ```
 Result: Standard SDK behavior, uses `OPENAI_API_KEY` environment variable.
 
+### OpenAI-Compatible Vendor Prefixes
+```bash
+export OPENROUTER_API_KEY="sk-or-..."
+export GROQ_API_KEY="gsk_..."
+export XAI_API_KEY="xai-..."
+```
+
+```python
+# OpenRouter with default model
+response = generate_with_schema(
+    ["Hello, world!"],
+    model="openrouter:"
+)
+# Automatically uses: qwen/qwen3-4b:free@https://openrouter.ai/api/v1|OPENROUTER_API_KEY
+
+# Groq with specific model
+response = generate_with_schema(
+    ["Hello, world!"],
+    model="groq:llama-3.3-70b-versatile"
+)
+# Automatically uses: llama-3.3-70b-versatile@https://api.groq.com/openai/v1|GROQ_API_KEY
+
+# X.AI Grok
+response = generate_with_schema(
+    ["Hello, world!"],
+    model="grok:grok-4-1"
+)
+# Automatically uses: grok-4-1@https://api.x.ai/v1|XAI_API_KEY
+```
+Result: Pre-configured vendor prefixes automatically apply secure base_url and api_key_env settings, building on the security foundation established by this feature.
+
 ## Implementation Summary
 
 ### Modified Files
@@ -231,6 +262,45 @@ This implementation:
 - ✅ **Follows principle of least privilege** (secure by default)
 - ✅ **Clear opt-in mechanism** for sending credentials
 
+## Building on This Foundation: OpenAI-Compatible Vendor Prefixes
+
+The security infrastructure established by `api_key_env` and `model@base_url|api_key_env` syntax enabled a natural extension: pre-configured vendor prefixes for popular OpenAI-compatible providers.
+
+### Implementation (Added Later)
+
+Three vendor prefixes were added to `compat.py`:
+- `openrouter:` - OpenRouter API
+- `groq:` - Groq API
+- `grok:` - X.AI Grok API
+
+Each vendor has pre-configured:
+- Default base_url (e.g., `https://openrouter.ai/api/v1`)
+- Default api_key_env (e.g., `OPENROUTER_API_KEY`)
+- Default model (e.g., `qwen/qwen3-4b:free`)
+
+### Automatic Security Application
+
+When a user specifies `model="openrouter:llama-3.3-70b"`, the system automatically constructs:
+```
+llama-3.3-70b@https://openrouter.ai/api/v1|OPENROUTER_API_KEY
+```
+
+This automatic construction:
+1. ✅ Reuses the secure `@base_url|api_key_env` parsing logic
+2. ✅ Applies secure defaults (empty API key if user hasn't set the environment variable)
+3. ✅ Allows user overrides (if user specifies `@`, vendor defaults aren't applied)
+4. ✅ Maintains the same security guarantees
+
+### Why This Extension Works
+
+The vendor prefix feature could be implemented cleanly because:
+- The security-first defaults were already established
+- The `|api_key_env` syntax provided explicit environment variable selection
+- The parsing logic in `_generate_with_openai()` handled the transformed model string transparently
+- User overrides naturally took precedence over vendor defaults
+
+This demonstrates how a well-designed security foundation enables convenient features without compromising safety.
+
 ## Future Considerations
 
 ### Potential Extensions
@@ -241,7 +311,7 @@ This implementation:
 
 ### Not Implemented (By Design)
 
-1. **Automatic base_url from model name**: Could infer `localhost:11434` for `ollama:` prefix, but explicit is better
+1. **Automatic base_url from core vendor prefixes**: We don't automatically infer base_url for core vendors like `ollama:` (which could point to `localhost:11434`), preferring explicit configuration. However, OpenAI-compatible vendors (`openrouter:`, `groq:`, `grok:`) do have pre-configured base_url since they always point to the same public endpoints.
 2. **Config file support**: Environment variables are sufficient for current use cases
 3. **API key validation**: Left to the SDK/server to report invalid credentials
 
@@ -252,3 +322,4 @@ This implementation:
 3. **Simple syntax wins**: `|` delimiter is concise and unambiguous
 4. **Document security implications**: Users need to understand the risks
 5. **Test edge cases thoroughly**: URL parsing has many corner cases (ports, special chars, etc.)
+6. **Good foundations enable extensions**: The OpenAI-compatible vendor prefix feature was implemented cleanly because the security infrastructure (`api_key_env` parameter and secure defaults) was already in place. Designing for security first made convenience features safer to add.

@@ -281,3 +281,121 @@ class TestBaseUrlAndApiKeyEnvParsing:
         # Check that api_key_env with special characters was parsed
         call_kwargs = mock_generate.call_args.kwargs
         assert call_kwargs["api_key_env"] == "MY_CUSTOM_API_KEY_123"
+
+
+class TestOpenAICompatibleVendors:
+    """Test OpenAI-compatible vendor prefixes (openrouter, groq, grok)"""
+
+    @patch('llm7shi.openai.generate_content')
+    def test_openrouter_with_default_model(self, mock_generate):
+        """Test openrouter: prefix uses default model"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="openrouter:"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that default model and vendor config were applied
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["model"] == "qwen/qwen3-4b:free"
+        assert call_kwargs["base_url"] == "https://openrouter.ai/api/v1"
+        assert call_kwargs["api_key_env"] == "OPENROUTER_API_KEY"
+
+    @patch('llm7shi.openai.generate_content')
+    def test_openrouter_with_specific_model(self, mock_generate):
+        """Test openrouter: prefix with specific model"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="openrouter:anthropic/claude-3.5-sonnet"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that vendor config was applied to specified model
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["model"] == "anthropic/claude-3.5-sonnet"
+        assert call_kwargs["base_url"] == "https://openrouter.ai/api/v1"
+        assert call_kwargs["api_key_env"] == "OPENROUTER_API_KEY"
+
+    @patch('llm7shi.openai.generate_content')
+    def test_groq_vendor_prefix(self, mock_generate):
+        """Test groq: vendor prefix"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="groq:llama-3.3-70b-versatile"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that groq vendor config was applied
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["model"] == "llama-3.3-70b-versatile"
+        assert call_kwargs["base_url"] == "https://api.groq.com/openai/v1"
+        assert call_kwargs["api_key_env"] == "GROQ_API_KEY"
+
+    @patch('llm7shi.openai.generate_content')
+    def test_grok_vendor_prefix(self, mock_generate):
+        """Test grok: vendor prefix"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="grok:grok-4-1"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that grok vendor config was applied
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["model"] == "grok-4-1"
+        assert call_kwargs["base_url"] == "https://api.x.ai/v1"
+        assert call_kwargs["api_key_env"] == "XAI_API_KEY"
+
+    @patch('llm7shi.openai.generate_content')
+    def test_openrouter_with_custom_url(self, mock_generate):
+        """Test that user-specified @base_url is not overridden"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="openrouter:custom-model@http://custom-url/v1|MY_KEY"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that user's custom URL was preserved (no vendor defaults applied)
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["model"] == "custom-model"
+        assert call_kwargs["base_url"] == "http://custom-url/v1"
+        assert call_kwargs["api_key_env"] == "MY_KEY"
+
+    @patch('llm7shi.openai.generate_content')
+    def test_groq_default_model(self, mock_generate):
+        """Test groq: prefix with empty model uses default"""
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="groq:"
+        )
+
+        assert result == "response"
+        mock_generate.assert_called_once()
+
+        # Check that default groq model was used
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["model"] == "llama-3.1-8b-instant"
+        assert call_kwargs["base_url"] == "https://api.groq.com/openai/v1"
+        assert call_kwargs["api_key_env"] == "GROQ_API_KEY"

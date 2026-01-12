@@ -42,3 +42,17 @@ The vendor prefix feature required dedicated testing to ensure robust multi-prov
 6. **Environment variable naming**: Ensures support for realistic env var names with underscores and numbers
 
 **Why this matters**: The pipe delimiter syntax enables secure custom endpoint usage by allowing explicit environment variable specification while maintaining backward compatibility with the simpler `@base_url` format. These tests ensure the parsing logic handles real-world URL formats and environment variable naming conventions correctly.
+
+### OpenAI-Compatible Vendor Prefix Routing
+**Problem**: Multiple OpenAI-compatible providers (OpenRouter, Groq, X.AI) required automatic configuration of base_url and api_key_env, but this automatic behavior needed verification to ensure correct defaults are applied without breaking user-specified overrides.
+
+**Solution**: Dedicated test class `TestOpenAICompatibleVendors` with six test scenarios:
+
+1. **Default model usage**: Validates empty model after prefix (e.g., `openrouter:`) correctly uses vendor's default model
+2. **Specific model specification**: Verifies custom model names are preserved while vendor defaults (base_url, api_key_env) are applied
+3. **Multi-vendor coverage**: Tests all three vendors (openrouter, groq, grok) to ensure consistent behavior
+4. **User override preservation**: Confirms that user-specified `@base_url|api_key_env` syntax takes precedence over vendor defaults
+5. **Correct parameter passing**: Validates that model, base_url, and api_key_env are correctly extracted and passed to underlying `generate_content()`
+6. **Automatic configuration**: Ensures vendor defaults are only applied when user hasn't specified custom endpoint
+
+**Why this matters**: OpenAI-compatible vendors share similar configuration needs (base_url + api_key_env), making them ideal candidates for automatic configuration. These tests ensure the convenience of pre-configured vendors doesn't compromise flexibility for users who need custom endpoints. The tests validate both the happy path (automatic configuration) and the escape hatch (user overrides).

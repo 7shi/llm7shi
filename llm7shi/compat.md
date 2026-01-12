@@ -42,25 +42,6 @@ As the library evolved, we realized that different LLM providers have significan
 - System prompt conflict detection: raises error if provided in both messages and parameter
 - Provider-specific handling: Gemini converts to Content objects, OpenAI/Ollama use messages directly
 
-Example:
-```python
-# Multi-turn conversation with message format
-messages = [
-    {"role": "system", "content": "You are helpful."},
-    {"role": "user", "content": "What is Python?"},
-    {"role": "assistant", "content": "Python is a programming language."},
-    {"role": "user", "content": "What makes it special?"}
-]
-response = generate_with_schema(messages, model="google:gemini-2.5-flash")
-
-# Legacy format still works
-response = generate_with_schema(
-    ["What is Python?"],
-    system_prompt="You are helpful.",
-    model="google:gemini-2.5-flash"
-)
-```
-
 ## Key Design Decisions
 
 ### Vendor Prefix Model Detection
@@ -73,6 +54,28 @@ response = generate_with_schema(
 - Legacy patterns like `"gpt-4.1-mini"` and `"gemini-2.5-flash"` continue to work for backward compatibility
 - Defaults to Gemini when no vendor prefix is specified
 
+### OpenAI-Compatible Vendor Prefixes
+**Problem**: Multiple providers offer OpenAI-compatible APIs (OpenRouter, Groq, X.AI), requiring users to manually specify base_url and api_key_env for each request.
+
+**Solution**: Pre-configured vendor prefixes for popular OpenAI-compatible providers:
+
+- `openrouter:` - OpenRouter API (`https://openrouter.ai/api/v1`)
+  - Default model: `qwen/qwen3-4b:free`
+  - API key: `OPENROUTER_API_KEY` environment variable
+
+- `groq:` - Groq API (`https://api.groq.com/openai/v1`)
+  - Default model: `llama-3.1-8b-instant`
+  - API key: `GROQ_API_KEY` environment variable
+
+- `grok:` - X.AI Grok API (`https://api.x.ai/v1`)
+  - Default model: `grok-4-1-fast-non-reasoning`
+  - API key: `XAI_API_KEY` environment variable
+
+**Automatic Configuration**: When using these vendor prefixes:
+- If model name is empty (e.g., `openrouter:`), the default model is used
+- If no `@base_url` is specified, vendor's default base_url and api_key_env are automatically appended
+- If user specifies `@base_url`, vendor defaults are not applied (user configuration takes precedence)
+
 ### Base URL Embedding in Model String
 **Problem**: Users running OpenAI-compatible servers (llama.cpp, LocalAI, etc.) needed a way to specify custom endpoints without adding separate configuration parameters to every function call.
 
@@ -83,16 +86,7 @@ response = generate_with_schema(
 - Base URL is extracted and passed to the underlying `generate_content()` function
 - This approach keeps model selection and endpoint configuration in a single string parameter
 
-**API Key Specification**: When using custom endpoints with `@base_url`, you can specify which environment variable contains the API key using `|api_key_env` syntax:
-
-- **Without `|`**: Uses empty API key (secure default for local servers)
-  - Example: `"openai:gpt-4@http://localhost:11434/v1"`
-  - Security: Prevents leaking `OPENAI_API_KEY` to untrusted local servers
-
-- **With `|api_key_env`**: Uses specified environment variable
-  - Example: `"openai:gpt-4@http://my-proxy.com/v1|MY_PROXY_KEY"`
-  - The value from `os.environ.get("MY_PROXY_KEY")` will be used
-  - Use case: Authenticated proxy services or custom OpenAI-compatible APIs
+**API Key Specification**: When using custom endpoints with `@base_url`, users can specify which environment variable contains the API key using `|api_key_env` syntax. Without the `|` delimiter, empty API key is used as secure default for local servers, preventing accidental leakage of `OPENAI_API_KEY` to untrusted servers. With `|api_key_env`, the specified environment variable is read for authenticated proxy services or custom OpenAI-compatible APIs.
 
 **llama-server Design Pattern**: Since llama-server provides only one model at a time and ignores the model name parameter in API requests, the model name portion (e.g., `"llama.cpp/gpt-oss"`) serves as a client-side template identifier rather than selecting a specific model on the server. This design enables users to signal which prompt template parser should be activated (like `GptOssTemplateFilter`) based on the server's configuration, independent of which model is actually being served. The server address is specified via `@base_url`, while the model name controls client-side behavior such as filter activation.
 

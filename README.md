@@ -20,7 +20,7 @@ llm7shi is intentionally a **thin wrapper** around LLM APIs - it doesn't attempt
 ## Features
 
 - **Minimal Wrapper**: Thin layer over LLM APIs without complex abstraction
-- **Multi-Provider Support**: Works with Gemini, OpenAI, Ollama, and OpenAI-compatible endpoints (llama.cpp, LocalAI, etc.) through separate modules and unified `compat` interface
+- **Multi-Provider Support**: Works with Gemini, OpenAI, Ollama, and OpenAI-compatible providers (OpenRouter, Groq, X.AI, llama.cpp, LocalAI, etc.) through separate modules and unified `compat` interface
 - **Secure Custom Endpoint Support**: Flexible API key management with `model@base_url|api_key_env` syntax prevents accidental key leakage to local servers
 - **Production-Ready Error Handling**: Built-in retry logic for API errors (429, 500, 502, 503) respecting API-suggested retry delays
 - **Streaming Output**: Both text and schema-based generation support real-time streaming
@@ -90,6 +90,14 @@ For Ollama (local models, no API key needed):
 ollama pull qwen3:4b  # or your preferred model
 ```
 
+For OpenAI-compatible providers (OpenRouter, Groq, X.AI):
+
+```bash
+export OPENROUTER_API_KEY="your-openrouter-api-key"
+export GROQ_API_KEY="your-groq-api-key"
+export XAI_API_KEY="your-xai-api-key"
+```
+
 ## API Reference
 
 See [llm7shi/README.md](llm7shi/README.md) for complete API documentation and module details.
@@ -124,6 +132,27 @@ generate_content_retry(
     ["The temperature in Tokyo is 90 degrees Fahrenheit."],
     config=config_from_schema(LocationsAndTemperatures),
 )
+```
+
+### Multi-Provider Example (via compat module)
+
+```python
+from llm7shi.compat import generate_with_schema
+
+# OpenAI
+response = generate_with_schema(["Hello"], model="openai:gpt-4.1-mini")
+
+# Gemini
+response = generate_with_schema(["Hello"], model="google:gemini-2.5-flash")
+
+# OpenRouter (OpenAI-compatible)
+response = generate_with_schema(["Hello"], model="openrouter:")
+
+# Groq (OpenAI-compatible)
+response = generate_with_schema(["Hello"], model="groq:llama-3.1-8b-instant")
+
+# X.AI Grok (OpenAI-compatible)
+response = generate_with_schema(["Hello"], model="grok:grok-4-1")
 ```
 
 ## Important Notes

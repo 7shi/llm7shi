@@ -13,6 +13,25 @@ from .monitor import StreamMonitor
 # Vendor prefixes for examples (use vendor prefix only for easier maintenance)
 VENDOR_PREFIXES = ["google:", "openai:", "ollama:"]
 
+# OpenAI-compatible vendor configurations
+OPENAI_COMPATIBLE_VENDORS = {
+    "openrouter": {
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key_env": "OPENROUTER_API_KEY",
+        "default_model": "qwen/qwen3-4b:free",
+    },
+    "groq": {
+        "base_url": "https://api.groq.com/openai/v1",
+        "api_key_env": "GROQ_API_KEY",
+        "default_model": "llama-3.1-8b-instant",
+    },
+    "grok": {
+        "base_url": "https://api.x.ai/v1",
+        "api_key_env": "XAI_API_KEY",
+        "default_model": "grok-4-1-fast-non-reasoning",
+    },
+}
+
 # Type alias for message content
 MessageContent = Union[List[str], List[Dict[str, str]]]
 
@@ -67,7 +86,22 @@ def generate_with_schema(
             else:
                 vendor_prefix = "openai"
 
-    if vendor_prefix == "google":
+    # Check if vendor is OpenAI-compatible (openrouter, groq, grok)
+    if vendor_prefix in OPENAI_COMPATIBLE_VENDORS:
+        vendor_config = OPENAI_COMPATIBLE_VENDORS[vendor_prefix]
+
+        # Use default model if actual_model is empty
+        if not actual_model:
+            actual_model = vendor_config["default_model"]
+
+        # Only add base_url if not already specified by user
+        if "@" not in actual_model:
+            # Construct model string with vendor defaults
+            actual_model = f"{actual_model}@{vendor_config['base_url']}|{vendor_config['api_key_env']}"
+
+        return _generate_with_openai(actual_model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition)
+
+    elif vendor_prefix == "google":
         return _generate_with_gemini(actual_model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params, max_length, check_repetition)
     elif vendor_prefix == "openai":
         return _generate_with_openai(actual_model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition)
