@@ -60,7 +60,7 @@ As the library evolved, we realized that different LLM providers have significan
 **Solution**: Pre-configured vendor prefixes for popular OpenAI-compatible providers:
 
 - `openrouter:` - OpenRouter API (`https://openrouter.ai/api/v1`)
-  - Default model: `qwen/qwen3-4b:free`
+  - Default model: `google/gemma-3-4b-it:free`
   - API key: `OPENROUTER_API_KEY` environment variable
 
 - `groq:` - Groq API (`https://api.groq.com/openai/v1`)

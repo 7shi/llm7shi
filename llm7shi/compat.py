@@ -18,7 +18,7 @@ OPENAI_COMPATIBLE_VENDORS = {
     "openrouter": {
         "base_url": "https://openrouter.ai/api/v1",
         "api_key_env": "OPENROUTER_API_KEY",
-        "default_model": "qwen/qwen3-4b:free",
+        "default_model": "google/gemma-3-4b-it:free",
     },
     "groq": {
         "base_url": "https://api.groq.com/openai/v1",
