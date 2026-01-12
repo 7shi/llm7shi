@@ -25,18 +25,17 @@ The compatibility versions use `llm7shi.compat.generate_with_schema()` to work s
 
 The compat examples demonstrate the vendor prefix format for provider selection:
 
-- **Examples use vendor prefix only**: `"openai:"`, `"google:"` (for easier maintenance when default models change)
+- **Examples use vendor prefix only**: `"ollama:"` (uses local Ollama by default to avoid unexpected costs)
 - **Production use (recommended)**: `"openai:gpt-4.1-mini"`, `"google:gemini-2.5-flash"` (explicit model specification)
 - **Legacy format (still supported)**: `"gpt-4.1-mini"`, `"gemini-2.5-flash"`
 
-Note: Examples in this directory use vendor prefix only (imported as `VENDOR_PREFIXES` constant from `llm7shi.compat`) to avoid frequent updates when recommended models change. For production use, explicitly specifying the model name is recommended for reproducible results.
+Note: Examples in this directory use `"ollama:"` by default. For production use or to use other providers, explicitly specifying the model name is recommended.
 
 **Implementation example**:
 ```python
-from llm7shi.compat import generate_with_schema, VENDOR_PREFIXES
+from llm7shi.compat import generate_with_schema
 
-for model in VENDOR_PREFIXES:  # ["google:", "openai:", "ollama:"]
-    generate_with_schema(["Your prompt"], model=model)
+generate_with_schema(["Your prompt"], model="ollama:")
 ```
 
 ## Basic Usage

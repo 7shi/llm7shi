@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from llm7shi.compat import generate_with_schema, VENDOR_PREFIXES
+from llm7shi.compat import generate_with_schema
 
 # Define evaluation criteria and their descriptions
 CRITERIA = {
@@ -85,6 +85,4 @@ print("=" * 60)
 print(essay)
 print("=" * 60)
 
-# Evaluate with all models
-for model in VENDOR_PREFIXES:
-    evaluate_essay(model)
+evaluate_essay("ollama:")

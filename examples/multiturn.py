@@ -1,4 +1,4 @@
-from llm7shi.compat import generate_with_schema, VENDOR_PREFIXES
+from llm7shi.compat import generate_with_schema
 
 # Multi-turn conversation using OpenAI-compatible message format
 messages = [
@@ -8,7 +8,4 @@ messages = [
     {"role": "user", "content": "What is its population?"}
 ]
 
-for i, model in enumerate(VENDOR_PREFIXES):
-    if i:
-        print("", "=" * 60, "", sep="\n")
-    generate_with_schema(messages, model=model)
+generate_with_schema(messages, model="ollama:")
