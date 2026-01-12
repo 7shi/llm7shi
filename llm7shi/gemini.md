@@ -33,3 +33,6 @@ Gemini's file API requires uploading first, then referencing in requests. We abs
 
 ### Stream Interruption
 Streaming responses can be safely interrupted by simply breaking out of the loop consuming the iterator. No explicit `close()` method is required - the underlying HTTP client libraries (httpx/aiohttp) automatically handle resource cleanup when the generator is garbage collected.
+
+### Immutable Module Constants
+The `config_text` constant uses Python's `__getattr__` mechanism to return a fresh `GenerateContentConfig` instance on every access. While it appears as a module-level constant, each access creates a new object, preventing unintended mutations from affecting other code. This maintains backward compatibility with existing code that references `config_text` while eliminating the risk of shared mutable state.

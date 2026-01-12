@@ -27,10 +27,7 @@ client = genai.Client(
     api_key=os.environ.get("GEMINI_API_KEY"),
 )
 
-# Default configuration for plain text responses
-config_text = types.GenerateContentConfig(
-    response_mime_type="text/plain",
-)
+# config_text is dynamically generated via __getattr__ to prevent mutation
 
 
 def build_schema_from_json(json_data):
@@ -294,11 +291,23 @@ def upload_file(path, mime_type):
 
 def delete_file(file):
     """Delete uploaded file from Gemini storage.
-    
+
     Args:
         file: File object returned from upload_file()
-        
+
     Returns:
         Delete operation result
     """
     return client.files.delete(name=file.name)
+
+
+def __getattr__(name):
+    """Module-level attribute access handler.
+
+    Dynamically generates config_text on each access to prevent mutation issues.
+    """
+    if name == "config_text":
+        return types.GenerateContentConfig(
+            response_mime_type="text/plain",
+        )
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
