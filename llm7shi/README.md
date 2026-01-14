@@ -98,7 +98,7 @@ Unified interface for OpenAI, Gemini, and Ollama APIs, enabling seamless switchi
 - `generate_with_schema()` - Unified generation function
 - Vendor prefix support:
   - Core providers: "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b"
-  - OpenAI-compatible: "openrouter:google/gemma-3-4b-it:free", "groq:llama-3.1-8b-instant", "grok:grok-4-1"
+  - OpenAI-compatible: "openrouter:google/gemma-3-4b-it:free", "groq:llama-3.1-8b-instant", "grok:grok-4-1", "cerebras:llama3.1-8b"
 - Base URL embedding support (e.g., "openai:model@http://localhost:8080/v1") - model name acts as client-side template identifier for llama-server
 - API key environment variable specification (e.g., "openai:model@http://proxy.com/v1|MY_PROXY_KEY")
 - Secure defaults: Empty API key for custom endpoints to prevent key leakage
@@ -192,6 +192,11 @@ response = generate_with_schema(
     model="grok:grok-4-1"  # X.AI Grok
 )
 
+response = generate_with_schema(
+    contents=["Your prompt"],
+    model="cerebras:llama3.1-8b"  # Cerebras
+)
+
 # Multi-turn conversation with message format
 messages = [
     {"role": "system", "content": "You are helpful."},
@@ -269,14 +274,15 @@ Then use with: `model="openai:gpt-4@http://my-proxy.com/v1|MY_PROXY_KEY"`
 **Security Note**: When using `@base_url` without `|api_key_env`, the library automatically uses an empty API key to prevent accidentally leaking your `OPENAI_API_KEY` to untrusted servers.
 
 ### OpenAI-Compatible Providers
-For pre-configured providers (OpenRouter, Groq, X.AI):
+For pre-configured providers (OpenRouter, Groq, X.AI, Cerebras):
 ```bash
 export OPENROUTER_API_KEY="your-openrouter-api-key"
 export GROQ_API_KEY="your-groq-api-key"
 export XAI_API_KEY="your-xai-api-key"
+export CEREBRAS_API_KEY="your-cerebras-api-key"
 ```
 
-Then use with vendor prefixes: `model="openrouter:"`, `model="groq:llama-3.3-70b"`, `model="grok:grok-4-1"`
+Then use with vendor prefixes: `model="openrouter:"`, `model="groq:llama-3.3-70b"`, `model="grok:grok-4-1"`, `model="cerebras:llama3.1-8b"`
 
 ## Dependencies
 

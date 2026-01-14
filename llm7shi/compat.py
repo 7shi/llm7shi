@@ -30,6 +30,11 @@ OPENAI_COMPATIBLE_VENDORS = {
         "api_key_env": "XAI_API_KEY",
         "default_model": "grok-4-1-fast-non-reasoning",
     },
+    "cerebras": {
+        "base_url": "https://api.cerebras.ai/v1",
+        "api_key_env": "CEREBRAS_API_KEY",
+        "default_model": "llama3.1-8b",
+    },
 }
 
 # Type alias for message content

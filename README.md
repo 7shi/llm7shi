@@ -20,7 +20,7 @@ llm7shi is intentionally a **thin wrapper** around LLM APIs - it doesn't attempt
 ## Features
 
 - **Minimal Wrapper**: Thin layer over LLM APIs without complex abstraction
-- **Multi-Provider Support**: Works with Gemini, OpenAI, Ollama, and OpenAI-compatible providers (OpenRouter, Groq, X.AI, llama.cpp, LocalAI, etc.) through separate modules and unified `compat` interface
+- **Multi-Provider Support**: Works with Gemini, OpenAI, Ollama, and OpenAI-compatible providers (OpenRouter, Groq, X.AI, Cerebras, llama.cpp, LocalAI, etc.) through separate modules and unified `compat` interface
 - **Secure Custom Endpoint Support**: Flexible API key management with `model@base_url|api_key_env` syntax prevents accidental key leakage to local servers
 - **Production-Ready Error Handling**: Built-in retry logic for API errors (429, 500, 502, 503) respecting API-suggested retry delays
 - **Streaming Output**: Both text and schema-based generation support real-time streaming
@@ -60,43 +60,13 @@ uv sync
 
 ## Setup
 
-Set your Gemini API key as an environment variable:
+Set your API key as an environment variable. For Gemini (default provider):
 
 ```bash
 export GEMINI_API_KEY="your-api-key-here"
 ```
 
-For OpenAI API compatibility (via compat module):
-
-```bash
-export OPENAI_API_KEY="your-openai-api-key-here"
-```
-
-For custom OpenAI-compatible endpoints with authentication:
-
-```bash
-# Set custom API key for authenticated proxy or custom endpoint
-export MY_PROXY_KEY="your-proxy-api-key"
-
-# Use in code with: model="openai:gpt-4@http://my-proxy.com/v1|MY_PROXY_KEY"
-```
-
-**Security Note**: When using `@base_url` syntax without `|api_key_env`, the library automatically uses an empty API key to prevent accidentally leaking your `OPENAI_API_KEY` to untrusted local servers.
-
-For Ollama (local models, no API key needed):
-
-```bash
-# Install and start Ollama first: https://ollama.ai/
-ollama pull qwen3:4b  # or your preferred model
-```
-
-For OpenAI-compatible providers (OpenRouter, Groq, X.AI):
-
-```bash
-export OPENROUTER_API_KEY="your-openrouter-api-key"
-export GROQ_API_KEY="your-groq-api-key"
-export XAI_API_KEY="your-xai-api-key"
-```
+For other providers (OpenAI, Ollama, OpenRouter, Groq, X.AI, Cerebras), see [llm7shi/README.md](llm7shi/README.md#environment-setup) for complete environment setup instructions.
 
 ## API Reference
 
@@ -139,45 +109,19 @@ generate_content_retry(
 ```python
 from llm7shi.compat import generate_with_schema
 
-# OpenAI
+# Switch providers with vendor prefixes
 response = generate_with_schema(["Hello"], model="openai:gpt-4.1-mini")
-
-# Gemini
 response = generate_with_schema(["Hello"], model="google:gemini-2.5-flash")
-
-# OpenRouter (OpenAI-compatible)
-response = generate_with_schema(["Hello"], model="openrouter:")
-
-# Groq (OpenAI-compatible)
 response = generate_with_schema(["Hello"], model="groq:llama-3.1-8b-instant")
-
-# X.AI Grok (OpenAI-compatible)
-response = generate_with_schema(["Hello"], model="grok:grok-4-1")
 ```
+
+See [llm7shi/README.md](llm7shi/README.md) for comprehensive multi-provider examples including OpenRouter, X.AI, Cerebras, custom endpoints, and message formats.
 
 ## Important Notes
 
-### llama.cpp Structured Output Behavior
+### llama.cpp and Custom Endpoints
 
-When using llama.cpp server with the gpt-oss template and structured output (JSON schema), the server behaves differently from plain text mode:
-
-- **Plain text mode**: Server emits control tokens (`<|channel|>`, `<|message|>`, etc.) to separate reasoning from final answer
-- **Structured output mode** (when `response_format` is specified): Server returns direct JSON output **without control tokens**
-
-This means:
-- The `GptOssTemplateFilter` is automatically disabled for structured output (no control tokens to parse)
-- Separation between reasoning and final answer via control tokens is not available in JSON mode
-- If you want to capture reasoning in structured output, include dedicated fields (e.g., `reasoning`) in your JSON schema
-
-Example schema with reasoning field:
-```python
-class LocationTemperature(BaseModel):
-    reasoning: str  # Explicitly include reasoning field
-    location: str
-    temperature: float
-```
-
-See [llm7shi/openai.md](llm7shi/openai.md) for detailed information about gpt-oss template filter behavior.
+When using llama.cpp server or other custom OpenAI-compatible endpoints, behavior varies between plain text and structured output modes. For detailed information about template filters and control token handling, see [llm7shi/openai.md](llm7shi/openai.md).
 
 ## Testing
 
