@@ -22,6 +22,14 @@ This creates a security risk where:
 From the OpenAI SDK source (`src/openai/_client.py`):
 
 ```python
+# In OpenAI.__init__
+if api_key is None:
+    api_key = os.environ.get("OPENAI_API_KEY")
+```
+
+And the header generation logic:
+
+```python
 @property
 @override
 def auth_headers(self) -> dict[str, str]:
@@ -32,7 +40,9 @@ def auth_headers(self) -> dict[str, str]:
     return {"Authorization": f"Bearer {api_key}"}
 ```
 
-This shows that the only way to prevent the `Authorization` header from being sent is to explicitly set `api_key` to an empty value.
+This shows:
+1. `api_key` is automatically loaded from the environment if not provided.
+2. The only way to prevent the `Authorization` header from being sent is to explicitly set `api_key` to an empty value.
 
 ## Initial Implementation Problem
 
