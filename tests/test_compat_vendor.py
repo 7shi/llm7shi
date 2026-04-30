@@ -301,7 +301,7 @@ class TestOpenAICompatibleVendors:
 
         # Check that default model and vendor config were applied
         call_kwargs = mock_generate.call_args.kwargs
-        assert call_kwargs["model"] == "qwen/qwen3-4b:free"
+        assert call_kwargs["model"] == "google/gemma-3-4b-it:free"
         assert call_kwargs["base_url"] == "https://openrouter.ai/api/v1"
         assert call_kwargs["api_key_env"] == "OPENROUTER_API_KEY"
 
