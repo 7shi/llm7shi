@@ -48,10 +48,11 @@ def generate_content(
     chunks = []
     converter = MarkdownStreamConverter()  # For terminal formatting
     monitor = StreamMonitor(converter, max_length=max_length, check_repetition=check_repetition)
-    
+    thoughts_monitor = StreamMonitor(converter, max_length=None, check_repetition=check_repetition)
+
     for chunk in response:
         chunks.append(chunk)
-        
+
         # Handle thinking content
         if getattr(chunk.message, 'thinking', None) is not None:
             thinking_content = chunk.message.thinking
@@ -63,7 +64,10 @@ def generate_content(
             # Stream formatted thinking output to terminal
             if file:
                 print(converter.feed(thinking_content), end='', flush=True, file=file)
-        
+            if not thoughts_monitor.check(thoughts, file):
+                client._client.close()
+                break
+
         # Handle regular content
         if chunk.message.content:
             content = chunk.message.content
@@ -75,7 +79,7 @@ def generate_content(
             # Stream formatted output to terminal
             if file:
                 print(converter.feed(content), end='', flush=True, file=file)
-            
+
             # Check for repetition and max length
             if not monitor.check(collected_content, file):
                 client._client.close()
@@ -99,6 +103,6 @@ def generate_content(
         chunks=chunks,
         thoughts=thoughts,
         text=collected_content,
-        repetition=monitor.repetition_detected,
+        repetition=monitor.repetition_detected or thoughts_monitor.repetition_detected,
         max_length=monitor.max_length_exceeded,
     )

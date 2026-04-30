@@ -77,6 +77,7 @@ def generate_content(
     converter = MarkdownStreamConverter()  # For terminal formatting
     content_filter = GptOssTemplateFilter() if needs_gpt_oss_filter else None
     monitor = StreamMonitor(converter, max_length=max_length, check_repetition=check_repetition)
+    thoughts_monitor = StreamMonitor(converter, max_length=None, check_repetition=check_repetition)
 
     # Track previous lengths for incremental display
     previous_thoughts_len = 0
@@ -127,6 +128,9 @@ def generate_content(
                 # Update stored values
                 thoughts = current_thoughts
                 collected_content = current_text
+                if not thoughts_monitor.check(thoughts, file):
+                    response.close()
+                    break
             else:
                 # No filter: direct passthrough
                 collected_content += content
@@ -185,6 +189,6 @@ def generate_content(
         chunks=chunks,
         thoughts=thoughts,
         text=collected_content,
-        repetition=monitor.repetition_detected,
+        repetition=monitor.repetition_detected or thoughts_monitor.repetition_detected,
         max_length=monitor.max_length_exceeded,
     )

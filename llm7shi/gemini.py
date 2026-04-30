@@ -173,6 +173,7 @@ def generate_content_retry(
             answer_shown = False  # Track if answer header was shown
             converter = MarkdownStreamConverter()  # For terminal formatting
             monitor = StreamMonitor(converter, max_length=max_length, check_repetition=check_repetition)
+            thoughts_monitor = StreamMonitor(converter, max_length=None, check_repetition=check_repetition)
             chunks = []  # Collect all chunks
             
             # Process streaming response chunks
@@ -210,6 +211,8 @@ def generate_content_retry(
                 # Check for repetition and max length
                 if not monitor.check(text, file):
                     break
+                if not thoughts_monitor.check(thoughts, file):
+                    break
             
             # Flush any remaining markdown formatting
             remaining = converter.flush()
@@ -228,7 +231,7 @@ def generate_content_retry(
                 chunks=chunks,
                 thoughts=thoughts,
                 text=text,
-                repetition=monitor.repetition_detected,
+                repetition=monitor.repetition_detected or thoughts_monitor.repetition_detected,
                 max_length=monitor.max_length_exceeded,
             )
         except genai.errors.APIError as e:
