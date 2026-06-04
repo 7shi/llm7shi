@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-06-04
+
 ### Added
 - **OpenRouter reasoning support** - Reasoning output is now displayed and captured (`Response.thoughts`) for OpenAI-compatible providers; `include_thoughts=False` suppresses it for `openrouter:` models
 
