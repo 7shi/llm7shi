@@ -38,19 +38,20 @@ def convert_markdown(text):
     code_block = False   # inside a ``` fenced block
     block_bg = False     # gray background active (block contents only)
     pending_nl = False   # a newline inside the block, held until the next token
+    pending_indent = ""  # whitespace after pending_nl, held to check for closing fence
     i = 0
     n = len(text)
 
     def release_pending():
-        # Emit a held newline as block content: turn the background on (just
-        # before the newline) if this is the first content line, then the newline
-        nonlocal result, block_bg, pending_nl
+        # Emit a held in-block newline (and any buffered indent) as content
+        nonlocal result, block_bg, pending_nl, pending_indent
         if pending_nl:
             if not block_bg:
                 result += BLOCK_ON
                 block_bg = True
-            result += "\n"
+            result += "\n" + pending_indent
             pending_nl = False
+            pending_indent = ""
 
     while i < n:
         ch = text[i]
@@ -63,14 +64,15 @@ def convert_markdown(text):
             run = j - i
             if code_block:
                 if run >= 3:
-                    # Close the block: background OFF, then the held newline, so
-                    # the closing ``` line stays unshaded
+                    # Close the block: background OFF, then the held newline and
+                    # indent (unshaded), so the closing ``` line stays unshaded
                     if block_bg:
                         result += BLOCK_OFF
                         block_bg = False
                     if pending_nl:
-                        result += "\n"
+                        result += "\n" + pending_indent
                         pending_nl = False
+                        pending_indent = ""
                     result += text[i:j]
                     code_block = False
                 else:
@@ -93,10 +95,15 @@ def convert_markdown(text):
 
         # Inside a code block everything else is literal. Newlines are held so we
         # can drop the background just before the one preceding the closing fence.
+        # Leading whitespace after a held newline is also buffered so an indented
+        # closing fence can be emitted unshaded.
         if code_block:
             if ch == "\n":
                 release_pending()  # flush a prior held newline as content
                 pending_nl = True
+                pending_indent = ""
+            elif pending_nl and (ch == " " or ch == "\t"):
+                pending_indent += ch
             else:
                 release_pending()
                 result += ch
@@ -155,16 +162,18 @@ class MarkdownStreamConverter:
         self.code_block = False   # Track fenced code block state
         self.block_bg = False     # Track block background (contents only)
         self.pending_nl = False   # Held newline inside a block (see feed)
+        self.pending_indent = ""  # Whitespace after pending_nl, held to check for closing fence
 
     def _release_pending(self):
-        """Emit a held in-block newline as content (background on before it)."""
+        """Emit a held in-block newline (and any buffered indent) as content."""
         out = ""
         if self.pending_nl:
             if not self.block_bg:
                 out += BLOCK_ON
                 self.block_bg = True
-            out += "\n"
+            out += "\n" + self.pending_indent
             self.pending_nl = False
+            self.pending_indent = ""
         return out
 
     def feed(self, chunk):
@@ -191,14 +200,15 @@ class MarkdownStreamConverter:
                     break
                 if self.code_block:
                     if run >= 3:
-                        # Close the block: background OFF, then the held newline,
-                        # so the closing ``` line stays unshaded
+                        # Close the block: background OFF, then the held newline
+                        # and indent (unshaded), so the closing ``` line stays unshaded
                         if self.block_bg:
                             output += BLOCK_OFF
                             self.block_bg = False
                         if self.pending_nl:
-                            output += "\n"
+                            output += "\n" + self.pending_indent
                             self.pending_nl = False
+                            self.pending_indent = ""
                         output += text[i:j]
                         self.code_block = False
                     else:
@@ -218,11 +228,15 @@ class MarkdownStreamConverter:
 
             # Inside a code block everything else is literal. Newlines are held
             # so the background can be dropped just before the one preceding the
-            # closing fence.
+            # closing fence. Leading whitespace after a held newline is also
+            # buffered so an indented closing fence can be emitted unshaded.
             if self.code_block:
                 if ch == "\n":
                     output += self._release_pending()
                     self.pending_nl = True
+                    self.pending_indent = ""
+                elif self.pending_nl and (ch == " " or ch == "\t"):
+                    self.pending_indent += ch
                 else:
                     output += self._release_pending()
                     output += ch
@@ -275,8 +289,9 @@ class MarkdownStreamConverter:
                             output += BLOCK_OFF
                             self.block_bg = False
                         if self.pending_nl:
-                            output += "\n"
+                            output += "\n" + self.pending_indent
                             self.pending_nl = False
+                            self.pending_indent = ""
                         output += buf
                         self.code_block = False
                     else:
