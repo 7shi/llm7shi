@@ -29,3 +29,8 @@ Auto-closes bold formatting at newlines to prevent formatting "bleed" into subse
 
 ### Minimal Scope
 Focused only on bold formatting (`**text**`) rather than full markdown support, as this was the specific need for displaying LLM thinking processes and emphasis.
+
+### Bold Color Choice: `Style.BRIGHT + Fore.RED`
+Bold text is rendered with `BOLD_ON = Style.BRIGHT + Fore.RED` rather than a single color constant like `Fore.LIGHTRED_EX`.
+
+In most terminals, `Style.BRIGHT` (`\033[1m`) increases color intensity rather than rendering a bold font. This means `Style.BRIGHT + Fore.RED` produces the same visual result as `Fore.LIGHTRED_EX` (`\033[91m`). The two-part form was chosen intentionally: it expresses the intent as "bright red" (base color + intensity modifier) rather than hardcoding the pre-brightened variant, making the color customizable by changing only `Fore.RED`.

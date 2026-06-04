@@ -1,12 +1,15 @@
-from colorama import just_fix_windows_console, Style
+from colorama import just_fix_windows_console, Fore, Style
 
 # Fix Windows console to properly display ANSI color codes
 just_fix_windows_console()
 
+BOLD_ON = Style.BRIGHT + Fore.RED
+BOLD_OFF = Style.NORMAL + Fore.RESET
+
 
 def bold(text):
     """Convert text to Colorama bold format"""
-    return Style.BRIGHT + text + Style.NORMAL
+    return BOLD_ON + text + BOLD_OFF
 
 
 def convert_markdown(text):
@@ -23,14 +26,14 @@ def convert_markdown(text):
             # Toggle bold state
             bright_mode = not bright_mode
             if bright_mode:
-                result += Style.BRIGHT
+                result += BOLD_ON
             else:
-                result += Style.NORMAL
+                result += BOLD_OFF
             i += 2  # Skip both asterisks
         else:
             # Auto-close bold at newline if still open
             if bright_mode and text[i] == "\n":
-                result += Style.NORMAL
+                result += BOLD_OFF
                 bright_mode = False
             # Append current character
             result += text[i]
@@ -38,7 +41,7 @@ def convert_markdown(text):
 
     # Ensure bold is closed at end of text
     if bright_mode:
-        result += Style.NORMAL
+        result += BOLD_OFF
 
     return result
 
@@ -66,7 +69,7 @@ class MarkdownStreamConverter:
             if i + 1 < len(text) and text[i:i+2] == "**":
                 # Toggle bold state
                 self.bright_mode = not self.bright_mode
-                output += Style.BRIGHT if self.bright_mode else Style.NORMAL
+                output += BOLD_ON if self.bright_mode else BOLD_OFF
                 i += 2
             else:
                 # If chunk ends with single *, buffer it for next chunk
@@ -75,7 +78,7 @@ class MarkdownStreamConverter:
                     break
                 # Auto-close bold at newline
                 if self.bright_mode and text[i] == "\n":
-                    output += Style.NORMAL
+                    output += BOLD_OFF
                     self.bright_mode = False
                 output += text[i]
                 i += 1
@@ -88,6 +91,6 @@ class MarkdownStreamConverter:
         self.buffer = ""
         # Ensure bold is closed
         if self.bright_mode:
-            output += Style.NORMAL
+            output += BOLD_OFF
             self.bright_mode = False
         return output

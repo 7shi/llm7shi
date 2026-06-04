@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Unified stream processing** - Thinking/answer display, streaming, and monitoring are now shared across all providers via `StreamProcessor`, ensuring exactly one blank line between the thinking and answer sections regardless of provider
+- **Bold text color** - Terminal bold formatting now renders in bright red (`Style.BRIGHT + Fore.RED`) for improved visibility on both dark and light backgrounds; customize via `BOLD_ON`/`BOLD_OFF` variables
 
 ## [0.10.2] - 2026-05-01
 
