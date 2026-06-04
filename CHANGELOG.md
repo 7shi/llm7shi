@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.4] - 2026-06-04
+
 ### Fixed
 - **Indented code-fence closing** - A closing ` ``` ` with leading whitespace no longer gets a gray background; the indent is buffered alongside the held newline and emitted after `BLOCK_OFF`
 
