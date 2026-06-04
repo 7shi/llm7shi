@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **OpenRouter reasoning disable** - `include_thoughts=False` now sets `reasoning.max_tokens=0` to fully skip the thinking process; previously used `exclude: True` which hid the output but still consumed reasoning tokens
+
 ## [0.11.0] - 2026-06-04
 
 ### Added

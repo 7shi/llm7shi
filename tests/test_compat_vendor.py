@@ -405,8 +405,8 @@ class TestOpenRouterReasoningControl:
     """Test OpenRouter-only reasoning suppression via include_thoughts"""
 
     @patch('llm7shi.openai.generate_content')
-    def test_openrouter_exclude_reasoning(self, mock_generate):
-        """include_thoughts=False suppresses reasoning for openrouter"""
+    def test_openrouter_disable_reasoning(self, mock_generate):
+        """include_thoughts=False disables reasoning for openrouter via max_tokens=0"""
         mock_generate.return_value = "response"
 
         generate_with_schema(
@@ -416,11 +416,11 @@ class TestOpenRouterReasoningControl:
         )
 
         call_kwargs = mock_generate.call_args.kwargs
-        assert call_kwargs["extra_body"] == {"reasoning": {"exclude": True}}
+        assert call_kwargs["extra_body"] == {"reasoning": {"max_tokens": 0}}
 
     @patch('llm7shi.openai.generate_content')
     def test_openrouter_default_includes_reasoning(self, mock_generate):
-        """Default include_thoughts does not set reasoning exclude"""
+        """Default include_thoughts does not set reasoning max_tokens"""
         mock_generate.return_value = "response"
 
         generate_with_schema(

@@ -63,7 +63,7 @@ def generate_with_schema(
         model: Model name with optional vendor prefix (e.g., "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b"). Defaults to Gemini.
         temperature: Temperature parameter for generation (None = use model default)
         system_prompt: System prompt as string
-        include_thoughts: Whether to include thinking process (Gemini and Ollama; for OpenRouter, False suppresses reasoning via reasoning.exclude)
+        include_thoughts: Whether to include thinking process (Gemini and Ollama; for OpenRouter, False disables reasoning via reasoning.max_tokens=0)
         thinking_budget: Optional thinking budget (Gemini only)
         file: File to stream output to. Defaults to sys.stdout.
         show_params: Whether to display parameters before generation
@@ -104,10 +104,10 @@ def generate_with_schema(
             # Construct model string with vendor defaults
             actual_model = f"{actual_model}@{vendor_config['base_url']}|{vendor_config['api_key_env']}"
 
-        # OpenRouter-only: suppress reasoning tokens when include_thoughts is False
+        # OpenRouter-only: disable reasoning when include_thoughts is False
         extra_body = None
         if vendor_prefix == "openrouter" and not include_thoughts:
-            extra_body = {"reasoning": {"exclude": True}}
+            extra_body = {"reasoning": {"max_tokens": 0}}
 
         return _generate_with_openai(actual_model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition, extra_body=extra_body)
 

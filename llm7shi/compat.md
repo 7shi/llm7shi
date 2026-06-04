@@ -57,7 +57,7 @@ As the library evolved, we realized that different LLM providers have significan
 ### OpenRouter Reasoning Control
 **Problem**: The existing `include_thoughts` parameter governed reasoning visibility only for Gemini and Ollama. There was no way to opt out of reasoning for OpenRouter models routed through this layer.
 
-**Solution**: `generate_with_schema()` maps `include_thoughts=False` to `extra_body={"reasoning": {"exclude": True}}` and hands it to the OpenAI delegate via the `extra_body` argument. The mapping is scoped to the `openrouter:` prefix (the only vendor here that supports it) and to the `exclude` flag; `effort` and `max_tokens` are out of scope. With the default `include_thoughts=True`, no `extra_body` is built. Capturing and displaying any reasoning that OpenRouter returns is handled downstream in `openai.py`.
+**Solution**: `generate_with_schema()` maps `include_thoughts=False` to `extra_body={"reasoning": {"max_tokens": 0}}` and hands it to the OpenAI delegate via the `extra_body` argument. Setting `max_tokens` to 0 fully disables the reasoning process rather than merely excluding the tokens from the response (which `exclude: True` does — the model still thinks but the output is dropped). The mapping is scoped to the `openrouter:` prefix (the only vendor here that supports it). With the default `include_thoughts=True`, no `extra_body` is built. Capturing and displaying any reasoning that OpenRouter returns is handled downstream in `openai.py`.
 
 ### Base URL Embedding in Model String
 **Problem**: Users running OpenAI-compatible servers needed a way to specify custom endpoints without adding separate configuration parameters to every function call.
