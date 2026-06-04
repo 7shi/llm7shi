@@ -7,15 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **OpenRouter reasoning disable** - `include_thoughts=False` now sets `reasoning.enabled=False` to fully skip the thinking process; `exclude: True` only hides reasoning tokens from the response while the model still thinks
+
 ## [0.11.1] - 2026-06-04
 
 ### Fixed
-- **OpenRouter reasoning disable** - `include_thoughts=False` now sets `reasoning.max_tokens=0` to fully skip the thinking process; previously used `exclude: True` which hid the output but still consumed reasoning tokens
+- ~~**OpenRouter reasoning disable** - `include_thoughts=False` now sets `reasoning.max_tokens=0` to fully skip the thinking process; previously used `exclude: True` which hid the output but still consumed reasoning tokens~~ (incorrect: use `enabled=False` instead)
 
 ## [0.11.0] - 2026-06-04
 
 ### Added
-- **OpenRouter reasoning support** - Reasoning output is now displayed and captured (`Response.thoughts`) for OpenAI-compatible providers; `include_thoughts=False` suppresses it for `openrouter:` models
+- **OpenRouter reasoning support** - Reasoning output is now displayed and captured (`Response.thoughts`) for OpenAI-compatible providers; ~~`include_thoughts=False` suppresses it for `openrouter:` models~~ (incorrect: used `exclude: True` which only hid output)
 
 ### Changed
 - **Unified stream processing** - Thinking/answer display, streaming, and monitoring are now shared across all providers via `StreamProcessor`, ensuring exactly one blank line between the thinking and answer sections regardless of provider

@@ -115,6 +115,15 @@ Features:
 uv run examples/multiturn.py
 ```
 
+### [openrouter.py](openrouter.py) - OpenRouter Reasoning Control
+Demonstrates how `include_thoughts` controls the reasoning behavior of thinking-capable models via OpenRouter, using a free tier model.
+
+**Documentation**: [openrouter.md](openrouter.md)
+
+```bash
+uv run examples/openrouter.py
+```
+
 ## Advanced Examples
 
 ### [essay.py](essay.py) - Automated Essay Evaluation
