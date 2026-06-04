@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-06-04
+
 ### Fixed
 - **OpenRouter reasoning disable** - `include_thoughts=False` now sets `reasoning.enabled=False` to fully skip the thinking process; `exclude: True` only hides reasoning tokens from the response while the model still thinks
+
+### Added
+- **OpenRouter example** - New `examples/openrouter.py` demonstrating `include_thoughts=True/False` with a free tier model
 
 ## [0.11.1] - 2026-06-04
 
