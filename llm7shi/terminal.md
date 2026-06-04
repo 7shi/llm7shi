@@ -28,7 +28,16 @@ The `MarkdownStreamConverter` class maintains state between `feed()` calls, allo
 Auto-closes bold formatting at newlines to prevent formatting "bleed" into subsequent content. This ensures that unclosed markdown doesn't affect the entire terminal session.
 
 ### Minimal Scope
-Focused only on bold formatting (`**text**`) rather than full markdown support, as this was the specific need for displaying LLM thinking processes and emphasis.
+Focused on the markdown constructs that actually appear in LLM responses — `**bold**`, inline `` `code` ``, and ``` fenced code blocks ``` — rather than full markdown support. These are what matter for displaying LLM thinking processes, emphasis, and code.
+
+### Inline Code vs Code Fences
+**Problem**: A single backtick (`` `code` ``) denotes inline code, but a run of three or more backticks (` ``` `, typically at the start of a line) denotes a code fence. Treating every backtick as an inline toggle would corrupt fences.
+
+**Solution**: Backticks are scanned as runs. A run of three or more is a fence delimiter that opens/closes a block; a single backtick toggles inline code. Inline code uses `CODE_ON = Style.BRIGHT + Fore.BLUE` (bright blue) and its backtick markers are removed, mirroring how `**bold**` is handled. For fenced blocks, only the **inner content lines** get a gray background (`BLOCK_ON = Back.LIGHTBLACK_EX`) — the ` ``` ` delimiter lines stay unshaded — so the code body is highlighted without the fence markers drawing attention. Markers inside the block are left untouched.
+
+The background ON/OFF codes are emitted **just before the surrounding newline**, not after it: ON is placed right before the newline that ends the opening fence line, and OFF right before the newline that precedes the closing fence (e.g. `` ``` `` + `BLOCK_ON` + `\nbody` + `BLOCK_OFF` + `\n` + `` ``` ``). This keeps each shaded line ending clean across terminals. Implementing it requires holding one in-block newline until the next token is known, so the converter can decide whether that newline belongs to the block body or precedes the closing fence.
+
+Sticking to Colorama constants keeps this cross-platform: Colorama only models the 16 standard ANSI colors, so 256-color/true-color backgrounds (which would be VT-dependent and untranslated on legacy Windows consoles) are intentionally avoided — `Back.LIGHTBLACK_EX` is the available gray. Because foreground (bold/inline) and background (fence) are independent ANSI channels, they compose without interfering. All four constants (`CODE_ON`/`CODE_OFF`/`BLOCK_ON`/`BLOCK_OFF`) are customizable, following the same base-color rationale as bold below.
 
 ### Bold Color Choice: `Style.BRIGHT + Fore.RED`
 Bold text is rendered with `BOLD_ON = Style.BRIGHT + Fore.RED` rather than a single color constant like `Fore.LIGHTRED_EX`.

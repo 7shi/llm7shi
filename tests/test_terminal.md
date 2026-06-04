@@ -23,3 +23,8 @@ Testing terminal formatting presented unique challenges for real-time streaming 
 **Problem**: Terminal formatting produces ANSI escape sequences that are hard to test directly. We needed to verify functionality without tightly coupling tests to specific escape sequence values.
 
 **Solution**: Content-focused testing that verifies markdown markers are removed and expected text is preserved, rather than testing exact escape sequence output.
+
+### Inline Code vs Code Fence Disambiguation
+**Problem**: A single backtick (`` `code` ``) means inline code, but a run of three or more backticks (` ``` `) means a code fence. Naively toggling on every backtick would corrupt fences, and fences can be split across streaming chunks just like `**`.
+
+**Solution**: Tests cover inline code coloring (with backtick markers removed), fenced blocks rendered with a background (delimiters kept literally, inner `**`/`` ` `` left untouched), the two coexisting in one string, backtick runs split across chunks, and `flush()` closing an unclosed inline span or fenced block. A streaming-vs-one-shot equivalence test guards against divergence between the two code paths.

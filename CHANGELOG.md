@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Inline code and code-fence formatting** - Terminal output now renders inline `` `code` `` in bright blue and fenced ` ``` ` code blocks with a dark-gray background, distinguishing them from `**bold**`; customize via `CODE_ON`/`CODE_OFF`/`BLOCK_ON`/`BLOCK_OFF`
+
 ## [0.11.2] - 2026-06-04
 
 ### Fixed

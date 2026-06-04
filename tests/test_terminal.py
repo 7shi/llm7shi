@@ -1,6 +1,14 @@
 import pytest
 
-from llm7shi.terminal import bold, convert_markdown, MarkdownStreamConverter
+from llm7shi.terminal import (
+    bold,
+    convert_markdown,
+    MarkdownStreamConverter,
+    CODE_ON,
+    CODE_OFF,
+    BLOCK_ON,
+    BLOCK_OFF,
+)
 
 
 class TestBoldFunction:
@@ -320,6 +328,111 @@ class TestMarkdownStreamConverter:
         result = converter.feed("**")
         assert converter.bright_mode is False
         assert converter.buffer == ""
+
+
+class TestInlineCodeAndFence:
+    """Test inline `code` and fenced ``` block conversion"""
+
+    def test_inline_code_one_shot(self):
+        """Inline code is colored and its backtick markers are removed"""
+        result = convert_markdown("a `inline` b")
+        assert "inline" in result
+        assert CODE_ON in result
+        assert CODE_OFF in result
+        assert "`" not in result
+
+    def test_inline_code_unclosed_closes_at_end(self):
+        """Unclosed inline code is auto-closed at end of text"""
+        result = convert_markdown("a `inline")
+        assert result.endswith(CODE_OFF)
+        assert "`" not in result
+
+    def test_inline_code_closes_at_newline(self):
+        """Inline code auto-closes at a newline"""
+        result = convert_markdown("a `inline\nmore")
+        assert CODE_OFF in result
+        # The OFF code must appear before the newline
+        assert result.index(CODE_OFF) < result.index("\n")
+
+    def test_fence_is_not_inline(self):
+        """A triple-backtick fence opens a block, not inline code"""
+        result = convert_markdown("```\ncode\n```")
+        assert BLOCK_ON in result
+        assert BLOCK_OFF in result
+        # Fence delimiters are kept literally; no inline blue toggles
+        assert "```" in result
+        assert CODE_ON not in result
+
+    def test_fence_suppresses_formatting_inside(self):
+        """Bold/inline markers inside a fence are left literal"""
+        result = convert_markdown("```\n**x** and `y`\n```")
+        assert "**x**" in result
+        assert "`y`" in result
+
+    def test_fence_distinguished_from_inline_same_text(self):
+        """Inline code and a fence coexist correctly in one string"""
+        result = convert_markdown("`in`\n```\nblock\n```")
+        assert CODE_ON in result
+        assert BLOCK_ON in result
+
+    def test_unclosed_fence_closes_at_end(self):
+        """An unclosed fenced block is closed at end of text"""
+        result = convert_markdown("```\ncode")
+        assert result.endswith(BLOCK_OFF)
+
+
+class TestInlineCodeAndFenceStreaming:
+    """Test streaming conversion of inline code and fences"""
+
+    def test_inline_split_across_chunks(self):
+        """A backtick run split across chunks is buffered then resolved"""
+        converter = MarkdownStreamConverter()
+        out = converter.feed("a `code") + converter.feed("` b")
+        out += converter.flush()
+        assert "code" in out
+        assert CODE_ON in out
+        assert CODE_OFF in out
+        assert "`" not in out
+        assert converter.code_mode is False
+
+    def test_fence_delimiter_split_across_chunks(self):
+        """A ``` fence split across chunks still opens a block"""
+        converter = MarkdownStreamConverter()
+        out = converter.feed("`")
+        # A lone trailing backtick is buffered (might grow into a fence)
+        assert converter.buffer == "`"
+        out += converter.feed("``\ncode\n```")
+        out += converter.flush()
+        assert BLOCK_ON in out
+        assert BLOCK_OFF in out
+        assert converter.code_block is False
+
+    def test_streaming_matches_one_shot(self):
+        """Streaming output matches the one-shot conversion"""
+        text = "a `inline` b\n```py\nx=1 **not bold**\n```\nafter **bold**"
+        one = convert_markdown(text)
+        converter = MarkdownStreamConverter()
+        out = ""
+        for k in range(0, len(text), 3):
+            out += converter.feed(text[k:k + 3])
+        out += converter.flush()
+        assert out == one
+
+    def test_flush_closes_open_inline_code(self):
+        """flush() closes an unclosed inline code section"""
+        converter = MarkdownStreamConverter()
+        converter.feed("`open and never closed ")
+        result = converter.flush()
+        assert CODE_OFF in result
+        assert converter.code_mode is False
+
+    def test_flush_closes_open_fence(self):
+        """flush() closes an unclosed fenced block"""
+        converter = MarkdownStreamConverter()
+        converter.feed("```\nunclosed block\n")
+        result = converter.flush()
+        assert BLOCK_OFF in result
+        assert converter.code_block is False
 
 
 class TestWindowsConsoleIntegration:

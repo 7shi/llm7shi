@@ -118,9 +118,10 @@ Terminal output formatting utilities for better display of streaming responses.
 **Documentation**: [terminal.md](terminal.md)
 
 **Key Features**:
-- `convert_markdown()` - Convert Markdown bold to terminal colors
+- `convert_markdown()` - Convert Markdown to terminal colors
 - `MarkdownStreamConverter` - Stream converter for real-time formatting
 - `bold()` - Simple bold text formatting
+- Bold (`**text**`), inline code (`` `code` ``, bright blue), and fenced ` ``` ` code blocks (inner lines on a gray background)
 - Windows console compatibility
 
 ### [monitor.py](monitor.py) - Stream Output Monitoring
@@ -135,6 +136,19 @@ Stream monitoring for output quality control, including repetition detection and
 - Provider-agnostic design for unified quality control
 - `GptOssTemplateFilter` - Parser for gpt-oss template control tokens
 - Channel-based content routing (analysis/final separation)
+
+### [__main__.py](__main__.py) - Command-Line Entry Point
+Command-line entry point with subcommand dispatch, used mainly for manually checking terminal formatting.
+
+**Documentation**: [__main__.md](__main__.md)
+
+**Key Features**:
+- `md` subcommand - Render a Markdown file to the terminal:
+  ```bash
+  uv run -m llm7shi md <markdown-file>
+  ```
+- Streams the file through `MarkdownStreamConverter` to exercise the streaming path
+- Lives in `__main__.py` (not a submodule) to avoid runpy's import warning
 
 ## Usage Examples
 
@@ -235,6 +249,7 @@ The package follows a modular design with clear separation of concerns:
 ```
 llm7shi/
 ├── __init__.py      # Public API exports
+├── __main__.py      # Command-line entry point
 ├── gemini.py        # Gemini-specific implementation
 ├── openai.py        # OpenAI-specific implementation
 ├── ollama.py        # Ollama-specific implementation
