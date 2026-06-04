@@ -80,9 +80,18 @@ This ensures the filter correctly:
 - Channel accumulation works correctly for long text
 - No performance degradation or memory issues
 
+### Reasoning Stream Extraction
+**Problem**: OpenAI-compatible reasoning providers (e.g. OpenRouter) deliver the thinking process in a separate `delta.reasoning` field rather than through gpt-oss control tokens. This path must be captured into `Response.thoughts` independently of the template filter, and must stay inert for providers that never emit the field.
+
+**Solution**: Test class `TestReasoningExtraction` covers:
+- **Reasoning separated from content**: chunks carrying `delta.reasoning` accumulate into `thoughts` while `delta.content` accumulates into `text`
+- **No reasoning leaves thoughts empty**: standard chunks without `delta.reasoning` leave `thoughts` empty and content flows to `text`
+
+The shared chunk helper sets `delta.reasoning = None` by default so mock chunks behave like real standard-OpenAI chunks (where the attribute is absent), preventing `MagicMock` truthiness from triggering the reasoning path.
+
 ## Test Organization
 
-Tests are organized into two categories:
+Tests are organized into the following categories:
 
 1. **Unit Tests** (12 tests): Test individual filter behaviors in isolation
    - Token parsing
@@ -94,5 +103,7 @@ Tests are organized into two categories:
    - Filter activation logic
    - End-to-end behavior with mocked API responses
    - Model name matching
+
+3. **Reasoning Extraction Tests** (2 tests in `TestReasoningExtraction`): Test `delta.reasoning` capture into `Response.thoughts`, independent of the gpt-oss filter
 
 This separation ensures both component-level correctness and proper integration with the OpenAI module.

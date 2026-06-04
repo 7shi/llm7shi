@@ -362,4 +362,62 @@ class TestFilterActivation:
         chunk.choices = [MagicMock()]
         chunk.choices[0].delta = MagicMock()
         chunk.choices[0].delta.content = content
+        chunk.choices[0].delta.reasoning = None
+        return chunk
+
+
+class TestReasoningExtraction:
+    """Test reasoning extraction from delta.reasoning (OpenRouter / reasoning models)."""
+
+    @patch('llm7shi.openai.OpenAI')
+    def test_reasoning_separated_from_content(self, mock_openai_class):
+        """delta.reasoning is collected into thoughts, content into text."""
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+
+        mock_chunks = [
+            self._create_chunk(reasoning="Let me "),
+            self._create_chunk(reasoning="think."),
+            self._create_chunk(content="Hello"),
+            self._create_chunk(content="!"),
+        ]
+        mock_client.chat.completions.create.return_value = iter(mock_chunks)
+
+        result = generate_content(
+            messages=[{"role": "user", "content": "Test"}],
+            model="anthropic/claude-3.5-sonnet",
+            file=None,
+        )
+
+        assert result.thoughts == "Let me think."
+        assert result.text == "Hello!"
+
+    @patch('llm7shi.openai.OpenAI')
+    def test_no_reasoning_leaves_thoughts_empty(self, mock_openai_class):
+        """Without delta.reasoning, thoughts stays empty."""
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+
+        mock_chunks = [
+            self._create_chunk(content="Hello, "),
+            self._create_chunk(content="world!"),
+        ]
+        mock_client.chat.completions.create.return_value = iter(mock_chunks)
+
+        result = generate_content(
+            messages=[{"role": "user", "content": "Test"}],
+            model="gpt-4",
+            file=None,
+        )
+
+        assert result.thoughts == ""
+        assert result.text == "Hello, world!"
+
+    def _create_chunk(self, content=None, reasoning=None):
+        """Helper to create a mock chunk with optional content/reasoning."""
+        chunk = MagicMock()
+        chunk.choices = [MagicMock()]
+        chunk.choices[0].delta = MagicMock()
+        chunk.choices[0].delta.content = content
+        chunk.choices[0].delta.reasoning = reasoning
         return chunk

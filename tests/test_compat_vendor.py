@@ -399,3 +399,48 @@ class TestOpenAICompatibleVendors:
         assert call_kwargs["model"] == "llama-3.1-8b-instant"
         assert call_kwargs["base_url"] == "https://api.groq.com/openai/v1"
         assert call_kwargs["api_key_env"] == "GROQ_API_KEY"
+
+
+class TestOpenRouterReasoningControl:
+    """Test OpenRouter-only reasoning suppression via include_thoughts"""
+
+    @patch('llm7shi.openai.generate_content')
+    def test_openrouter_exclude_reasoning(self, mock_generate):
+        """include_thoughts=False suppresses reasoning for openrouter"""
+        mock_generate.return_value = "response"
+
+        generate_with_schema(
+            contents=["Test"],
+            model="openrouter:anthropic/claude-3.5-sonnet",
+            include_thoughts=False,
+        )
+
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["extra_body"] == {"reasoning": {"exclude": True}}
+
+    @patch('llm7shi.openai.generate_content')
+    def test_openrouter_default_includes_reasoning(self, mock_generate):
+        """Default include_thoughts does not set reasoning exclude"""
+        mock_generate.return_value = "response"
+
+        generate_with_schema(
+            contents=["Test"],
+            model="openrouter:anthropic/claude-3.5-sonnet",
+        )
+
+        call_kwargs = mock_generate.call_args.kwargs
+        assert "extra_body" not in call_kwargs
+
+    @patch('llm7shi.openai.generate_content')
+    def test_groq_no_reasoning_control(self, mock_generate):
+        """Reasoning control is openrouter-only; groq is unaffected"""
+        mock_generate.return_value = "response"
+
+        generate_with_schema(
+            contents=["Test"],
+            model="groq:llama-3.3-70b-versatile",
+            include_thoughts=False,
+        )
+
+        call_kwargs = mock_generate.call_args.kwargs
+        assert "extra_body" not in call_kwargs

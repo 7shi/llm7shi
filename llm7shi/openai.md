@@ -74,3 +74,8 @@ This design ensures that local testing with custom endpoints cannot accidentally
 **Problem**: Models with reasoning capabilities (like those using gpt-oss template) emit both thinking process and final answer, but previous implementation discarded the thinking portion.
 
 **Solution**: Extended response handling to capture and display thoughts separately with visual indicators (🤔 **Thinking...** / 💡 **Answer:**), matching the user experience pattern established in `gemini.py` and `ollama.py` for models with thinking capabilities.
+
+### Reasoning Stream Extraction
+**Problem**: Some OpenAI-compatible providers return the thinking process in a separate `delta.reasoning` field during streaming, but the loop only read `delta.content`, so the reasoning was silently dropped.
+
+**Solution**: The streaming loop also reads `delta.reasoning` (when present), accumulating it into `Response.thoughts` and rendering it under the same 🤔 **Thinking...** / 💡 **Answer:** indicators used for `delta.content`. Providers that do not emit the field leave `thoughts` empty. This is independent of the gpt-oss template filter, which derives thoughts from control tokens and does not emit `delta.reasoning`, so the two paths never conflict.

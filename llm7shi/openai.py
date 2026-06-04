@@ -85,8 +85,25 @@ def generate_content(
 
     for chunk in response:
         chunks.append(chunk)
-        if chunk.choices[0].delta.content is not None:
-            content = chunk.choices[0].delta.content
+        delta = chunk.choices[0].delta
+
+        # Handle reasoning content (OpenRouter / reasoning models expose delta.reasoning)
+        reasoning = getattr(delta, "reasoning", None)
+        if reasoning:
+            if not thoughts_shown:
+                if file:
+                    print(converter.feed("🤔 **Thinking...**\n"), file=file)
+                thoughts_shown = True
+            thoughts += reasoning
+            # Stream formatted thinking output to terminal
+            if file:
+                print(converter.feed(reasoning), end='', flush=True, file=file)
+            if not thoughts_monitor.check(thoughts, file):
+                response.close()
+                break
+
+        if delta.content is not None:
+            content = delta.content
 
             # Apply filter if present
             if content_filter:
@@ -133,6 +150,11 @@ def generate_content(
                     break
             else:
                 # No filter: direct passthrough
+                # Show answer header when switching from reasoning to answer
+                if thoughts_shown and not answer_shown:
+                    if file:
+                        print(converter.feed("\n💡 **Answer:**\n"), file=file)
+                    answer_shown = True
                 collected_content += content
                 if file:
                     print(converter.feed(content), end='', flush=True, file=file)

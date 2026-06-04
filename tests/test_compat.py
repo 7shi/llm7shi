@@ -178,6 +178,7 @@ class TestOpenAIIntegration:
         mock_chunk.choices = [MagicMock()]
         mock_chunk.choices[0].delta = MagicMock()
         mock_chunk.choices[0].delta.content = "OpenAI response"
+        mock_chunk.choices[0].delta.reasoning = None
         mock_client.chat.completions.create.return_value = [mock_chunk]
 
         result = generate_with_schema(
@@ -337,6 +338,7 @@ class TestErrorHandling:
         mock_chunk.choices = [MagicMock()]
         mock_chunk.choices[0].delta = MagicMock()
         mock_chunk.choices[0].delta.content = "fallback_response"
+        mock_chunk.choices[0].delta.reasoning = None
         mock_client.chat.completions.create.return_value = [mock_chunk]
 
         result = generate_with_schema(

@@ -63,7 +63,7 @@ def generate_with_schema(
         model: Model name with optional vendor prefix (e.g., "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b"). Defaults to Gemini.
         temperature: Temperature parameter for generation (None = use model default)
         system_prompt: System prompt as string
-        include_thoughts: Whether to include thinking process (Gemini and Ollama only)
+        include_thoughts: Whether to include thinking process (Gemini and Ollama; for OpenRouter, False suppresses reasoning via reasoning.exclude)
         thinking_budget: Optional thinking budget (Gemini only)
         file: File to stream output to. Defaults to sys.stdout.
         show_params: Whether to display parameters before generation
@@ -104,7 +104,12 @@ def generate_with_schema(
             # Construct model string with vendor defaults
             actual_model = f"{actual_model}@{vendor_config['base_url']}|{vendor_config['api_key_env']}"
 
-        return _generate_with_openai(actual_model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition)
+        # OpenRouter-only: suppress reasoning tokens when include_thoughts is False
+        extra_body = None
+        if vendor_prefix == "openrouter" and not include_thoughts:
+            extra_body = {"reasoning": {"exclude": True}}
+
+        return _generate_with_openai(actual_model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition, extra_body=extra_body)
 
     elif vendor_prefix == "google":
         return _generate_with_gemini(actual_model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params, max_length, check_repetition)
@@ -194,6 +199,7 @@ def _generate_with_openai(
     show_params: bool = True,
     max_length=None,
     check_repetition: bool = True,
+    extra_body=None,
 ) -> Response:
     """Generate with OpenAI API with streaming."""
     from .openai import DEFAULT_MODEL, generate_content
@@ -234,6 +240,10 @@ def _generate_with_openai(
     # Add temperature only if provided
     if temperature is not None:
         kwargs["temperature"] = temperature
+
+    # Add OpenRouter-specific reasoning control if provided
+    if extra_body is not None:
+        kwargs["extra_body"] = extra_body
 
     # Convert contents to OpenAI format messages
     openai_messages = contents_to_openai_messages(contents, system_prompt)
