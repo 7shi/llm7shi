@@ -4,8 +4,7 @@ from typing import List, Dict, Any
 from openai import OpenAI
 
 from .response import Response
-from .terminal import MarkdownStreamConverter
-from .monitor import StreamMonitor, GptOssTemplateFilter
+from .monitor import StreamProcessor, GptOssTemplateFilter
 
 DEFAULT_MODEL = "gpt-4.1-mini"
 
@@ -69,17 +68,11 @@ def generate_content(
     )
 
     # Collect streamed response and chunks
-    collected_content = ""
-    thoughts = ""
-    thoughts_shown = False  # Track if thinking header was shown
-    answer_shown = False  # Track if answer header was shown
     chunks = []
-    converter = MarkdownStreamConverter()  # For terminal formatting
     content_filter = GptOssTemplateFilter() if needs_gpt_oss_filter else None
-    monitor = StreamMonitor(converter, max_length=max_length, check_repetition=check_repetition)
-    thoughts_monitor = StreamMonitor(converter, max_length=None, check_repetition=check_repetition)
+    processor = StreamProcessor(file=file, max_length=max_length, check_repetition=check_repetition)
 
-    # Track previous lengths for incremental display
+    # Track previous lengths for incremental display (gpt-oss filter only)
     previous_thoughts_len = 0
     previous_text_len = 0
 
@@ -90,15 +83,7 @@ def generate_content(
         # Handle reasoning content (OpenRouter / reasoning models expose delta.reasoning)
         reasoning = getattr(delta, "reasoning", None)
         if reasoning:
-            if not thoughts_shown:
-                if file:
-                    print(converter.feed("🤔 **Thinking...**\n"), file=file)
-                thoughts_shown = True
-            thoughts += reasoning
-            # Stream formatted thinking output to terminal
-            if file:
-                print(converter.feed(reasoning), end='', flush=True, file=file)
-            if not thoughts_monitor.check(thoughts, file):
+            if not processor.add_thought(reasoning):
                 response.close()
                 break
 
@@ -109,60 +94,26 @@ def generate_content(
             if content_filter:
                 content_filter.feed(content)
 
-                # Get incremental thoughts (analysis channel)
-                current_thoughts = content_filter.thoughts
-                if len(current_thoughts) > previous_thoughts_len:
-                    # Show thinking header on first thought
-                    if not thoughts_shown:
-                        if file:
-                            print(converter.feed("🤔 **Thinking...**\n"), file=file)
-                        thoughts_shown = True
+                # Output incremental thoughts (analysis channel)
+                if len(content_filter.thoughts) > previous_thoughts_len:
+                    new_thoughts = content_filter.thoughts[previous_thoughts_len:]
+                    previous_thoughts_len = len(content_filter.thoughts)
+                    if not processor.add_thought(new_thoughts):
+                        response.close()
+                        break
 
-                    # Output new thoughts
-                    new_thoughts = current_thoughts[previous_thoughts_len:]
-                    if file:
-                        print(converter.feed(new_thoughts), end='', flush=True, file=file)
-                    previous_thoughts_len = len(current_thoughts)
-
-                # Get incremental text (final channel)
-                current_text = content_filter.text
-                if len(current_text) > previous_text_len:
-                    # Show answer header when switching from thoughts to answer
-                    if thoughts_shown and not answer_shown:
-                        if file:
-                            # Add newline if thoughts don't end with one
-                            if content_filter.thoughts and not content_filter.thoughts.endswith('\n'):
-                                print(file=file)
-                            print(converter.feed("\n💡 **Answer:**\n"), file=file)
-                        answer_shown = True
-
-                    # Output new text
-                    new_text = current_text[previous_text_len:]
-                    if file:
-                        print(converter.feed(new_text), end='', flush=True, file=file)
-                    previous_text_len = len(current_text)
-
-                # Update stored values
-                thoughts = current_thoughts
-                collected_content = current_text
-                if not thoughts_monitor.check(thoughts, file):
-                    response.close()
-                    break
+                # Output incremental text (final channel)
+                if len(content_filter.text) > previous_text_len:
+                    new_text = content_filter.text[previous_text_len:]
+                    previous_text_len = len(content_filter.text)
+                    if not processor.add_text(new_text):
+                        response.close()
+                        break
             else:
                 # No filter: direct passthrough
-                # Show answer header when switching from reasoning to answer
-                if thoughts_shown and not answer_shown:
-                    if file:
-                        print(converter.feed("\n💡 **Answer:**\n"), file=file)
-                    answer_shown = True
-                collected_content += content
-                if file:
-                    print(converter.feed(content), end='', flush=True, file=file)
-
-            # Check for repetition and max length
-            if not monitor.check(collected_content, file):
-                response.close()  # Close stream connection
-                break
+                if not processor.add_text(content):
+                    response.close()  # Close stream connection
+                    break
 
     # Flush filter if present
     if content_filter:
@@ -170,37 +121,13 @@ def generate_content(
 
         # Output any remaining thoughts
         if len(content_filter.thoughts) > previous_thoughts_len:
-            if not thoughts_shown:
-                if file:
-                    print(converter.feed("🤔 **Thinking...**\n"), file=file)
-            new_thoughts = content_filter.thoughts[previous_thoughts_len:]
-            if file:
-                print(converter.feed(new_thoughts), end='', flush=True, file=file)
+            processor.add_thought(content_filter.thoughts[previous_thoughts_len:])
 
         # Output any remaining text
         if len(content_filter.text) > previous_text_len:
-            if thoughts_shown and not answer_shown:
-                if file:
-                    # Add newline if thoughts don't end with one
-                    if content_filter.thoughts and not content_filter.thoughts.endswith('\n'):
-                        print(file=file)
-                    print(converter.feed("\n💡 **Answer:**\n"), file=file)
-            new_text = content_filter.text[previous_text_len:]
-            if file:
-                print(converter.feed(new_text), end='', flush=True, file=file)
+            processor.add_text(content_filter.text[previous_text_len:])
 
-        # Update final values
-        thoughts = content_filter.thoughts
-        collected_content = content_filter.text
-
-    # Flush any remaining markdown formatting
-    remaining = converter.flush()
-    if remaining and file:
-        print(remaining, end='', flush=True, file=file)
-
-    # Ensure output ends with newline
-    if file and not collected_content.endswith("\n"):
-        print(flush=True, file=file)
+    processor.finalize()
 
     # Create Response object for OpenAI
     return Response(
@@ -209,8 +136,8 @@ def generate_content(
         contents=messages,
         response=response,
         chunks=chunks,
-        thoughts=thoughts,
-        text=collected_content,
-        repetition=monitor.repetition_detected or thoughts_monitor.repetition_detected,
-        max_length=monitor.max_length_exceeded,
+        thoughts=processor.thoughts,
+        text=processor.text,
+        repetition=processor.repetition_detected,
+        max_length=processor.max_length_exceeded,
     )

@@ -3,8 +3,7 @@ import ollama
 from typing import List, Dict, Any
 
 from .response import Response
-from .terminal import MarkdownStreamConverter
-from .monitor import StreamMonitor
+from .monitor import StreamProcessor
 
 DEFAULT_MODEL = "qwen3:4b"
 
@@ -41,59 +40,26 @@ def generate_content(
     )
     
     # Collect streamed response and chunks
-    collected_content = ""
-    thoughts = ""
-    thoughts_shown = False  # Track if thinking header was shown
-    answer_shown = False  # Track if answer header was shown
     chunks = []
-    converter = MarkdownStreamConverter()  # For terminal formatting
-    monitor = StreamMonitor(converter, max_length=max_length, check_repetition=check_repetition)
-    thoughts_monitor = StreamMonitor(converter, max_length=None, check_repetition=check_repetition)
+    processor = StreamProcessor(file=file, max_length=max_length, check_repetition=check_repetition)
 
     for chunk in response:
         chunks.append(chunk)
 
         # Handle thinking content
         if getattr(chunk.message, 'thinking', None) is not None:
-            thinking_content = chunk.message.thinking
-            if not thoughts_shown:
-                if file:
-                    print(converter.feed("🤔 **Thinking...**\n"), file=file)
-                thoughts_shown = True
-            thoughts += thinking_content
-            # Stream formatted thinking output to terminal
-            if file:
-                print(converter.feed(thinking_content), end='', flush=True, file=file)
-            if not thoughts_monitor.check(thoughts, file):
+            if not processor.add_thought(chunk.message.thinking):
                 client._client.close()
                 break
 
         # Handle regular content
         if chunk.message.content:
-            content = chunk.message.content
-            if thoughts_shown and not answer_shown:
-                if file:
-                    print(converter.feed("\n💡 **Answer:**\n"), file=file)
-                answer_shown = True
-            collected_content += content
-            # Stream formatted output to terminal
-            if file:
-                print(converter.feed(content), end='', flush=True, file=file)
-
-            # Check for repetition and max length
-            if not monitor.check(collected_content, file):
+            if not processor.add_text(chunk.message.content):
                 client._client.close()
                 break
-    
-    # Flush any remaining markdown formatting
-    remaining = converter.flush()
-    if remaining and file:
-        print(remaining, end='', flush=True, file=file)
-    
-    # Ensure output ends with newline
-    if file and not collected_content.endswith("\n"):
-        print(flush=True, file=file)
-    
+
+    processor.finalize()
+
     # Create Response object for Ollama
     return Response(
         model=model,
@@ -101,8 +67,8 @@ def generate_content(
         contents=messages,
         response=response,
         chunks=chunks,
-        thoughts=thoughts,
-        text=collected_content,
-        repetition=monitor.repetition_detected or thoughts_monitor.repetition_detected,
-        max_length=monitor.max_length_exceeded,
+        thoughts=processor.thoughts,
+        text=processor.text,
+        repetition=processor.repetition_detected,
+        max_length=processor.max_length_exceeded,
     )

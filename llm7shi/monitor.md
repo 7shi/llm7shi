@@ -78,6 +78,23 @@ This enhancement detects common LLM degeneration patterns like:
 
 For detailed algorithm design and edge case analysis, see [Quasi-Repetition Detection Algorithm](../docs/20251207-quasi-repetition.md).
 
+## Thinking/Answer Stream Processing
+
+### Duplication of the Display State Machine
+**Problem**: Beyond repetition and max-length checking, every provider (Gemini, OpenAI, Ollama) re-implemented the same thinking→answer flow by hand: show the `🤔 **Thinking...**` header once, show the `💡 **Answer:**` header once on transition, stream each chunk through the converter, accumulate `thoughts`/`text`, and run two `StreamMonitor` instances. The header strings, newline handling, and check calls drifted apart between providers (for example, the answer header had a leading newline in Ollama/OpenAI but not in Gemini).
+
+**Solution**: Introduced `StreamProcessor`, a higher-level class that owns the `MarkdownStreamConverter` and both `StreamMonitor` instances and exposes a tiny provider-facing API: `add_thought(chunk)`, `add_text(chunk)`, and `finalize()`. Providers no longer touch the converter or monitors directly; each streaming loop collapses to feeding chunks and breaking when a method returns `False`. This keeps `StreamMonitor` a pure, provider-agnostic text checker while concentrating the display/state concerns in one place.
+
+### Exactly One Blank Line at the Section Boundary
+**Problem**: Because providers disagreed on the answer-header newline and passed model trailing newlines straight through, the visual gap between the thinking and answer sections was inconsistent — sometimes zero blank lines, sometimes several, depending on the model's output.
+
+**Solution**: `StreamProcessor` holds back trailing newlines from the terminal (caching them in a display-only buffer) and discards them at a section boundary, then relies on the unified `\n💡 **Answer:**\n` header to insert exactly one blank line. Newlines that appear *between* content are flushed as soon as more text arrives, so internal blank lines are preserved while trailing ones are trimmed.
+
+### Display-Only Formatting Preserves Verbatim Text
+**Problem**: Trimming trailing newlines for display must not alter the text returned to callers. The `Response` stores `thoughts`/`text` that may be resent as conversation history; if the stored text diverged from the server output, it would desync the server-side KV cache.
+
+**Solution**: The blank-line suppression operates strictly on the terminal output path. `add_thought`/`add_text` accumulate the raw chunks verbatim, and the monitors check those raw strings, so `processor.thoughts` and `processor.text` always match exactly what the server streamed.
+
 ## Template Filter Integration
 
 ### gpt-oss Template Parsing Challenge

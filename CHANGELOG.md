@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **OpenRouter reasoning support** - Reasoning output is now displayed and captured (`Response.thoughts`) for OpenAI-compatible providers; `include_thoughts=False` suppresses it for `openrouter:` models
 
+### Changed
+- **Unified stream processing** - Thinking/answer display, streaming, and monitoring are now shared across all providers via `StreamProcessor`, ensuring exactly one blank line between the thinking and answer sections regardless of provider
+
 ## [0.10.2] - 2026-05-01
 
 ### Fixed

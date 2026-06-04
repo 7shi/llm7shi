@@ -57,6 +57,7 @@ from .utils import (
 
 from .monitor import (
     StreamMonitor,
+    StreamProcessor,
     detect_repetition,
 )
 
@@ -86,5 +87,6 @@ __all__ = [
     "openai_messages_to_contents",
     # monitor.py
     "StreamMonitor",
+    "StreamProcessor",
     "detect_repetition",
 ]

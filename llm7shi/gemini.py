@@ -8,10 +8,9 @@ from google import genai
 from google.genai import types
 
 # Local imports for terminal formatting and response object
-from .terminal import convert_markdown, MarkdownStreamConverter
 from .utils import do_show_params
 from .response import Response
-from .monitor import StreamMonitor
+from .monitor import StreamProcessor
 
 # Available Gemini models
 models = [
@@ -167,15 +166,10 @@ def generate_content_retry(
             )
             
             # Initialize response tracking variables
-            text = ""  # Final answer text
-            thoughts = ""  # Thinking process text
-            thoughts_shown = False  # Track if thinking header was shown
-            answer_shown = False  # Track if answer header was shown
-            converter = MarkdownStreamConverter()  # For terminal formatting
-            monitor = StreamMonitor(converter, max_length=max_length, check_repetition=check_repetition)
-            thoughts_monitor = StreamMonitor(converter, max_length=None, check_repetition=check_repetition)
+            processor = StreamProcessor(file=file, max_length=max_length, check_repetition=check_repetition)
             chunks = []  # Collect all chunks
-            
+            stop = False  # Set when monitoring requests early termination
+
             # Process streaming response chunks
             for chunk in response:
                 chunks.append(chunk)
@@ -185,54 +179,34 @@ def generate_content_retry(
                             continue
                         elif include_thoughts and part.thought:
                             # Handle thinking process output
-                            if not thoughts_shown:
-                                if file:
-                                    print(converter.feed("🤔 **Thinking...**\n"), file=file)
-                                thoughts_shown = True
-                            thoughts += part.text
+                            if not processor.add_thought(part.text):
+                                stop = True
+                                break
                         else:
                             # Handle final answer output
-                            if thoughts_shown and not answer_shown:
-                                if file:
-                                    print(converter.feed("💡 **Answer:**\n"), file=file)
-                                answer_shown = True
-                            text += part.text
-                        # Stream formatted output to terminal
-                        if file:
-                            print(converter.feed(part.text), end="", flush=True, file=file)
+                            if not processor.add_text(part.text):
+                                stop = True
+                                break
                 else:
                     # Fallback for older API response format
                     if hasattr(chunk, "text") and chunk.text:
-                        text += chunk.text
-                        # Stream formatted output to terminal
-                        if file:
-                            print(converter.feed(chunk.text), end="", flush=True, file=file)
-                
-                # Check for repetition and max length
-                if not monitor.check(text, file):
+                        if not processor.add_text(chunk.text):
+                            stop = True
+                if stop:
                     break
-                if not thoughts_monitor.check(thoughts, file):
-                    break
-            
-            # Flush any remaining markdown formatting
-            remaining = converter.flush()
-            if remaining and file:
-                print(remaining, end="", flush=True, file=file)
-            
-            # Ensure output ends with newline
-            if file and not text.endswith("\n"):
-                print(flush=True, file=file)
-            
+
+            processor.finalize()
+
             return Response(
                 model=model,
                 config=config,
                 contents=contents,
                 response=response,
                 chunks=chunks,
-                thoughts=thoughts,
-                text=text,
-                repetition=monitor.repetition_detected or thoughts_monitor.repetition_detected,
-                max_length=monitor.max_length_exceeded,
+                thoughts=processor.thoughts,
+                text=processor.text,
+                repetition=processor.repetition_detected,
+                max_length=processor.max_length_exceeded,
             )
         except genai.errors.APIError as e:
             # Handle retryable API errors (rate limit, server errors)

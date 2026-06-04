@@ -6,9 +6,12 @@ Whitespace detection uses weighted calculation:
 - Spaces and other whitespace: weight 1
 - Threshold: 512 weighted units
 """
+import sys
 from typing import Optional
 from math import ceil
 import re
+
+from .terminal import MarkdownStreamConverter
 
 # Lookup table for required repetitions (pattern_len 1-20)
 # Generated dynamically by _initialize_required_reps_table()
@@ -294,6 +297,153 @@ class StreamMonitor:
                 self.rep_check_count = 0
 
         return True
+
+
+THINKING_HEADER = "🤔 **Thinking...**\n"
+ANSWER_HEADER = "\n💡 **Answer:**\n"
+
+
+class StreamProcessor:
+    """Manages the thinking/answer display state machine shared by all providers.
+
+    Owns a MarkdownStreamConverter and two StreamMonitor instances (one for the
+    answer, one for the thoughts). Providers feed raw chunks via add_thought() and
+    add_text(); this class emits the thinking/answer headers once each, streams the
+    formatted output to the terminal, accumulates the raw text, and runs repetition /
+    max-length monitoring.
+
+    Display-only blank-line suppression: trailing newlines are held back from the
+    terminal so that exactly one blank line separates the thinking and answer
+    sections (and no trailing blank lines remain). The accumulated thoughts / text
+    always preserve the server output verbatim, since stripping newlines there would
+    desync the conversation history from the server-side KV cache on resend.
+    """
+
+    def __init__(self, file=sys.stdout, max_length=None, check_repetition=True):
+        """Initialize the stream processor.
+
+        Args:
+            file: Output file for streaming display (None to suppress display)
+            max_length: Maximum length of the answer text (None for no limit)
+            check_repetition: Whether to check for repetitive patterns
+        """
+        self.converter = MarkdownStreamConverter()
+        self.file = file
+        self.thoughts = ""  # Raw server thoughts (verbatim)
+        self.text = ""      # Raw server answer text (verbatim)
+        self._thoughts_shown = False
+        self._answer_shown = False
+        self._held = ""  # Trailing newlines held back from display only
+        self._last_char = ""  # Last character written to the display
+        self._answer_monitor = StreamMonitor(
+            self.converter, max_length=max_length, check_repetition=check_repetition
+        )
+        self._thoughts_monitor = StreamMonitor(
+            self.converter, max_length=None, check_repetition=check_repetition
+        )
+
+    def add_thought(self, chunk: str) -> bool:
+        """Accumulate and display a thinking chunk.
+
+        Args:
+            chunk: Raw thinking text chunk from the provider stream
+
+        Returns:
+            bool: True if generation should continue, False if it should stop
+        """
+        if not chunk:
+            return True
+        if not self._thoughts_shown:
+            self._emit_header(THINKING_HEADER)
+            self._thoughts_shown = True
+        self.thoughts += chunk  # Store verbatim
+        self._emit_stream(chunk)
+        return self._thoughts_monitor.check(self.thoughts, self.file)
+
+    def add_text(self, chunk: str) -> bool:
+        """Accumulate and display an answer chunk.
+
+        Args:
+            chunk: Raw answer text chunk from the provider stream
+
+        Returns:
+            bool: True if generation should continue, False if it should stop
+        """
+        if not chunk:
+            return True
+        if self._thoughts_shown and not self._answer_shown:
+            self._close_section()
+            self._emit_header(ANSWER_HEADER)
+            self._answer_shown = True
+        self.text += chunk  # Store verbatim
+        self._emit_stream(chunk)
+        return self._answer_monitor.check(self.text, self.file)
+
+    def finalize(self) -> None:
+        """Flush any buffered display output and ensure a single trailing newline."""
+        self._close_section()
+        remaining = self.converter.flush()
+        if remaining:
+            self._write(remaining)
+        # Match the providers' "ensure trailing newline" behavior (and emit one for
+        # empty output, where _last_char is still "").
+        if self.file and self._last_char != "\n":
+            print(flush=True, file=self.file)
+            self._last_char = "\n"
+
+    @property
+    def repetition_detected(self) -> bool:
+        return (
+            self._answer_monitor.repetition_detected
+            or self._thoughts_monitor.repetition_detected
+        )
+
+    @property
+    def max_length_exceeded(self):
+        return self._answer_monitor.max_length_exceeded
+
+    def _write(self, s: str) -> None:
+        """Print already-converted output and track the last displayed character."""
+        if not s or not self.file:
+            return
+        print(s, end="", flush=True, file=self.file)
+        self._last_char = s[-1]
+
+    def _emit_header(self, header: str) -> None:
+        """Display a section header (reproduces ``print(converter.feed(header))``)."""
+        if self.file:
+            # The trailing "\n" matches print()'s default line ending in the original
+            # provider code, leaving one blank line after the header.
+            self._write(self.converter.feed(header) + "\n")
+
+    def _emit_stream(self, chunk: str) -> None:
+        """Display a content chunk, holding back trailing newlines (blank lines).
+
+        Trailing newlines are cached in ``self._held`` so they are not shown until
+        more non-newline content arrives in the same section. Internal blank lines
+        are therefore preserved, while trailing blank lines at a section boundary can
+        be discarded by ``_close_section()``. Display only; never alters accumulation.
+        """
+        if not self.file:
+            return
+        data = self._held + chunk
+        body = data.rstrip("\n")
+        self._held = data[len(body):]
+        if body:
+            self._write(self.converter.feed(body))
+
+    def _close_section(self) -> None:
+        """Discard held trailing blank lines and close an open display line.
+
+        Drops the cached trailing newlines so no extra blank lines leak across the
+        thinking->answer boundary or before finalize, then emits a single newline if
+        the last displayed character did not already end the line. Combined with the
+        leading "\\n" of ANSWER_HEADER, this yields exactly one blank line at the
+        boundary regardless of how many newlines the model emitted.
+        """
+        self._held = ""
+        if self.file and self._last_char not in ("", "\n"):
+            self._write(self.converter.feed("\n"))
 
 
 class GptOssTemplateFilter:
