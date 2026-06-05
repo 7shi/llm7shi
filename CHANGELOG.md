@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.5] - 2026-06-05
+
 ### Added
 - **Nested inline formatting** - Inline `` `code` `` inside `**bold**` now restores the bold color once the code closes, using a general stack so future inline elements compose the same way; markup inside inline code is left literal
 
