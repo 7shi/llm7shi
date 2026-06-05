@@ -10,6 +10,42 @@ BOLD_OFF = Style.NORMAL + Fore.RESET
 CODE_ON = Style.BRIGHT + Fore.BLUE
 CODE_OFF = Style.NORMAL + Fore.RESET
 
+# Inline (foreground) formatting is tracked as a stack so elements can nest
+# (e.g. inline `code` inside **bold**). Each format maps to its ON code; OFF is
+# a single generic foreground reset, after which the remaining stack's ON codes
+# are re-applied to restore the surrounding (parent) formatting. The foreground
+# is a single ANSI channel, so the innermost active format wins.
+INLINE_ON = {"bold": BOLD_ON, "code": CODE_ON}
+INLINE_OFF = Style.NORMAL + Fore.RESET
+
+
+def _open_inline(stack, fmt):
+    """Push an inline format and return its ON code."""
+    stack.append(fmt)
+    return INLINE_ON[fmt]
+
+
+def _close_inline(stack, fmt):
+    """Pop an inline format, then re-apply the remaining stack's ON codes.
+
+    Re-applying restores the parent element's formatting (e.g. closing inline
+    code while still inside bold re-emits the bold ON code).
+    """
+    if fmt in stack:
+        stack.remove(fmt)
+    out = INLINE_OFF
+    for f in stack:
+        out += INLINE_ON[f]
+    return out
+
+
+def _close_all_inline(stack):
+    """Clear the inline stack (blank line / end of text). One reset suffices."""
+    if not stack:
+        return ""
+    stack.clear()
+    return INLINE_OFF
+
 # Fenced code block contents are rendered with a gray background (only the inner
 # lines are shaded, not the ``` delimiter lines). Background ON/OFF is emitted
 # just before the surrounding newline so each shaded line ends cleanly.
@@ -29,12 +65,17 @@ def convert_markdown(text):
     ``` code blocks ``` (the inner lines get a gray background, while the ```
     delimiter lines stay unshaded). A run of three or more backticks is treated
     as a code-fence delimiter rather than inline code.
+
+    Inline formats nest as a stack, so inline `code` inside **bold** restores
+    the bold color once the code closes; markup inside inline code is left
+    literal. A single (soft) newline keeps inline formatting active; a blank
+    line (whitespace-only) or end of text resets it.
     """
     result = ""
     # Normalize line endings to Unix style (LF)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
-    bright_mode = False  # **bold**
-    code_mode = False    # inline `code`
+    stack = []           # active inline formats (**bold**, inline `code`)
+    line_has_content = False  # non-whitespace seen on the current line
     code_block = False   # inside a ``` fenced block
     block_bg = False     # gray background active (block contents only)
     pending_nl = False   # a newline inside the block, held until the next token
@@ -88,8 +129,10 @@ def convert_markdown(text):
             else:
                 # Inline code toggle (drop the backtick markers)
                 for _ in range(run):
-                    code_mode = not code_mode
-                    result += CODE_ON if code_mode else CODE_OFF
+                    if "code" in stack:
+                        result += _close_inline(stack, "code")
+                    else:
+                        result += _open_inline(stack, "code")
             i = j
             continue
 
@@ -110,34 +153,37 @@ def convert_markdown(text):
             i += 1
             continue
 
+        # Inside inline code, other markup is suppressed (contents are literal);
+        # only a backtick (handled above) can close it.
+        code_active = bool(stack) and stack[-1] == "code"
+
         # **bold** toggle
-        if ch == "*" and i + 1 < n and text[i + 1] == "*":
-            bright_mode = not bright_mode
-            result += BOLD_ON if bright_mode else BOLD_OFF
+        if ch == "*" and not code_active and i + 1 < n and text[i + 1] == "*":
+            if "bold" in stack:
+                result += _close_inline(stack, "bold")
+            else:
+                result += _open_inline(stack, "bold")
             i += 2
             continue
 
-        # Auto-close inline formatting at newline
+        # Newline: a single (soft) newline keeps inline formatting; a blank line
+        # (whitespace-only) dissolves the stack and resets formatting.
         if ch == "\n":
-            if code_mode:
-                result += CODE_OFF
-                code_mode = False
-            if bright_mode:
-                result += BOLD_OFF
-                bright_mode = False
+            if not line_has_content:
+                result += _close_all_inline(stack)
             result += ch
+            line_has_content = False
             i += 1
             continue
 
+        if ch != " " and ch != "\t":
+            line_has_content = True
         result += ch
         i += 1
 
     # Ensure all formatting is closed at end of text
     release_pending()
-    if code_mode:
-        result += CODE_OFF
-    if bright_mode:
-        result += BOLD_OFF
+    result += _close_all_inline(stack)
     if block_bg:
         result += BLOCK_OFF
 
@@ -152,17 +198,29 @@ class MarkdownStreamConverter:
     ``` code blocks ``` (the inner lines get a gray background, the ``` delimiter
     lines stay unshaded). Incomplete markers at the end of a chunk (a lone "*" or
     a short backtick run that might still grow into a ``` fence) are buffered
-    until the next chunk arrives. Inline formatting is auto-closed at newlines or
-    on flush if not properly closed.
+    until the next chunk arrives. Inline formats nest as a stack (inline `code`
+    inside **bold** restores bold when the code closes; markup inside inline
+    code stays literal). Inline formatting persists across a soft newline and is
+    reset at a blank (whitespace-only) line, on flush, or at end of text.
     """
     def __init__(self):
         self.buffer = ""  # Buffer for incomplete ** / ` markers
-        self.bright_mode = False  # Track current bold state
-        self.code_mode = False    # Track inline code state
+        self.stack = []           # Active inline formats (**bold**, inline `code`)
+        self.line_has_content = False  # Non-whitespace seen on the current line
         self.code_block = False   # Track fenced code block state
         self.block_bg = False     # Track block background (contents only)
         self.pending_nl = False   # Held newline inside a block (see feed)
         self.pending_indent = ""  # Whitespace after pending_nl, held to check for closing fence
+
+    @property
+    def bright_mode(self):
+        """Whether **bold** is currently active (derived from the stack)."""
+        return "bold" in self.stack
+
+    @property
+    def code_mode(self):
+        """Whether inline `code` is currently active (derived from the stack)."""
+        return "code" in self.stack
 
     def _release_pending(self):
         """Emit a held in-block newline (and any buffered indent) as content."""
@@ -221,8 +279,10 @@ class MarkdownStreamConverter:
                     self.pending_nl = False
                 else:
                     for _ in range(run):
-                        self.code_mode = not self.code_mode
-                        output += CODE_ON if self.code_mode else CODE_OFF
+                        if "code" in self.stack:
+                            output += _close_inline(self.stack, "code")
+                        else:
+                            output += _open_inline(self.stack, "code")
                 i = j
                 continue
 
@@ -243,32 +303,38 @@ class MarkdownStreamConverter:
                 i += 1
                 continue
 
+            # Inside inline code, other markup is suppressed (contents are
+            # literal); only a backtick (handled above) can close it.
+            code_active = bool(self.stack) and self.stack[-1] == "code"
+
             # **bold** handling (buffer a lone trailing "*")
-            if ch == "*":
+            if ch == "*" and not code_active:
                 if i + 1 == n:
                     self.buffer = "*"
                     break
                 if text[i + 1] == "*":
-                    self.bright_mode = not self.bright_mode
-                    output += BOLD_ON if self.bright_mode else BOLD_OFF
+                    if "bold" in self.stack:
+                        output += _close_inline(self.stack, "bold")
+                    else:
+                        output += _open_inline(self.stack, "bold")
                     i += 2
                     continue
                 output += ch
                 i += 1
                 continue
 
-            # Auto-close inline formatting at newline
+            # Newline: a single (soft) newline keeps inline formatting; a blank
+            # line (whitespace-only) dissolves the stack and resets formatting.
             if ch == "\n":
-                if self.code_mode:
-                    output += CODE_OFF
-                    self.code_mode = False
-                if self.bright_mode:
-                    output += BOLD_OFF
-                    self.bright_mode = False
+                if not self.line_has_content:
+                    output += _close_all_inline(self.stack)
                 output += ch
+                self.line_has_content = False
                 i += 1
                 continue
 
+            if ch != " " and ch != "\t":
+                self.line_has_content = True
             output += ch
             i += 1
 
@@ -304,20 +370,18 @@ class MarkdownStreamConverter:
                     self.pending_nl = False
                 else:
                     for _ in range(run):
-                        self.code_mode = not self.code_mode
-                        output += CODE_ON if self.code_mode else CODE_OFF
+                        if "code" in self.stack:
+                            output += _close_inline(self.stack, "code")
+                        else:
+                            output += _open_inline(self.stack, "code")
             else:
                 # Leftover lone "*" is literal
                 output += buf
 
         # Flush a held in-block newline, then ensure all formatting is closed
         output += self._release_pending()
-        if self.code_mode:
-            output += CODE_OFF
-            self.code_mode = False
-        if self.bright_mode:
-            output += BOLD_OFF
-            self.bright_mode = False
+        output += _close_all_inline(self.stack)
+        self.line_has_content = False
         if self.block_bg:
             output += BLOCK_OFF
             self.block_bg = False

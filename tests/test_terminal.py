@@ -4,8 +4,11 @@ from llm7shi.terminal import (
     bold,
     convert_markdown,
     MarkdownStreamConverter,
+    BOLD_ON,
+    BOLD_OFF,
     CODE_ON,
     CODE_OFF,
+    INLINE_OFF,
     BLOCK_ON,
     BLOCK_OFF,
 )
@@ -212,15 +215,19 @@ class TestMarkdownStreamConverter:
         
         assert converter.buffer == ""
     
-    def test_converter_newline_closes_bold(self):
-        """Test that newlines auto-close bold formatting"""
+    def test_converter_soft_newline_keeps_bold(self):
+        """A single (soft) newline keeps bold active; a blank line resets it"""
         converter = MarkdownStreamConverter()
-        
-        # Start bold but encounter newline
+
+        # A soft newline after a non-empty line does not close bold
         result = converter.feed("**bold text\n")
         assert "bold text" in result
         assert "\n" in result
         assert converter.buffer == ""
+        assert converter.bright_mode is True
+
+        # A following blank line dissolves the stack and resets formatting
+        result = converter.feed("\n")
         assert converter.bright_mode is False
     
     def test_converter_newline_in_complete_bold(self):
@@ -347,12 +354,20 @@ class TestInlineCodeAndFence:
         assert result.endswith(CODE_OFF)
         assert "`" not in result
 
-    def test_inline_code_closes_at_newline(self):
-        """Inline code auto-closes at a newline"""
+    def test_inline_code_persists_across_soft_newline(self):
+        """Inline code persists across a soft newline and closes at end of text"""
         result = convert_markdown("a `inline\nmore")
         assert CODE_OFF in result
-        # The OFF code must appear before the newline
-        assert result.index(CODE_OFF) < result.index("\n")
+        # A soft newline keeps the code open, so the OFF code comes after it
+        assert result.index("\n") < result.index(CODE_OFF)
+        assert result.endswith(CODE_OFF)
+
+    def test_inline_code_closes_at_blank_line(self):
+        """Inline code is reset at a blank line"""
+        result = convert_markdown("a `inline\n\nmore")
+        # The OFF code is emitted at the blank line, before the second newline
+        assert CODE_OFF in result
+        assert result.index(CODE_OFF) < result.rindex("\n")
 
     def test_fence_is_not_inline(self):
         """A triple-backtick fence opens a block, not inline code"""
@@ -433,6 +448,80 @@ class TestInlineCodeAndFenceStreaming:
         result = converter.flush()
         assert BLOCK_OFF in result
         assert converter.code_block is False
+
+
+class TestNestedInlineFormatting:
+    """Test inline `code` nested inside **bold** (stack-based restore)"""
+
+    def test_code_inside_bold_restores_bold(self):
+        """Closing inline code re-applies the surrounding bold color"""
+        result = convert_markdown("**a `b` c**")
+        # When the inline code closes, INLINE_OFF is immediately followed by
+        # BOLD_ON so the trailing "c" stays bold.
+        assert INLINE_OFF + BOLD_ON in result
+        assert "**" not in result
+        assert "`" not in result
+        # The trailing "c" is between the restored BOLD_ON and the final OFF
+        assert "c" in result
+        assert result.endswith(BOLD_OFF)
+
+    def test_code_inside_bold_streaming_matches_one_shot(self):
+        """Nested formatting streams identically to the one-shot conversion"""
+        text = "x **a `b` c** y"
+        one = convert_markdown(text)
+        converter = MarkdownStreamConverter()
+        out = ""
+        for k in range(0, len(text), 2):
+            out += converter.feed(text[k:k + 2])
+        out += converter.flush()
+        assert out == one
+
+    def test_markup_suppressed_inside_inline_code(self):
+        """** inside inline code is literal, not a bold toggle"""
+        result = convert_markdown("`a**b**c`")
+        # The asterisks survive as literal content (no bold toggle applied)
+        assert "a**b**c" in result
+        assert CODE_ON in result
+        assert result.endswith(CODE_OFF)
+
+
+class TestNewlineSemantics:
+    """Soft newlines keep formatting; blank lines reset the stack"""
+
+    def test_soft_newline_keeps_bold_one_shot(self):
+        """Bold persists across a single newline and closes at the final **"""
+        result = convert_markdown("**a\nb**")
+        # No reset between "a" and "b": the only OFF is the closing one at the end
+        assert result.count(INLINE_OFF) == 1
+        assert result.endswith(INLINE_OFF)
+
+    def test_blank_line_resets_stack(self):
+        """A blank line dissolves the stack (bold does not bleed past it)"""
+        result = convert_markdown("**a\n\nb")
+        # The reset is emitted at the blank line, before the second newline
+        assert INLINE_OFF in result
+        assert result.index(INLINE_OFF) < result.rindex("\n")
+        # "b" after the blank line is not bold (no BOLD_ON after the reset)
+        assert BOLD_ON not in result[result.index(INLINE_OFF):]
+        assert result.endswith("b")
+
+    def test_whitespace_only_line_counts_as_blank(self):
+        """A line with only spaces is treated as blank"""
+        result = convert_markdown("**a\n   \nb")
+        # Reset happens at the whitespace-only line, before the final newline
+        assert INLINE_OFF in result
+        assert result.index(INLINE_OFF) < result.rindex("\n")
+
+    def test_newline_semantics_streaming_matches_one_shot(self):
+        """Soft/blank-line handling streams identically to one-shot"""
+        text = "**a\nb** c\n\n**d\n\ne `f`\ng"
+        one = convert_markdown(text)
+        converter = MarkdownStreamConverter()
+        out = ""
+        for k in range(0, len(text), 3):
+            out += converter.feed(text[k:k + 3])
+        out += converter.flush()
+        assert out == one
 
 
 class TestWindowsConsoleIntegration:

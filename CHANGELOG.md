@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Nested inline formatting** - Inline `` `code` `` inside `**bold**` now restores the bold color once the code closes, using a general stack so future inline elements compose the same way; markup inside inline code is left literal
+
+### Changed
+- **Markdown newline handling** - A single (soft) newline now keeps inline formatting active across the line; bold/inline code are reset only at a blank line (whitespace-only counts) or end of text, instead of at every newline
+
 ## [0.11.4] - 2026-06-04
 
 ### Fixed

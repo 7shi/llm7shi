@@ -24,8 +24,8 @@ When building CLI applications that display LLM responses, we faced several spec
 ### Streaming-First Architecture
 The `MarkdownStreamConverter` class maintains state between `feed()` calls, allowing continuous processing of text streams without losing formatting context.
 
-### Conservative Formatting
-Auto-closes bold formatting at newlines to prevent formatting "bleed" into subsequent content. This ensures that unclosed markdown doesn't affect the entire terminal session.
+### Newline Semantics: Soft Breaks vs Blank Lines
+Inline formatting follows Markdown's line model. A single newline is a *soft* line break — the logical line (paragraph) continues, so active inline formatting **persists across it**. Inline formatting is reset only at a **blank line** (a paragraph break; a line containing only whitespace counts as blank) or at the end of text. This prevents unclosed markdown from bleeding into a *new paragraph* while still allowing a bold or code span to wrap naturally across a soft-wrapped line. A line is considered blank when no non-whitespace literal character has been emitted on it; the `**`/`` ` `` markers are consumed rather than emitted, so they don't count as content.
 
 ### Minimal Scope
 Focused on the markdown constructs that actually appear in LLM responses — `**bold**`, inline `` `code` ``, and ``` fenced code blocks ``` — rather than full markdown support. These are what matter for displaying LLM thinking processes, emphasis, and code.
@@ -38,6 +38,13 @@ Focused on the markdown constructs that actually appear in LLM responses — `**
 The background ON/OFF codes are emitted **just before the surrounding newline**, not after it: ON is placed right before the newline that ends the opening fence line, and OFF right before the newline that precedes the closing fence (e.g. `` ``` `` + `BLOCK_ON` + `\nbody` + `BLOCK_OFF` + `\n` + `` ``` ``). This keeps each shaded line ending clean across terminals. Implementing it requires holding one in-block newline until the next token is known, so the converter can decide whether that newline belongs to the block body or precedes the closing fence. When the closing fence is indented, the leading whitespace on that line is also buffered alongside the held newline (`pending_indent`), so `BLOCK_OFF` is emitted before both the newline and the indent — ensuring the entire closing line, including its leading spaces, stays unshaded.
 
 Sticking to Colorama constants keeps this cross-platform: Colorama only models the 16 standard ANSI colors, so 256-color/true-color backgrounds (which would be VT-dependent and untranslated on legacy Windows consoles) are intentionally avoided — `Back.LIGHTBLACK_EX` is the available gray. Because foreground (bold/inline) and background (fence) are independent ANSI channels, they compose without interfering. All four constants (`CODE_ON`/`CODE_OFF`/`BLOCK_ON`/`BLOCK_OFF`) are customizable, following the same base-color rationale as bold below.
+
+### Nested Inline Formatting: A Stack, Not Two Flags
+**Problem**: Inline elements share the single ANSI *foreground* channel, and each "off" code (`Style.NORMAL + Fore.RESET`) is a *full* reset. With independent on/off flags for `**bold**` and inline `` `code` ``, a nested span like `**bold `code` bold**` breaks: closing the inner code emits a full reset, which also clears the surrounding bold, leaving the trailing text uncolored.
+
+**Solution**: Active inline formats are tracked as an ordered **stack** (`INLINE_ON` maps each format name to its on code). Opening a format pushes it and emits its on code; closing pops it, emits one `INLINE_OFF` reset, then **re-applies the remaining stack's on codes** so the surrounding (parent) element's formatting is restored. For the common single-level case the stack is empty after the pop, so the output is byte-identical to the old flag-based behavior — only genuinely nested closes differ. The `_open_inline`/`_close_inline`/`_close_all_inline` helpers are shared by both `convert_markdown()` and `MarkdownStreamConverter`, keeping one-shot and streaming output identical.
+
+Because **markup inside inline code is left literal** (a `` ` `` span's contents are not re-parsed, so `**` inside it stays a literal asterisk), the stack only ever nests in one direction — `bold` then `code`, never the reverse. A general stack is still used rather than a special-case so that future inline elements compose the same way. The legacy `bright_mode`/`code_mode` attributes remain available as read-only properties derived from the stack (`"bold" in stack` / `"code" in stack`).
 
 ### Bold Color Choice: `Style.BRIGHT + Fore.RED`
 Bold text is rendered with `BOLD_ON = Style.BRIGHT + Fore.RED` rather than a single color constant like `Fore.LIGHTRED_EX`.
