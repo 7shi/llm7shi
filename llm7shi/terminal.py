@@ -10,12 +10,17 @@ BOLD_OFF = Style.NORMAL + Fore.RESET
 CODE_ON = Style.BRIGHT + Fore.BLUE
 CODE_OFF = Style.NORMAL + Fore.RESET
 
+# Italic (*...*) is rendered as yellow foreground. Colorama has no direct italic
+# support, so Fore.YELLOW stands in for it (no Style.BRIGHT, i.e. normal weight).
+ITALIC_ON = Fore.YELLOW
+ITALIC_OFF = Fore.RESET
+
 # Inline (foreground) formatting is tracked as a stack so elements can nest
 # (e.g. inline `code` inside **bold**). Each format maps to its ON code; OFF is
 # a single generic foreground reset, after which the remaining stack's ON codes
 # are re-applied to restore the surrounding (parent) formatting. The foreground
 # is a single ANSI channel, so the innermost active format wins.
-INLINE_ON = {"bold": BOLD_ON, "code": CODE_ON}
+INLINE_ON = {"bold": BOLD_ON, "code": CODE_ON, "italic": ITALIC_ON}
 INLINE_OFF = Style.NORMAL + Fore.RESET
 
 
@@ -61,10 +66,13 @@ def bold(text):
 def convert_markdown(text):
     """Convert Markdown to Colorama colors (handles unclosed tags)
 
-    Supports **bold** (bright red), inline `code` (bright blue), and fenced
-    ``` code blocks ``` (the inner lines get a gray background, while the ```
-    delimiter lines stay unshaded). A run of three or more backticks is treated
-    as a code-fence delimiter rather than inline code.
+    Supports **bold** (bright red), *italic* (yellow), inline `code` (bright
+    blue), and fenced ``` code blocks ``` (the inner lines get a gray
+    background, while the ``` delimiter lines stay unshaded). A run of three or
+    more backticks is treated as a code-fence delimiter rather than inline code.
+    A "*" only opens italic when followed by a non-space, so a "* " or indented
+    "  * " list marker stays literal; a "*" that closes an open italic always
+    closes it (regardless of the following character).
 
     Inline formats nest as a stack, so inline `code` inside **bold** restores
     the bold color once the code closes; markup inside inline code is left
@@ -157,14 +165,25 @@ def convert_markdown(text):
         # only a backtick (handled above) can close it.
         code_active = bool(stack) and stack[-1] == "code"
 
-        # **bold** toggle
-        if ch == "*" and not code_active and i + 1 < n and text[i + 1] == "*":
-            if "bold" in stack:
-                result += _close_inline(stack, "bold")
-            else:
-                result += _open_inline(stack, "bold")
-            i += 2
-            continue
+        # **bold** / *italic* toggle. An open italic is always closed by a "*";
+        # otherwise a "*" only opens italic when followed by a non-space, so a
+        # "* " (or indented "  * ") list marker stays literal via the fall-through.
+        if ch == "*" and not code_active:
+            if i + 1 < n and text[i + 1] == "*":
+                if "bold" in stack:
+                    result += _close_inline(stack, "bold")
+                else:
+                    result += _open_inline(stack, "bold")
+                i += 2
+                continue
+            if "italic" in stack:
+                result += _close_inline(stack, "italic")
+                i += 1
+                continue
+            if i + 1 < n and text[i + 1] != " ":
+                result += _open_inline(stack, "italic")
+                i += 1
+                continue
 
         # Newline: a single (soft) newline keeps inline formatting; a blank line
         # (whitespace-only) dissolves the stack and resets formatting.
@@ -194,14 +213,17 @@ class MarkdownStreamConverter:
     """
     Class for incrementally converting Markdown received in streams.
 
-    Handles **bold** (bright red), inline `code` (bright blue), and fenced
-    ``` code blocks ``` (the inner lines get a gray background, the ``` delimiter
-    lines stay unshaded). Incomplete markers at the end of a chunk (a lone "*" or
-    a short backtick run that might still grow into a ``` fence) are buffered
-    until the next chunk arrives. Inline formats nest as a stack (inline `code`
-    inside **bold** restores bold when the code closes; markup inside inline
-    code stays literal). Inline formatting persists across a soft newline and is
-    reset at a blank (whitespace-only) line, on flush, or at end of text.
+    Handles **bold** (bright red), *italic* (yellow), inline `code` (bright
+    blue), and fenced ``` code blocks ``` (the inner lines get a gray
+    background, the ``` delimiter lines stay unshaded). A "*" only opens italic
+    when followed by a non-space (so a "* " or indented "  * " list marker stays
+    literal); a "*" closing an open italic always closes it. Incomplete markers
+    at the end of a chunk (a
+    lone "*" or a short backtick run that might still grow into a ``` fence) are
+    buffered until the next chunk arrives. Inline formats nest as a stack (inline
+    `code` inside **bold** restores bold when the code closes; markup inside
+    inline code stays literal). Inline formatting persists across a soft newline
+    and is reset at a blank (whitespace-only) line, on flush, or at end of text.
     """
     def __init__(self):
         self.buffer = ""  # Buffer for incomplete ** / ` markers
@@ -307,7 +329,8 @@ class MarkdownStreamConverter:
             # literal); only a backtick (handled above) can close it.
             code_active = bool(self.stack) and self.stack[-1] == "code"
 
-            # **bold** handling (buffer a lone trailing "*")
+            # **bold** / *italic* handling (buffer a lone trailing "*" until the
+            # next char disambiguates ** vs * vs a "* " list marker)
             if ch == "*" and not code_active:
                 if i + 1 == n:
                     self.buffer = "*"
@@ -319,7 +342,15 @@ class MarkdownStreamConverter:
                         output += _open_inline(self.stack, "bold")
                     i += 2
                     continue
-                output += ch
+                # An open italic is always closed; otherwise "*" only opens italic
+                # when followed by a non-space ("* "/"  * " list markers stay literal).
+                if "italic" in self.stack:
+                    output += _close_inline(self.stack, "italic")
+                elif text[i + 1] != " ":
+                    output += _open_inline(self.stack, "italic")
+                else:
+                    output += ch
+                    self.line_has_content = True
                 i += 1
                 continue
 
@@ -375,8 +406,12 @@ class MarkdownStreamConverter:
                         else:
                             output += _open_inline(self.stack, "code")
             else:
-                # Leftover lone "*" is literal
-                output += buf
+                # Leftover lone "*" from chunk end (EOF): close an open italic,
+                # otherwise leave it literal (nothing follows it to open italic).
+                if "italic" in self.stack:
+                    output += _close_inline(self.stack, "italic")
+                else:
+                    output += buf
 
         # Flush a held in-block newline, then ensure all formatting is closed
         output += self._release_pending()

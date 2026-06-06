@@ -312,10 +312,11 @@ class StreamProcessor:
     formatted output to the terminal, accumulates the raw text, and runs repetition /
     max-length monitoring.
 
-    Display-only blank-line suppression: trailing newlines are held back from the
-    terminal so that exactly one blank line separates the thinking and answer
-    sections (and no trailing blank lines remain). The accumulated thoughts / text
-    always preserve the server output verbatim, since stripping newlines there would
+    Display-only blank-line suppression: leading newlines at the start of each
+    section are dropped, and trailing newlines are held back from the terminal, so
+    that exactly one blank line separates the thinking and answer sections (and no
+    leading or trailing blank lines remain). The accumulated thoughts / text always
+    preserve the server output verbatim, since stripping newlines there would
     desync the conversation history from the server-side KV cache on resend.
     """
 
@@ -334,6 +335,7 @@ class StreamProcessor:
         self._thoughts_shown = False
         self._answer_shown = False
         self._held = ""  # Trailing newlines held back from display only
+        self._leading = True  # Drop leading newlines at the start of a section
         self._last_char = ""  # Last character written to the display
         self._answer_monitor = StreamMonitor(
             self.converter, max_length=max_length, check_repetition=check_repetition
@@ -422,13 +424,19 @@ class StreamProcessor:
         Trailing newlines are cached in ``self._held`` so they are not shown until
         more non-newline content arrives in the same section. Internal blank lines
         are therefore preserved, while trailing blank lines at a section boundary can
-        be discarded by ``_close_section()``. Display only; never alters accumulation.
+        be discarded by ``_close_section()``. Leading newlines at the start of a
+        section are dropped outright (``self._leading``) so a section never opens with
+        blank lines. Display only; never alters accumulation.
         """
         if not self.file:
             return
         data = self._held + chunk
         body = data.rstrip("\n")
         self._held = data[len(body):]
+        if self._leading:
+            body = body.lstrip("\n")  # display-only: drop leading blank lines
+            if body:
+                self._leading = False
         if body:
             self._write(self.converter.feed(body))
 
@@ -442,6 +450,7 @@ class StreamProcessor:
         boundary regardless of how many newlines the model emitted.
         """
         self._held = ""
+        self._leading = True  # Next section also drops its leading blank lines
         if self.file and self._last_char not in ("", "\n"):
             self._write(self.converter.feed("\n"))
 

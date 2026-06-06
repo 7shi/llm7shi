@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Italic formatting** - Terminal output now renders `*italic*` text in yellow (`ITALIC_ON = Fore.YELLOW`); a `* `/`  * ` list marker stays literal, and `*italic*` composes inside `**bold**`
+
+### Changed
+- **Leading blank-line trimming** - Streaming display now drops leading blank lines at the start of the thinking and answer sections (symmetric with existing trailing-newline trimming); the returned `thoughts`/`text` remain verbatim
+
 ## [0.11.5] - 2026-06-05
 
 ### Added

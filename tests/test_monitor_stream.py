@@ -77,6 +77,40 @@ def test_raw_text_preserved_verbatim():
     assert processor.text == "".join(text_chunks)
 
 
+def test_leading_blank_lines_trimmed_in_display():
+    """Leading newlines at the start of a section are dropped from the display only."""
+    processor, display = _run(["\n\nHello"], [])
+    # The thinking content starts right after the header, with no leading blank lines.
+    assert "🤔 Thinking...\n\nHello" in display
+    assert "Hello" in display
+    # Accumulation stays verbatim (KV-cache safety).
+    assert processor.thoughts == "\n\nHello"
+
+
+def test_leading_blank_lines_split_across_chunks_trimmed():
+    """Leading newlines spanning multiple chunks are still trimmed before content."""
+    processor, display = _run(["\n", "\n", "World"], [])
+    assert "🤔 Thinking...\n\nWorld" in display
+    assert processor.thoughts == "\n\nWorld"
+
+
+def test_answer_section_leading_blank_lines_trimmed():
+    """The answer section also drops its own leading blank lines."""
+    processor, display = _run(["reason"], ["\n\nanswer"])
+    # The answer content follows the header with no extra leading blank lines from
+    # the content itself (the header already provides its own blank line).
+    assert "💡 Answer:\n\nanswer" in display
+    assert "answer\n" in display
+    assert processor.text == "\n\nanswer"
+
+
+def test_first_line_indent_preserved():
+    """Leading spaces/tabs on the first content line are kept (only newlines trimmed)."""
+    processor, display = _run([], ["\n   indented"])
+    assert "   indented" in display
+    assert processor.text == "\n   indented"
+
+
 def test_empty_output_ends_with_single_newline():
     """Empty output still terminates with a newline, matching the providers' behavior."""
     _, display = _run([], [])

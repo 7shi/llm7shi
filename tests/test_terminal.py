@@ -8,6 +8,7 @@ from llm7shi.terminal import (
     BOLD_OFF,
     CODE_ON,
     CODE_OFF,
+    ITALIC_ON,
     INLINE_OFF,
     BLOCK_ON,
     BLOCK_OFF,
@@ -138,6 +139,41 @@ class TestConvertMarkdown:
         assert "\n" in result
         assert "**" not in result
 
+    def test_convert_single_italic(self):
+        """Test conversion of single italic text"""
+        text = "This is *italic* text"
+        result = convert_markdown(text)
+        assert ITALIC_ON in result
+        assert INLINE_OFF in result
+        assert "italic" in result
+        # The italic markers are consumed
+        assert "*" not in result
+
+    def test_convert_list_marker_stays_literal(self):
+        """A '* ' list marker (single '*' before a space) is left literal"""
+        text = "* item one\n* item two"
+        result = convert_markdown(text)
+        # The asterisks are kept and no italic color is emitted
+        assert "* item one" in result
+        assert "* item two" in result
+        assert ITALIC_ON not in result
+
+    def test_convert_indented_list_marker_stays_literal(self):
+        """An indented '  * ' list marker is also left literal"""
+        text = "  * nested item"
+        result = convert_markdown(text)
+        assert "  * nested item" in result
+        assert ITALIC_ON not in result
+
+    def test_convert_italic_inside_bold_restores_bold(self):
+        """Italic nested in bold restores the bold color when it closes"""
+        text = "**bold *italic* bold**"
+        result = convert_markdown(text)
+        assert ITALIC_ON in result
+        # Bold ON appears again after the italic closes (parent restored)
+        assert result.count(BOLD_ON) >= 2
+        assert "*" not in result
+
 
 class TestMarkdownStreamConverter:
     """Test streaming markdown conversion"""
@@ -230,6 +266,77 @@ class TestMarkdownStreamConverter:
         result = converter.feed("\n")
         assert converter.bright_mode is False
     
+    def test_converter_italic_in_single_chunk(self):
+        """Test complete italic formatting in a single chunk"""
+        converter = MarkdownStreamConverter()
+        result = converter.feed("This is *italic* text")
+        assert ITALIC_ON in result
+        assert INLINE_OFF in result
+        assert "italic" in result
+        assert "*" not in result
+        assert converter.buffer == ""
+
+    def test_converter_italic_across_chunks(self):
+        """Test italic with the closing '*' split into a separate chunk"""
+        converter = MarkdownStreamConverter()
+
+        # A lone trailing "*" is buffered until disambiguated
+        result1 = converter.feed("Start *italic")
+        assert "Start " in result1
+        assert "italic" in result1
+        assert ITALIC_ON in result1
+
+        result2 = converter.feed("*")  # buffered, resolved on flush
+        assert converter.buffer == "*"
+        result2 += converter.flush()
+        assert "*" not in (result1 + result2)
+
+    def test_converter_bold_italic_triple_asterisk(self):
+        """'***' opens bold then italic; closing '***' restores order"""
+        converter = MarkdownStreamConverter()
+        result = converter.feed("***both***") + converter.flush()
+        assert BOLD_ON in result
+        assert ITALIC_ON in result
+        assert "both" in result
+        assert "*" not in result
+        assert converter.buffer == ""
+
+    def test_converter_list_marker_stays_literal(self):
+        """A '* ' list marker stays literal in streaming mode"""
+        converter = MarkdownStreamConverter()
+        result = converter.feed("* item one\n")
+        assert "* item one" in result
+        assert ITALIC_ON not in result
+        assert converter.buffer == ""
+
+    def test_converter_indented_list_marker_stays_literal(self):
+        """An indented '  * ' list marker stays literal in streaming mode"""
+        converter = MarkdownStreamConverter()
+        result = converter.feed("  * nested\n")
+        assert "  * nested" in result
+        assert ITALIC_ON not in result
+        assert converter.buffer == ""
+
+    def test_converter_flush_lone_asterisk_literal(self):
+        """A dangling lone '*' (chunk end, no open italic) stays literal on flush"""
+        converter = MarkdownStreamConverter()
+        result = converter.feed("text*")
+        assert converter.buffer == "*"
+        result += converter.flush()
+        # Nothing follows it to open italic, so it is emitted literally
+        assert "*" in result
+        assert ITALIC_ON not in result
+
+    def test_converter_flush_lone_asterisk_closes_italic(self):
+        """A buffered lone '*' closes an already-open italic on flush"""
+        converter = MarkdownStreamConverter()
+        result = converter.feed("*italic")  # opens italic
+        assert ITALIC_ON in result
+        result += converter.feed("*")  # buffered
+        assert converter.buffer == "*"
+        result += converter.flush()
+        assert "*" not in result
+
     def test_converter_newline_in_complete_bold(self):
         """Test newlines within properly closed bold"""
         converter = MarkdownStreamConverter()
@@ -288,10 +395,12 @@ class TestMarkdownStreamConverter:
         result1 = converter.feed("Text *")
         assert result1 == "Text "
         assert converter.buffer == "*"
-        
-        # Non-matching continuation should flush buffer
+
+        # A "*" followed by a non-space opens italic once the next chunk arrives
         result2 = converter.feed("regular")
-        assert "*regular" in result2
+        assert ITALIC_ON in result2
+        assert "regular" in result2
+        assert "*" not in result2
         assert converter.buffer == ""
     
     def test_converter_complex_streaming_scenario(self):

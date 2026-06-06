@@ -88,10 +88,10 @@ For detailed algorithm design and edge case analysis, see [Quasi-Repetition Dete
 ### Exactly One Blank Line at the Section Boundary
 **Problem**: Because providers disagreed on the answer-header newline and passed model trailing newlines straight through, the visual gap between the thinking and answer sections was inconsistent — sometimes zero blank lines, sometimes several, depending on the model's output.
 
-**Solution**: `StreamProcessor` holds back trailing newlines from the terminal (caching them in a display-only buffer) and discards them at a section boundary, then relies on the unified `\n💡 **Answer:**\n` header to insert exactly one blank line. Newlines that appear *between* content are flushed as soon as more text arrives, so internal blank lines are preserved while trailing ones are trimmed.
+**Solution**: `StreamProcessor` holds back trailing newlines from the terminal (caching them in a display-only buffer) and discards them at a section boundary, then relies on the unified `\n💡 **Answer:**\n` header to insert exactly one blank line. Newlines that appear *between* content are flushed as soon as more text arrives, so internal blank lines are preserved while trailing ones are trimmed. Symmetrically, **leading** newlines at the start of each section are dropped (a `_leading` flag, reset at every section boundary) so a section never opens with stray blank lines before its first content; leading spaces/tabs on the first content line are kept (only newlines are trimmed).
 
 ### Display-Only Formatting Preserves Verbatim Text
-**Problem**: Trimming trailing newlines for display must not alter the text returned to callers. The `Response` stores `thoughts`/`text` that may be resent as conversation history; if the stored text diverged from the server output, it would desync the server-side KV cache.
+**Problem**: Trimming leading/trailing newlines for display must not alter the text returned to callers. The `Response` stores `thoughts`/`text` that may be resent as conversation history; if the stored text diverged from the server output, it would desync the server-side KV cache.
 
 **Solution**: The blank-line suppression operates strictly on the terminal output path. `add_thought`/`add_text` accumulate the raw chunks verbatim, and the monitors check those raw strings, so `processor.thoughts` and `processor.text` always match exactly what the server streamed.
 
