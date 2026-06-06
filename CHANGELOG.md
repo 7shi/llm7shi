@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.6] - 2026-06-06
+
 ### Added
 - **Italic formatting** - Terminal output now renders `*italic*` text in yellow (`ITALIC_ON = Fore.YELLOW`); a `* `/`  * ` list marker stays literal, and `*italic*` composes inside `**bold**`
 
