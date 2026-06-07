@@ -124,6 +124,17 @@ Demonstrates how `include_thoughts` controls the reasoning behavior of thinking-
 uv run examples/openrouter.py
 ```
 
+### [gemma4.py](gemma4.py) - Same Model Across Multiple Providers
+Demonstrates that the same model (`gemma-4-31b-it`) can be accessed uniformly through Google, OpenRouter, and Ollama, with consistent `include_thoughts` reasoning control across all providers.
+
+Note: With `include_thoughts=False`, the `google:` provider does not disable reasoning - the thinking process leaks into the answer body instead of being separated out. This is a server-side behavior that cannot be worked around; OpenRouter and Ollama suppress reasoning cleanly.
+
+**Documentation**: [gemma4.md](gemma4.md)
+
+```bash
+uv run examples/gemma4.py
+```
+
 ## Advanced Examples
 
 ### [essay.py](essay.py) - Automated Essay Evaluation
