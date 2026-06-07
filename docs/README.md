@@ -81,6 +81,16 @@ Key topics:
 - Three-tier API key selection logic
 - Syntax evaluation: `$`, `|`, and `?` delimiter comparison
 
+### [20260607-openrouter-reasoning.md](20260607-openrouter-reasoning.md) - OpenRouter Reasoning Control
+How `include_thoughts` maps onto OpenRouter's reasoning controls and why `reasoning.enabled` is sent explicitly for both states.
+
+Key topics:
+- Extracting `delta.reasoning` into `Response.thoughts` via the OpenAI-compatible layer
+- Evolution of the disable mechanism: `exclude` → `max_tokens=0` → `enabled=False`
+- Why `exclude` only hides reasoning while the model still thinks
+- Sending `enabled` explicitly so models that default to no reasoning (e.g. google/gemma) honor `include_thoughts=True`
+- Provider-specific caveat for the direct `google:` path
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`
