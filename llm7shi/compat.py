@@ -104,10 +104,12 @@ def generate_with_schema(
             # Construct model string with vendor defaults
             actual_model = f"{actual_model}@{vendor_config['base_url']}|{vendor_config['api_key_env']}"
 
-        # OpenRouter-only: disable reasoning when include_thoughts is False
+        # OpenRouter-only: explicitly toggle reasoning via include_thoughts.
+        # Some models (e.g. google/gemma) do not emit reasoning unless
+        # enabled is sent explicitly, so set it for both True and False.
         extra_body = None
-        if vendor_prefix == "openrouter" and not include_thoughts:
-            extra_body = {"reasoning": {"enabled": False}}
+        if vendor_prefix == "openrouter":
+            extra_body = {"reasoning": {"enabled": include_thoughts}}
 
         return _generate_with_openai(actual_model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition, extra_body=extra_body)
 

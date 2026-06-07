@@ -58,10 +58,10 @@ The vendor prefix feature required dedicated testing to ensure robust multi-prov
 **Why this matters**: OpenAI-compatible vendors share similar configuration needs (base_url + api_key_env), making them ideal candidates for automatic configuration. These tests ensure the convenience of pre-configured vendors doesn't compromise flexibility for users who need custom endpoints. The tests validate both the happy path (automatic configuration) and the escape hatch (user overrides).
 
 ### OpenRouter Reasoning Control Routing
-**Problem**: Reasoning suppression via `include_thoughts=False` must reach the API only as `extra_body={"reasoning": {"exclude": True}}` and only for the `openrouter:` prefix — it must not leak to other OpenAI-compatible vendors that do not support the extension.
+**Problem**: Reasoning must be toggled explicitly via `extra_body={"reasoning": {"enabled": ...}}` and only for the `openrouter:` prefix — it must not leak to other OpenAI-compatible vendors that do not support the extension. Sending `enabled` explicitly for both states is required because some models (e.g. `google/gemma`) do not emit reasoning unless it is requested.
 
 **Solution**: Test class `TestOpenRouterReasoningControl` with three scenarios:
 
-1. **Exclude on opt-out**: `openrouter:` with `include_thoughts=False` sets `extra_body={"reasoning": {"exclude": True}}`
-2. **No override by default**: `openrouter:` with the default `include_thoughts` sends no `extra_body`
+1. **Disable on opt-out**: `openrouter:` with `include_thoughts=False` sets `extra_body={"reasoning": {"enabled": False}}`
+2. **Enable by default**: `openrouter:` with the default `include_thoughts` sets `extra_body={"reasoning": {"enabled": True}}`
 3. **OpenRouter-only scope**: `groq:` with `include_thoughts=False` sends no `extra_body`, confirming the control does not apply to other vendors

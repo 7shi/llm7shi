@@ -419,8 +419,8 @@ class TestOpenRouterReasoningControl:
         assert call_kwargs["extra_body"] == {"reasoning": {"enabled": False}}
 
     @patch('llm7shi.openai.generate_content')
-    def test_openrouter_default_includes_reasoning(self, mock_generate):
-        """Default include_thoughts does not set reasoning enabled"""
+    def test_openrouter_default_enables_reasoning(self, mock_generate):
+        """Default include_thoughts explicitly enables reasoning for openrouter"""
         mock_generate.return_value = "response"
 
         generate_with_schema(
@@ -429,7 +429,7 @@ class TestOpenRouterReasoningControl:
         )
 
         call_kwargs = mock_generate.call_args.kwargs
-        assert "extra_body" not in call_kwargs
+        assert call_kwargs["extra_body"] == {"reasoning": {"enabled": True}}
 
     @patch('llm7shi.openai.generate_content')
     def test_groq_no_reasoning_control(self, mock_generate):

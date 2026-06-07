@@ -1,9 +1,12 @@
 from llm7shi.compat import generate_with_schema
 
-MODEL = "openrouter:moonshotai/kimi-k2.6:free"
+MODELS = [
+    "openrouter:moonshotai/kimi-k2.6:free",
+    "openrouter:google/gemma-4-31b-it:free",
+]
 
-print("=== include_thoughts=True ===")
-generate_with_schema(["Hello, World!"], model=MODEL, include_thoughts=True)
-
-print("\n=== include_thoughts=False ===")
-generate_with_schema(["Hello, World!"], model=MODEL, include_thoughts=False)
+for model in MODELS:
+    for include_thoughts in [True, False]:
+        print(f"=== {model} (include_thoughts={include_thoughts}) ===")
+        generate_with_schema(["Hello, World!"], model=model, include_thoughts=include_thoughts)
+        print()
