@@ -91,6 +91,15 @@ Key topics:
 - Sending `enabled` explicitly so models that default to no reasoning (e.g. google/gemma) honor `include_thoughts=True`
 - Provider-specific caveat for the direct `google:` path
 
+### [20260608-provider-apis.md](20260608-provider-apis.md) - Raw Provider APIs Behind the Wrapper
+Side-by-side look at the raw provider APIs that llm7shi wraps, using the same Gemma 4 model across Google, OpenRouter, and Ollama.
+
+Key topics:
+- Per-provider client creation, thinking enablement, and thinking/answer field differences
+- Comparison table of all four divergence points
+- How `generate_with_schema()` collapses them into one call with a vendor prefix
+- Caveat: disabling reasoning is not uniform (Gemma via Gemini API vs. `gemini-2.5-flash`)
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`
