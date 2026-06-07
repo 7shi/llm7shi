@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.7] - 2026-06-07
+
 ### Fixed
 - **OpenRouter reasoning with `include_thoughts=True`** - The compat layer now sends `reasoning.enabled` explicitly for both states, so models that do not emit reasoning by default (e.g. `google/gemma`) now return their thinking process when requested
 
