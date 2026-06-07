@@ -127,7 +127,7 @@ uv run examples/openrouter.py
 ### [gemma4.py](gemma4.py) - Same Model Across Multiple Providers
 Demonstrates that the same model (`gemma-4-31b-it`) can be accessed uniformly through Google, OpenRouter, and Ollama, with consistent `include_thoughts` reasoning control across all providers.
 
-Note: With `include_thoughts=False`, the `google:` provider does not disable reasoning - the thinking process leaks into the answer body instead of being separated out. This is a server-side behavior that cannot be worked around; OpenRouter and Ollama suppress reasoning cleanly.
+Note: With `include_thoughts=False`, the `google:` provider cannot suppress reasoning for Gemma - the model keeps generating thought parts server-side. llm7shi discards them so they no longer leak into the answer, but the reasoning still happens and cannot be worked around from the client. OpenRouter and Ollama suppress reasoning cleanly.
 
 **Documentation**: [gemma4.md](gemma4.md)
 

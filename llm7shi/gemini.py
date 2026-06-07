@@ -177,9 +177,12 @@ def generate_content_retry(
                     for part in chunk.candidates[0].content.parts:
                         if not part.text:
                             continue
-                        elif include_thoughts and part.thought:
-                            # Handle thinking process output
-                            if not processor.add_thought(part.text):
+                        elif part.thought:
+                            # Handle thinking process output.
+                            # Some models (e.g. Gemma) keep emitting thought
+                            # parts even with include_thoughts=False; suppress
+                            # them here instead of leaking them into the answer.
+                            if include_thoughts and not processor.add_thought(part.text):
                                 stop = True
                                 break
                         else:

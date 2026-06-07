@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Gemini thinking leak with `include_thoughts=False`** - Thought parts are now always identified by `part.thought`; previously, with `include_thoughts=False`, models that keep emitting thoughts (e.g. Gemma) had their reasoning leak into the answer body. It is now discarded instead
+
 ## [0.11.7] - 2026-06-07
 
 ### Fixed
