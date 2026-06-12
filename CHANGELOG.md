@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.9] - 2026-06-12
+
 ### Fixed
 - **Gemini import without API key** - `import llm7shi` no longer fails when `GEMINI_API_KEY` is not set; the Gemini client is now initialized lazily on first use, matching the behavior of the OpenAI and Ollama providers
 
