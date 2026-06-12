@@ -21,10 +21,15 @@ models = [
 # Default model to use when none specified
 DEFAULT_MODEL = models[0]
 
-# Initialize Gemini API client with API key from environment
-client = genai.Client(
-    api_key=os.environ.get("GEMINI_API_KEY"),
-)
+# Lazy singleton for Gemini API client — initialized on first use to avoid
+# requiring GEMINI_API_KEY at import time when only other providers are used.
+_client = None
+
+def _get_client():
+    global _client
+    if _client is None:
+        _client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+    return _client
 
 # config_text is dynamically generated via __getattr__ to prevent mutation
 
@@ -159,7 +164,7 @@ def generate_content_retry(
     for attempt in range(5, 0, -1):
         try:
             # Stream response from Gemini API
-            response = client.models.generate_content_stream(
+            response = _get_client().models.generate_content_stream(
                 model=model,
                 config=config,
                 contents=contents,
@@ -252,7 +257,7 @@ def upload_file(path, mime_type):
         File object from Gemini API after processing is complete
     """
     # Upload file to Gemini
-    file = client.files.upload(
+    file = _get_client().files.upload(
         file=path,
         config=types.UploadFileConfig(
             display_name=os.path.basename(path),
@@ -264,7 +269,7 @@ def upload_file(path, mime_type):
     while file.state.name == "PROCESSING":
         print("Waiting for file to be processed.")
         time.sleep(2)
-        file = client.files.get(name=file.name)
+        file = _get_client().files.get(name=file.name)
     
     return file
 
@@ -278,14 +283,18 @@ def delete_file(file):
     Returns:
         Delete operation result
     """
-    return client.files.delete(name=file.name)
+    return _get_client().files.delete(name=file.name)
 
 
 def __getattr__(name):
     """Module-level attribute access handler.
 
+    Exposes client lazily so external code can access llm7shi.gemini.client without
+    requiring GEMINI_API_KEY at import time.
     Dynamically generates config_text on each access to prevent mutation issues.
     """
+    if name == "client":
+        return _get_client()
     if name == "config_text":
         return types.GenerateContentConfig(
             response_mime_type="text/plain",

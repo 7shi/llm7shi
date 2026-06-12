@@ -36,3 +36,6 @@ Streaming responses can be safely interrupted by simply breaking out of the loop
 
 ### Immutable Module Constants
 The `config_text` constant uses Python's `__getattr__` mechanism to return a fresh `GenerateContentConfig` instance on every access. While it appears as a module-level constant, each access creates a new object, preventing unintended mutations from affecting other code. This maintains backward compatibility with existing code that references `config_text` while eliminating the risk of shared mutable state.
+
+### Lazy Client Initialization
+The `genai.Client` was originally created at module load time, which caused a `ValueError` whenever the module was imported without `GEMINI_API_KEY` set — even when only OpenAI or Ollama providers were being used. The client is now a lazy singleton initialized on first use via `_get_client()`, matching the pattern already used by `openai.py` and `ollama.py`. The `client` name remains accessible as a module property via `__getattr__` for backward compatibility with external code that references `llm7shi.gemini.client`.

@@ -24,11 +24,6 @@ class MockChunk:
         self.candidates[0].content.parts[0].thought = is_thought
 
 
-@pytest.fixture(autouse=True)
-def set_dummy_api_key(monkeypatch):
-    """Set dummy API key for all tests"""
-    monkeypatch.setenv("GEMINI_API_KEY", "dummy")
-
 
 class TestResponse:
     """Test Response dataclass"""
@@ -130,128 +125,135 @@ class TestSchemaBuilding:
 class TestGenerateContentRetry:
     """Test main content generation function"""
     
-    @patch('llm7shi.gemini.client.models.generate_content_stream')
-    def test_basic_generation(self, mock_stream):
+    @patch('llm7shi.gemini._get_client')
+    def test_basic_generation(self, mock_get_client):
         """Test basic text generation"""
+        mock_stream = mock_get_client.return_value.models.generate_content_stream
         mock_chunks = [
             MockChunk("Hello "),
             MockChunk("World!")
         ]
         mock_stream.return_value = iter(mock_chunks)
-        
+
         response = generate_content_retry(["Test prompt"], file=None)
-        
+
         assert response.text == "Hello World!"
         assert response.model == "gemini-2.5-flash"
         assert len(response.chunks) == 2
         mock_stream.assert_called_once()
-    
-    @patch('llm7shi.gemini.client.models.generate_content_stream')
-    def test_thinking_process_extraction(self, mock_stream):
+
+    @patch('llm7shi.gemini._get_client')
+    def test_thinking_process_extraction(self, mock_get_client):
         """Test extraction of thinking process"""
+        mock_stream = mock_get_client.return_value.models.generate_content_stream
         mock_chunks = [
             MockChunk("I need to think...", is_thought=True),
             MockChunk("The answer is 42", is_thought=False)
         ]
         mock_stream.return_value = iter(mock_chunks)
-        
+
         response = generate_content_retry(["What is the answer?"], file=None)
-        
+
         assert response.thoughts == "I need to think..."
         assert response.text == "The answer is 42"
-    
-    @patch('llm7shi.gemini.client.models.generate_content_stream')
-    def test_custom_model(self, mock_stream):
+
+    @patch('llm7shi.gemini._get_client')
+    def test_custom_model(self, mock_get_client):
         """Test custom model parameter"""
+        mock_stream = mock_get_client.return_value.models.generate_content_stream
         mock_chunks = [MockChunk("Response")]
         mock_stream.return_value = iter(mock_chunks)
-        
+
         response = generate_content_retry(
-            ["Test"], 
+            ["Test"],
             model="gemini-2.5-pro",
             file=None
         )
-        
+
         assert response.model == "gemini-2.5-pro"
         mock_stream.assert_called_once()
         call_args = mock_stream.call_args
         assert call_args[1]['model'] == "gemini-2.5-pro"
-    
-    @patch('llm7shi.gemini.client.models.generate_content_stream')
-    def test_thinking_budget_parameter(self, mock_stream):
+
+    @patch('llm7shi.gemini._get_client')
+    def test_thinking_budget_parameter(self, mock_get_client):
         """Test thinking budget parameter"""
+        mock_stream = mock_get_client.return_value.models.generate_content_stream
         mock_chunks = [MockChunk("Response")]
         mock_stream.return_value = iter(mock_chunks)
-        
+
         response = generate_content_retry(
-            ["Test"], 
+            ["Test"],
             thinking_budget=50000,
             file=None
         )
-        
+
         call_args = mock_stream.call_args
         assert call_args[1]['config'].thinking_config.thinking_budget == 50000
-    
-    @patch('llm7shi.gemini.client.models.generate_content_stream')
-    def test_with_config(self, mock_stream):
+
+    @patch('llm7shi.gemini._get_client')
+    def test_with_config(self, mock_get_client):
         """Test generation with config parameter"""
+        mock_stream = mock_get_client.return_value.models.generate_content_stream
         mock_chunks = [MockChunk('{"result": "test"}')]
         mock_stream.return_value = iter(mock_chunks)
-        
+
         from google.genai import types
         config = types.GenerateContentConfig(response_mime_type="application/json")
         response = generate_content_retry(
-            ["Test"], 
+            ["Test"],
             config=config,
             file=None
         )
-        
+
         call_args = mock_stream.call_args
         # Config should have thinking_config added but preserve original settings
         passed_config = call_args[1]['config']
         assert passed_config.response_mime_type == "application/json"
         assert passed_config.thinking_config is not None
 
-    @patch('llm7shi.gemini.client.models.generate_content_stream')
+    @patch('llm7shi.gemini._get_client')
     @patch('time.sleep')
     @patch('builtins.print')  # Mock print to avoid stderr output
-    def test_retry_logic_429(self, mock_print, mock_sleep, mock_stream):
+    def test_retry_logic_429(self, mock_print, mock_sleep, mock_get_client):
         """Test retry logic for 429 errors"""
+        mock_stream = mock_get_client.return_value.models.generate_content_stream
         # Mock a 429 error followed by success
         from google.genai.errors import APIError
         error_429 = APIError("Rate limit exceeded", {"error": {"details": []}})
         error_429.code = 429
-        
+
         mock_chunks = [MockChunk("Success after retry")]
-        
+
         # First call raises 429, second succeeds
         mock_stream.side_effect = [error_429, iter(mock_chunks)]
-        
+
         response = generate_content_retry(["Test"], file=None)
-        
+
         assert response.text == "Success after retry"
         assert mock_stream.call_count == 2
-    
-    @patch('llm7shi.gemini.client.models.generate_content_stream')
+
+    @patch('llm7shi.gemini._get_client')
     @patch('time.sleep')
     @patch('builtins.print')  # Mock print to avoid stderr output
-    def test_retry_logic_server_errors(self, mock_print, mock_sleep, mock_stream):
+    def test_retry_logic_server_errors(self, mock_print, mock_sleep, mock_get_client):
         """Test retry logic for server errors (500, 502, 503)"""
+        mock_stream = mock_get_client.return_value.models.generate_content_stream
         from google.genai.errors import APIError
-        
+
         for error_code in [500, 502, 503]:
             mock_sleep.reset_mock()
             mock_stream.reset_mock()
             mock_print.reset_mock()
-            
+
             error = APIError(f"Server error {error_code}", {"error": {"details": []}})
             error.code = error_code
-            
+
             mock_chunks = [MockChunk(f"Success after {error_code}")]
             mock_stream.side_effect = [error, iter(mock_chunks)]
-            
+
             response = generate_content_retry(["Test"], file=None)
-            
+
             assert response.text == f"Success after {error_code}"
             assert mock_stream.call_count == 2
 
@@ -259,25 +261,26 @@ class TestGenerateContentRetry:
 class TestFileOperations:
     """Test file upload and delete operations"""
     
-    @patch('llm7shi.gemini.client.files.upload')
-    @patch('llm7shi.gemini.client.files.get')
+    @patch('llm7shi.gemini._get_client')
     @patch('time.sleep')
-    def test_upload_file_success(self, mock_sleep, mock_get, mock_upload):
+    def test_upload_file_success(self, mock_sleep, mock_get_client):
         """Test successful file upload with processing wait"""
+        mock_upload = mock_get_client.return_value.files.upload
+        mock_get = mock_get_client.return_value.files.get
         # Mock upload response - initially PROCESSING
         mock_file = MagicMock()
         mock_file.name = "files/test123"
         mock_file.state.name = "PROCESSING"  # Initial state after upload
         mock_upload.return_value = mock_file
-        
+
         # Mock processing states: first processing, then active
         mock_active = MagicMock()
         mock_active.state.name = "ACTIVE"
-        
+
         mock_get.side_effect = [mock_active]
-        
+
         result = upload_file("test.txt", "text/plain")
-        
+
         assert result == mock_active  # Returns the final state
         # Check the actual call structure with UploadFileConfig
         mock_upload.assert_called_once()
@@ -285,16 +288,17 @@ class TestFileOperations:
         assert call_args[1]['file'] == "test.txt"
         assert call_args[1]['config'].mime_type == "text/plain"
         assert call_args[1]['config'].display_name == "test.txt"
-    
-    @patch('llm7shi.gemini.client.files.delete')
-    def test_delete_file_success(self, mock_delete):
+
+    @patch('llm7shi.gemini._get_client')
+    def test_delete_file_success(self, mock_get_client):
         """Test successful file deletion"""
+        mock_delete = mock_get_client.return_value.files.delete
         # Create a mock file object with name attribute
         mock_file = MagicMock()
         mock_file.name = "files/test123"
-        
+
         delete_file(mock_file)
-        
+
         mock_delete.assert_called_once_with(name="files/test123")
 
 
