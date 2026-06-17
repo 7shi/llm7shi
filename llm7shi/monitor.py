@@ -381,8 +381,26 @@ class StreamProcessor:
         self._emit_stream(chunk)
         return self._answer_monitor.check(self.text, self.file)
 
+    def __enter__(self) -> "StreamProcessor":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Flush buffered output and reset terminal formatting on block exit.
+
+        Runs whether the streaming loop finished normally or was broken off by an
+        exception (or interrupt), so the terminal is never left in a bold/colored
+        state. Returning None lets any in-flight exception propagate unchanged.
+        """
+        self.finalize()
+
     def finalize(self) -> None:
-        """Flush any buffered display output and ensure a single trailing newline."""
+        """Flush any buffered display output and ensure a single trailing newline.
+
+        Resolves any incomplete markdown markers, closes open formatting, and
+        emits a trailing newline. Safe to use both on normal completion and when
+        a stream is aborted: a half-formed marker is at worst rendered literally,
+        and the trailing newline keeps a following exception traceback readable.
+        """
         self._close_section()
         remaining = self.converter.flush()
         if remaining:

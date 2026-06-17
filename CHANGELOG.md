@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Terminal formatting after interrupted streaming** - When an exception or interrupt breaks off generation mid-stream, terminal formatting (bold/color/code-block background) is now reset and the line is properly terminated, so the terminal is no longer left in a colored state and the following traceback stays readable
+
 ## [0.11.9] - 2026-06-12
 
 ### Fixed

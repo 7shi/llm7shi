@@ -43,22 +43,24 @@ def generate_content(
     chunks = []
     processor = StreamProcessor(file=file, max_length=max_length, check_repetition=check_repetition)
 
-    for chunk in response:
-        chunks.append(chunk)
+    # Stream inside the StreamProcessor context so buffered output is flushed and
+    # terminal formatting is reset on exit, whether the loop completes normally or
+    # is interrupted.
+    with processor:
+        for chunk in response:
+            chunks.append(chunk)
 
-        # Handle thinking content
-        if getattr(chunk.message, 'thinking', None) is not None:
-            if not processor.add_thought(chunk.message.thinking):
-                client._client.close()
-                break
+            # Handle thinking content
+            if getattr(chunk.message, 'thinking', None) is not None:
+                if not processor.add_thought(chunk.message.thinking):
+                    client._client.close()
+                    break
 
-        # Handle regular content
-        if chunk.message.content:
-            if not processor.add_text(chunk.message.content):
-                client._client.close()
-                break
-
-    processor.finalize()
+            # Handle regular content
+            if chunk.message.content:
+                if not processor.add_text(chunk.message.content):
+                    client._client.close()
+                    break
 
     # Create Response object for Ollama
     return Response(

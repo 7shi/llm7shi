@@ -142,3 +142,36 @@ def test_file_none_accumulates_without_error():
     processor.finalize()
     assert processor.thoughts == "thought"
     assert processor.text == "answer"
+
+
+def test_context_manager_resets_formatting_on_exception():
+    """An exception inside the `with` block still flushes and resets formatting.
+
+    A thought chunk that opens **bold** without closing it leaves the terminal in
+    the bold/colored state. On exit the processor must emit the closing codes and
+    a trailing newline (so the traceback is readable), while re-raising the
+    original exception and leaving the accumulated text intact.
+    """
+    buf = io.StringIO()
+    processor = StreamProcessor(file=buf)
+    with pytest.raises(RuntimeError):
+        with processor:
+            processor.add_thought("**still bold")  # opens bold, never closed
+            raise RuntimeError("stream interrupted")
+    output = buf.getvalue()
+    # A foreground/style reset is emitted to close the open formatting.
+    assert "\x1b[39m" in output
+    # The output ends with a newline so a following traceback starts at column 0.
+    assert output.endswith("\n")
+    # Accumulated thoughts are preserved verbatim.
+    assert processor.thoughts == "**still bold"
+
+
+def test_context_manager_finalizes_on_normal_exit():
+    """Normal `with` exit flushes buffered output just like calling finalize()."""
+    buf = io.StringIO()
+    processor = StreamProcessor(file=buf)
+    with processor:
+        processor.add_text("answer")
+    assert buf.getvalue().endswith("\n")
+    assert processor.text == "answer"

@@ -95,6 +95,11 @@ For detailed algorithm design and edge case analysis, see [Quasi-Repetition Dete
 
 **Solution**: The blank-line suppression operates strictly on the terminal output path. `add_thought`/`add_text` accumulate the raw chunks verbatim, and the monitors check those raw strings, so `processor.thoughts` and `processor.text` always match exactly what the server streamed.
 
+### Resetting Formatting on Interrupted Streaming
+**Problem**: When an exception (a network error, or a Ctrl-C interrupt) breaks off generation while a `**bold**`, `` `code` ``, or fenced code block is still open, the converter's closing ANSI codes are never emitted. The exception must still propagate, but the terminal is left stuck in the colored/bold/background state, bleeding into the shell prompt and the exception traceback that follows.
+
+**Solution**: `StreamProcessor` is a context manager whose `__exit__` always calls `finalize()`, which resolves any incomplete markers, closes open formatting, and emits a trailing newline. Cleanup on a normal end and on an abort are therefore identical — there is no separate "reset" path — so each provider simply runs its streaming loop inside `with processor:`. On a normal exit the buffered output is flushed; on an exception `__exit__` runs the same cleanup and then (by returning `None`) lets the original exception propagate unchanged. The trailing newline keeps the following traceback readable, and the accumulated `thoughts`/`text` are untouched.
+
 ## Template Filter Integration
 
 ### gpt-oss Template Parsing Challenge

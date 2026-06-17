@@ -76,58 +76,60 @@ def generate_content(
     previous_thoughts_len = 0
     previous_text_len = 0
 
-    for chunk in response:
-        chunks.append(chunk)
-        delta = chunk.choices[0].delta
+    # Stream inside the StreamProcessor context so buffered output is flushed and
+    # terminal formatting is reset on exit, whether the loop completes normally or
+    # is interrupted.
+    with processor:
+        for chunk in response:
+            chunks.append(chunk)
+            delta = chunk.choices[0].delta
 
-        # Handle reasoning content (OpenRouter / reasoning models expose delta.reasoning)
-        reasoning = getattr(delta, "reasoning", None)
-        if reasoning:
-            if not processor.add_thought(reasoning):
-                response.close()
-                break
-
-        if delta.content is not None:
-            content = delta.content
-
-            # Apply filter if present
-            if content_filter:
-                content_filter.feed(content)
-
-                # Output incremental thoughts (analysis channel)
-                if len(content_filter.thoughts) > previous_thoughts_len:
-                    new_thoughts = content_filter.thoughts[previous_thoughts_len:]
-                    previous_thoughts_len = len(content_filter.thoughts)
-                    if not processor.add_thought(new_thoughts):
-                        response.close()
-                        break
-
-                # Output incremental text (final channel)
-                if len(content_filter.text) > previous_text_len:
-                    new_text = content_filter.text[previous_text_len:]
-                    previous_text_len = len(content_filter.text)
-                    if not processor.add_text(new_text):
-                        response.close()
-                        break
-            else:
-                # No filter: direct passthrough
-                if not processor.add_text(content):
-                    response.close()  # Close stream connection
+            # Handle reasoning content (OpenRouter / reasoning models expose delta.reasoning)
+            reasoning = getattr(delta, "reasoning", None)
+            if reasoning:
+                if not processor.add_thought(reasoning):
+                    response.close()
                     break
 
-    # Flush filter if present
-    if content_filter:
-        content_filter.flush()
+            if delta.content is not None:
+                content = delta.content
 
-        # Output any remaining thoughts
-        if len(content_filter.thoughts) > previous_thoughts_len:
-            processor.add_thought(content_filter.thoughts[previous_thoughts_len:])
+                # Apply filter if present
+                if content_filter:
+                    content_filter.feed(content)
 
-        # Output any remaining text
-        if len(content_filter.text) > previous_text_len:
-            processor.add_text(content_filter.text[previous_text_len:])
+                    # Output incremental thoughts (analysis channel)
+                    if len(content_filter.thoughts) > previous_thoughts_len:
+                        new_thoughts = content_filter.thoughts[previous_thoughts_len:]
+                        previous_thoughts_len = len(content_filter.thoughts)
+                        if not processor.add_thought(new_thoughts):
+                            response.close()
+                            break
 
-    processor.finalize()
+                    # Output incremental text (final channel)
+                    if len(content_filter.text) > previous_text_len:
+                        new_text = content_filter.text[previous_text_len:]
+                        previous_text_len = len(content_filter.text)
+                        if not processor.add_text(new_text):
+                            response.close()
+                            break
+                else:
+                    # No filter: direct passthrough
+                    if not processor.add_text(content):
+                        response.close()  # Close stream connection
+                        break
+
+        # Flush filter if present
+        if content_filter:
+            content_filter.flush()
+
+            # Output any remaining thoughts
+            if len(content_filter.thoughts) > previous_thoughts_len:
+                processor.add_thought(content_filter.thoughts[previous_thoughts_len:])
+
+            # Output any remaining text
+            if len(content_filter.text) > previous_text_len:
+                processor.add_text(content_filter.text[previous_text_len:])
 
     # Create Response object for OpenAI
     return Response(

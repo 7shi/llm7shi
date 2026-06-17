@@ -175,35 +175,36 @@ def generate_content_retry(
             chunks = []  # Collect all chunks
             stop = False  # Set when monitoring requests early termination
 
-            # Process streaming response chunks
-            for chunk in response:
-                chunks.append(chunk)
-                if hasattr(chunk, "candidates") and chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
-                    for part in chunk.candidates[0].content.parts:
-                        if not part.text:
-                            continue
-                        elif part.thought:
-                            # Handle thinking process output.
-                            # Some models (e.g. Gemma) keep emitting thought
-                            # parts even with include_thoughts=False; suppress
-                            # them here instead of leaking them into the answer.
-                            if include_thoughts and not processor.add_thought(part.text):
+            # Process streaming response chunks inside the StreamProcessor context
+            # so that buffered output is flushed and terminal formatting is reset
+            # on exit, whether the loop completes normally or is interrupted.
+            with processor:
+                for chunk in response:
+                    chunks.append(chunk)
+                    if hasattr(chunk, "candidates") and chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
+                        for part in chunk.candidates[0].content.parts:
+                            if not part.text:
+                                continue
+                            elif part.thought:
+                                # Handle thinking process output.
+                                # Some models (e.g. Gemma) keep emitting thought
+                                # parts even with include_thoughts=False; suppress
+                                # them here instead of leaking them into the answer.
+                                if include_thoughts and not processor.add_thought(part.text):
+                                    stop = True
+                                    break
+                            else:
+                                # Handle final answer output
+                                if not processor.add_text(part.text):
+                                    stop = True
+                                    break
+                    else:
+                        # Fallback for older API response format
+                        if hasattr(chunk, "text") and chunk.text:
+                            if not processor.add_text(chunk.text):
                                 stop = True
-                                break
-                        else:
-                            # Handle final answer output
-                            if not processor.add_text(part.text):
-                                stop = True
-                                break
-                else:
-                    # Fallback for older API response format
-                    if hasattr(chunk, "text") and chunk.text:
-                        if not processor.add_text(chunk.text):
-                            stop = True
-                if stop:
-                    break
-
-            processor.finalize()
+                    if stop:
+                        break
 
             return Response(
                 model=model,
