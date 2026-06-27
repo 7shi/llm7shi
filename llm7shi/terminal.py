@@ -494,7 +494,8 @@ class ConsoleStream:
         width = len(str(delay))
         for i in range(delay, -1, -1):
             self.print(f"\r{message} {i:>{width}}s", end="")
-            time.sleep(1)
+            if i > 0:
+                time.sleep(1)
         self.print("", end="\n")
 
     def error(self, text: str) -> None:

@@ -755,7 +755,7 @@ class TestConsoleStream:
 
         with patch("time.sleep") as mock_sleep:
             stream.wait_retry(2, message="Waiting...")
-            assert mock_sleep.call_count == 3  # for 2, 1, 0
+            assert mock_sleep.call_count == 2  # for 2, 1
             mock_console.print.assert_any_call("\rWaiting... 2s", end="", highlight=False)
             mock_console.print.assert_any_call("\rWaiting... 1s", end="", highlight=False)
             mock_console.print.assert_any_call("\rWaiting... 0s", end="", highlight=False)
@@ -810,5 +810,5 @@ class TestModuleWaitRetry:
         mock_file = StringIO()
         with patch("time.sleep") as mock_sleep:
             wait_retry(2, message="Waiting...", file=mock_file)
-            assert mock_sleep.call_count == 3
+            assert mock_sleep.call_count == 2
             assert mock_file.getvalue() == "\rWaiting... 2s\rWaiting... 1s\rWaiting... 0s\n"
