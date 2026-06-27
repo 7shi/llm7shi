@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-06-27
+
 ### Added
-- **Stateful Client (`client.py`)** - Added a new `client.py` module defining the callable `Client` class (invoked via `client(...)`, integrated from `dante-dravidian`). This client manages conversational history state, delegates configuration properties to instance attributes for a clean call signature, provides a dedicated `set_system_prompt` method to insert or dynamically update system instructions at the head of the history, incorporates application-layer quality retries (runaway-guarding) with customizable thresholds, and natively handles XML history persistence using the `to_xml` and `load_xml` methods. Includes globally configurable default settings (`DEFAULT_LLM_RETRIES`), unit tests (`tests/test_client.py`), and documentation (`client.md`, `test_client.md`).
-- **XML Serialization Utilities (`xml.py`)** - Added a new `xml.py` module containing utilities for serializing chat logs to/from XML. Features include `messages_to_xml` (returning a `Document` object), `xml_to_str` (flat serialization style with no indentation, newline-separated), and `xml_to_messages` (roundtrip deserialization on a `Document` object). Incorporates CDATA escaping/unescaping to prevent parsing errors when content contains `]]>`, while preserving raw-file inspectability. Includes corresponding unit tests (`tests/test_xml.py`) and documentation (`llm7shi/xml.md`, `tests/test_xml.md`).
-- **Unified Stream Processing and Retry (StreamGenerator)** - Introduced a new `stream.py` module defining the `StreamGenerator` base class using the Template Method Pattern. Refactored `gemini.py`, `openai.py`, and `ollama.py` to inherit from it, standardizing streaming, monitoring, and error-handling flows while extending rate-limit and connection error retries (with countdown displays) to OpenAI. Features globally configurable settings (`DEFAULT_MAX_ATTEMPTS` and `DEFAULT_RETRY_DELAY`), comprehensive unit tests (`tests/test_stream.py`), and documentation (`stream.md`, `test_stream.md`).
-- **`ConsoleStream` and stream utilities** - Added `ConsoleStream` line-buffered terminal stream utility to `llm7shi.terminal` (moved from `dante-corpus`) along with module-level `wait_retry` and `error` helper functions. This allows CLI applications to coordinate rate-limit retries and error logs with active progress bars by subclassing `ConsoleStream` and overriding hooks (`print`, `wait_retry`, `error`). The old callback properties (`retry_handler`, `error_handler`) were removed in favor of this clean inheritance model.
-- **Dynamic countdown alignment** - Aligned countdown display digits to the right with dynamic width calculated via `len(str(delay))` to keep the screen layout clean when values decrease, supporting custom messages.
+- **Stateful Client** - New `Client` class managing conversational history, system prompt updates, quality retries, and XML persistence (`to_xml`/`load_xml`)
+- **XML Serialization** - New `xml.py` utilities for serializing/deserializing chat logs to XML with CDATA escaping
+- **StreamGenerator base class** - Unified streaming, monitoring, and retry logic across all providers (Gemini, OpenAI, Ollama) via a shared `stream.py` base class; extends rate-limit and connection error retries with countdown display to OpenAI
+- **ConsoleStream** - Line-buffered terminal stream utility in `llm7shi.terminal` for coordinating retries and error logs with progress bars via subclassing
+- **Dynamic countdown alignment** - Countdown digits aligned right with dynamic width for clean display as values decrease
 
 ## [0.12.0] - 2026-06-17
 
