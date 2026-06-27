@@ -121,8 +121,11 @@ Terminal output formatting utilities for better display of streaming responses.
 - `convert_markdown()` - Convert Markdown to terminal colors
 - `MarkdownStreamConverter` - Stream converter for real-time formatting
 - `bold()` - Simple bold text formatting
+- `ConsoleStream` - Line-buffered terminal stream utility for progress bar coexistence
+- `wait_retry()` - Customizable sleep countdown helper with dynamic padding
 - Bold (`**text**`), inline code (`` `code` ``, bright blue), and fenced ` ``` ` code blocks (inner lines on a gray background)
 - Windows console compatibility
+
 
 ### [monitor.py](monitor.py) - Stream Output Monitoring
 Stream monitoring for output quality control, including repetition detection and length limits.

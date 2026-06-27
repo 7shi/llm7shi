@@ -28,3 +28,8 @@ Testing terminal formatting presented unique challenges for real-time streaming 
 **Problem**: A single backtick (`` `code` ``) means inline code, but a run of three or more backticks (` ``` `) means a code fence. Naively toggling on every backtick would corrupt fences, and fences can be split across streaming chunks just like `**`.
 
 **Solution**: Tests cover inline code coloring (with backtick markers removed), fenced blocks rendered with a background (delimiters kept literally, inner `**`/`` ` `` left untouched), the two coexisting in one string, backtick runs split across chunks, and `flush()` closing an unclosed inline span or fenced block. A streaming-vs-one-shot equivalence test guards against divergence between the two code paths.
+
+### Line-Buffered and Countdown stream testing (ConsoleStream / wait_retry)
+**Problem**: Output streams like `ConsoleStream` handle line buffering and countdowns with dynamic formatting (dynamic alignment, custom messages, callback delegation), which could easily break across different console targets (Rich, sys.stdout, or mock files).
+
+**Solution**: Added dedicated tests verifying line buffering behavior, file-like fallback writing, dynamic padding based on dynamic delays, and registration/execution of custom retry handlers to ensure robust, conflict-free UI outputs.

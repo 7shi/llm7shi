@@ -4,6 +4,8 @@ from llm7shi.terminal import (
     bold,
     convert_markdown,
     MarkdownStreamConverter,
+    ConsoleStream,
+    wait_retry,
     BOLD_ON,
     BOLD_OFF,
     CODE_ON,
@@ -673,3 +675,118 @@ class TestEdgeCases:
         assert long_text in result
         # Should not contain markdown markers
         assert "**" not in result
+
+
+class TestConsoleStream:
+    """Test ConsoleStream functionality"""
+
+    def test_console_print_buffered(self):
+        """Test ConsoleStream line-buffered mode with print-based console"""
+        from unittest.mock import MagicMock
+        mock_console = MagicMock()
+        stream = ConsoleStream(mock_console, line_buffered=True)
+
+        stream.write("hello\nworld\n")
+        # should call mock_console.print for each line
+        mock_console.print.assert_any_call("hello", end="\n", highlight=False)
+        mock_console.print.assert_any_call("world", end="\n", highlight=False)
+        assert mock_console.print.call_count == 2
+
+        mock_console.reset_mock()
+        stream.write("part1")
+        mock_console.print.assert_not_called()
+        stream.write("part2\n")
+        mock_console.print.assert_called_once_with("part1part2", end="\n", highlight=False)
+
+    def test_console_print_unbuffered(self):
+        """Test ConsoleStream unbuffered mode with print-based console"""
+        from unittest.mock import MagicMock
+        mock_console = MagicMock()
+        stream = ConsoleStream(mock_console, line_buffered=False)
+
+        stream.write("hello\n")
+        mock_console.print.assert_called_once_with("hello\n", end="", highlight=False)
+
+        mock_console.reset_mock()
+        stream.write("partial")
+        mock_console.print.assert_called_once_with("partial", end="", highlight=False)
+
+    def test_write_method_buffered(self):
+        """Test ConsoleStream line-buffered mode with file-like console"""
+        from io import StringIO
+        mock_file = StringIO()
+        stream = ConsoleStream(mock_file, line_buffered=True)
+
+        stream.write("hello\nworld\n")
+        assert mock_file.getvalue() == "hello\nworld\n"
+
+        stream.write("partial")
+        assert mock_file.getvalue() == "hello\nworld\n"
+        stream.end()
+        assert mock_file.getvalue() == "hello\nworld\npartial\n"
+
+    def test_write_method_unbuffered(self):
+        """Test ConsoleStream unbuffered mode with file-like console"""
+        from io import StringIO
+        mock_file = StringIO()
+        stream = ConsoleStream(mock_file, line_buffered=False)
+
+        stream.write("hello\n")
+        assert mock_file.getvalue() == "hello\n"
+
+        stream.write("partial")
+        assert mock_file.getvalue() == "hello\npartial"
+        stream.end()
+        assert mock_file.getvalue() == "hello\npartial"
+
+    def test_fallback_print(self):
+        """Test ConsoleStream fallback print when console has neither print nor write"""
+        from unittest.mock import patch
+        stream = ConsoleStream(None, line_buffered=True)
+        with patch("builtins.print") as mock_print:
+            stream.write("hello\n")
+            mock_print.assert_called_once_with("hello", end="\n")
+
+    def test_wait_retry_with_handler(self):
+        """Test wait_retry calls custom handler when registered"""
+        from unittest.mock import MagicMock
+        mock_console = MagicMock()
+        stream = ConsoleStream(mock_console)
+        mock_handler = MagicMock()
+        stream.retry_handler = mock_handler
+
+        stream.wait_retry(5)
+        mock_handler.assert_called_once_with(5, "Retrying...")
+
+        mock_handler.reset_mock()
+        stream.wait_retry(5, message="Waiting...")
+        mock_handler.assert_called_once_with(5, "Waiting...")
+        mock_console.print.assert_not_called()
+
+    def test_wait_retry_default_fallback(self):
+        """Test wait_retry falls back to standard countdown printing when no handler is registered"""
+        from unittest.mock import MagicMock, patch
+        mock_console = MagicMock()
+        stream = ConsoleStream(mock_console)
+
+        with patch("time.sleep") as mock_sleep:
+            stream.wait_retry(2, message="Waiting...")
+            assert mock_sleep.call_count == 3  # for 2, 1, 0
+            mock_console.print.assert_any_call("\rWaiting... 2s", end="", highlight=False)
+            mock_console.print.assert_any_call("\rWaiting... 1s", end="", highlight=False)
+            mock_console.print.assert_any_call("\rWaiting... 0s", end="", highlight=False)
+            mock_console.print.assert_any_call("", end="\n", highlight=False)
+
+
+class TestModuleWaitRetry:
+    """Test module-level wait_retry function"""
+
+    def test_module_wait_retry(self):
+        from unittest.mock import patch
+        from io import StringIO
+
+        mock_file = StringIO()
+        with patch("time.sleep") as mock_sleep:
+            wait_retry(2, message="Waiting...", file=mock_file)
+            assert mock_sleep.call_count == 3
+            assert mock_file.getvalue() == "\rWaiting... 2s\rWaiting... 1s\rWaiting... 0s\n"

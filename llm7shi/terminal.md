@@ -19,6 +19,16 @@ When building CLI applications that display LLM responses, we faced several spec
 
 **Solution**: Integrated Colorama's Windows console fixes and normalized line endings across platforms.
 
+### Line-Buffered Streaming for Progress Bar Coexistence (ConsoleStream)
+**Problem**: When streaming LLM outputs in a CLI application that also displays a live progress bar (e.g., using Rich's Live/Progress), printing raw chunks directly causes the progress bar to glitch or overwrite the output.
+
+**Solution**: Implemented `ConsoleStream`, a line-buffered file-like wrapper that accumulates streaming chunks and prints only complete lines, allowing the progress bar to cleanly push outputs up.
+
+### Safe Countdown Retries (wait_retry)
+**Problem**: During rate-limit (429) retries, printing a carriage-return (`\r`) countdown directly to `sys.stderr` collides with active Rich progress bars, causing screen corruption or making the retry status invisible.
+
+**Solution**: Implemented a duck-typed `wait_retry` interface. If the custom stream (like `ConsoleStream`) has a custom handler registered (e.g., to update the progress task directly), it delegates the countdown to the UI; otherwise, it falls back to a clean terminal countdown with dynamically-sized padding based on the delay length.
+
 ## Key Design Decisions
 
 ### Streaming-First Architecture
@@ -55,3 +65,9 @@ Because **markup inside inline code is left literal** (a `` ` `` span's contents
 Bold text is rendered with `BOLD_ON = Style.BRIGHT + Fore.RED` rather than a single color constant like `Fore.LIGHTRED_EX`.
 
 In most terminals, `Style.BRIGHT` (`\033[1m`) increases color intensity rather than rendering a bold font. This means `Style.BRIGHT + Fore.RED` produces the same visual result as `Fore.LIGHTRED_EX` (`\033[91m`). The two-part form was chosen intentionally: it expresses the intent as "bright red" (base color + intensity modifier) rather than hardcoding the pre-brightened variant, making the color customizable by changing only `Fore.RED`.
+
+### Duck-Typed Retry Interface
+`ConsoleStream` supports a dynamic `retry_handler` callback. The library `llm7shi` calls `file.wait_retry()` if available, allowing downstream applications (like `dante-corpus`) to intercept retries and render the countdown cleanly inside their custom UI layouts (like Rich `Progress` tasks) without creating tight coupling.
+
+### Dynamic Countdown Padding
+To prevent trailing character garbage when digit counts decrease (e.g., from `10s` to `9s`), we calculate the maximum digit width dynamically using `len(str(delay))` and format the output with right-alignment (`f"{i:>{width}}s"`), avoiding static padding while keeping output clean on all terminals.

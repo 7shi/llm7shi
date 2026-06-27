@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`ConsoleStream` and `wait_retry` utilities** - Added `ConsoleStream` line-buffered terminal stream utility to `llm7shi.terminal` (moved from `dante-corpus`) along with a module-level and class-level `wait_retry` countdown function. This allows CLI applications utilizing `llm7shi` to cleanly coordinate API rate-limit retry countdowns with active terminal progress bars (like Rich) via duck-typing and custom handler registration.
+- **Dynamic countdown alignment** - Aligned countdown display digits to the right with dynamic width calculated via `len(str(delay))` to keep the screen layout clean when values decrease, supporting custom messages.
+
 ## [0.12.0] - 2026-06-17
 
 ### Fixed

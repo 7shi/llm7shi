@@ -42,6 +42,8 @@ from .terminal import (
     bold,
     convert_markdown,
     MarkdownStreamConverter,
+    ConsoleStream,
+    wait_retry,
 )
 
 from .utils import (
@@ -76,6 +78,8 @@ __all__ = [
     "bold",
     "convert_markdown",
     "MarkdownStreamConverter",
+    "ConsoleStream",
+    "wait_retry",
     # utils.py
     "do_show_params",
     "contents_to_openai_messages",

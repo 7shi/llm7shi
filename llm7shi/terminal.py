@@ -441,3 +441,75 @@ def render_file(path, chunk_size=8):
         sys.stdout.write(converter.feed(text[k:k + chunk_size]))
     sys.stdout.write(converter.flush())
     sys.stdout.flush()
+
+
+class ConsoleStream:
+    """File-like wrapper that buffers output by line (optionally) and forwards
+    to a console/printer object (e.g. Rich console), so streamed output coexists
+    with a live progress bar."""
+
+    def __init__(self, console, line_buffered: bool = True):
+        self._console = console
+        self.line_buffered = line_buffered
+        self._buf = ""
+
+    def write(self, text: str) -> None:
+        if self.line_buffered:
+            self._buf += text
+            while "\n" in self._buf:
+                line, self._buf = self._buf.split("\n", 1)
+                self._print(line, end="\n")
+        else:
+            self._print(text, end="")
+
+    def _print(self, text: str, end: str = "\n") -> None:
+        if hasattr(self._console, "print"):
+            try:
+                self._console.print(text, end=end, highlight=False)
+            except TypeError:
+                self._console.print(text, end=end)
+        elif hasattr(self._console, "write"):
+            self._console.write(text + end)
+            if hasattr(self._console, "flush"):
+                self._console.flush()
+        else:
+            # Fallback to standard print
+            print(text, end=end)
+
+    def flush(self) -> None:
+        pass
+
+    def end(self) -> None:
+        """Flush any trailing partial line (no newline) after a generation finishes."""
+        if self.line_buffered:
+            if self._buf.strip():
+                self._print(self._buf, end="\n")
+            self._buf = ""
+
+    def wait_retry(self, delay: int, message: str = "Retrying...") -> None:
+        handler = getattr(self, "retry_handler", None)
+        if handler is not None:
+            handler(delay, message)
+            return
+
+        import time
+        width = len(str(delay))
+        for i in range(delay, -1, -1):
+            self._print(f"\r{message} {i:>{width}}s", end="")
+            time.sleep(1)
+        self._print("", end="\n")
+
+
+def wait_retry(delay: int, message: str = "Retrying...", file=None) -> None:
+    """Sleep with a visual countdown on stderr (or target file if provided)."""
+    import sys
+    import time
+    target_file = file or sys.stderr
+    width = len(str(delay))
+    for i in range(delay, -1, -1):
+        print(f"\r{message} {i:>{width}}s", end="", file=target_file, flush=True)
+        time.sleep(1)
+    print(file=target_file)
+
+
+

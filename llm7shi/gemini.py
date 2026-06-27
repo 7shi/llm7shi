@@ -11,6 +11,7 @@ from google.genai import types
 from .utils import do_show_params
 from .response import Response
 from .monitor import StreamProcessor
+from .terminal import wait_retry
 
 # Available Gemini models
 models = [
@@ -236,10 +237,10 @@ def generate_content_retry(
                             break
                 
                 # Countdown with progress display
-                for i in range(delay, -1, -1):
-                    print(f"\rRetrying... {i}s ", end="", file=sys.stderr, flush=True)
-                    time.sleep(1)
-                print(file=sys.stderr)
+                if hasattr(file, "wait_retry"):
+                    file.wait_retry(delay)
+                else:
+                    wait_retry(delay)
                 continue
             else:
                 # Re-raise non-retryable errors
