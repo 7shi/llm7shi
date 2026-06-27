@@ -38,6 +38,17 @@ Provider-agnostic response object that encapsulates results from LLM API calls.
 - Text, thoughts, and metadata access
 - String conversion support
 
+### [stream.py](stream.py) - Unified Stream Processing & Retry
+Unified base class and execution loop for streaming LLM generation, coordinating retry loops, exception handling, and real-time output monitoring.
+
+**Documentation**: [stream.md](stream.md)
+
+**Key Features**:
+- `StreamGenerator` base class implementing the Template Method Pattern
+- Unified backoff and retry execution loop for connection errors and rate limits (429/500/503)
+- Integrates `StreamProcessor` monitoring context natively into the execution flow
+- Globally configurable retry settings (`DEFAULT_MAX_ATTEMPTS` and `DEFAULT_RETRY_DELAY`)
+
 ### [utils.py](utils.py) - Utility Functions
 Helper functions for parameter display, message formatting, and schema transformations.
 

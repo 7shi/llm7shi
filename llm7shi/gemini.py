@@ -11,7 +11,7 @@ from google.genai import types
 from .utils import do_show_params
 from .response import Response
 from .monitor import StreamProcessor
-from .terminal import wait_retry
+from .stream import StreamGenerator
 
 # Available Gemini models
 models = [
@@ -111,6 +111,49 @@ def config_from_schema(schema):
         response_mime_type="application/json",
         response_schema=schema,
     )
+class GeminiStreamGenerator(StreamGenerator):
+    """Gemini-specific stream generator."""
+
+    def __init__(self, *args, include_thoughts: bool = True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.include_thoughts = include_thoughts
+
+    def make_stream(self):
+        return _get_client().models.generate_content_stream(
+            model=self.model,
+            config=self.config,
+            contents=self.contents,
+        )
+
+    def process_chunk(self, chunk, processor) -> bool:
+        if hasattr(chunk, "candidates") and chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
+            for part in chunk.candidates[0].content.parts:
+                if not part.text:
+                    continue
+                elif part.thought:
+                    # Suppress thinking process output if include_thoughts=False
+                    if self.include_thoughts and not processor.add_thought(part.text):
+                        return False
+                else:
+                    if not processor.add_text(part.text):
+                        return False
+        else:
+            if hasattr(chunk, "text") and chunk.text:
+                if not processor.add_text(chunk.text):
+                    return False
+        return True
+
+    def handle_error(self, e: Exception) -> Optional[dict]:
+        if isinstance(e, genai.errors.APIError) and hasattr(e, "code") and e.code in [429, 500, 502, 503]:
+            delay = None
+            if e.code == 429:
+                details = e.details["error"]["details"]
+                for d in details:
+                    if (rd := d.get("retryDelay")) and (m := re.match(r"^(\d+)s$", rd)):
+                        delay = int(m.group(1))
+                        break
+            return {"status_code": e.code, "delay": delay}
+        return None
 
 
 def generate_content_retry(
@@ -125,22 +168,7 @@ def generate_content_retry(
     max_length=None,
     check_repetition=True,
 ):
-    """Generate content with retry logic and return a Response object.
-    
-    Args:
-        contents: The content to send
-        model: The model to use (default: None)
-        config: GenerateContentConfig object (default: None)
-        include_thoughts: Whether to include thoughts in the response
-        thinking_budget: Optional thinking budget
-        file: Output file for streaming content (default: sys.stdout, None to disable)
-        show_params: Whether to display parameters before generation (default: False)
-        max_length: Maximum length of generated text (default: None, no limit)
-        check_repetition: Whether to check for repetitive patterns every 1KB (default: True)
-    
-    Returns:
-        Response: Object containing thoughts, text, response, and chunks
-    """
+    """Generate content with retry logic and return a Response object."""
     # Use default model if none specified
     if not model:
         model = DEFAULT_MODEL
@@ -161,91 +189,16 @@ def generate_content_retry(
             config = types.GenerateContentConfig()
         config.thinking_config = thinking_config
     
-    # Retry loop with exponential backoff for API errors
-    for attempt in range(5, 0, -1):
-        try:
-            # Stream response from Gemini API
-            response = _get_client().models.generate_content_stream(
-                model=model,
-                config=config,
-                contents=contents,
-            )
-            
-            # Initialize response tracking variables
-            processor = StreamProcessor(file=file, max_length=max_length, check_repetition=check_repetition)
-            chunks = []  # Collect all chunks
-            stop = False  # Set when monitoring requests early termination
-
-            # Process streaming response chunks inside the StreamProcessor context
-            # so that buffered output is flushed and terminal formatting is reset
-            # on exit, whether the loop completes normally or is interrupted.
-            with processor:
-                for chunk in response:
-                    chunks.append(chunk)
-                    if hasattr(chunk, "candidates") and chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
-                        for part in chunk.candidates[0].content.parts:
-                            if not part.text:
-                                continue
-                            elif part.thought:
-                                # Handle thinking process output.
-                                # Some models (e.g. Gemma) keep emitting thought
-                                # parts even with include_thoughts=False; suppress
-                                # them here instead of leaking them into the answer.
-                                if include_thoughts and not processor.add_thought(part.text):
-                                    stop = True
-                                    break
-                            else:
-                                # Handle final answer output
-                                if not processor.add_text(part.text):
-                                    stop = True
-                                    break
-                    else:
-                        # Fallback for older API response format
-                        if hasattr(chunk, "text") and chunk.text:
-                            if not processor.add_text(chunk.text):
-                                stop = True
-                    if stop:
-                        break
-
-            return Response(
-                model=model,
-                config=config,
-                contents=contents,
-                response=response,
-                chunks=chunks,
-                thoughts=processor.thoughts,
-                text=processor.text,
-                repetition=processor.repetition_detected,
-                max_length=processor.max_length_exceeded,
-            )
-        except genai.errors.APIError as e:
-            # Handle retryable API errors (rate limit, server errors)
-            if hasattr(e, "code") and e.code in [429, 500, 502, 503]:
-                print(e, file=sys.stderr)
-                # Skip waiting on last attempt
-                if attempt == 1:
-                    continue
-                
-                # Calculate retry delay
-                delay = 15  # Default delay in seconds
-                if e.code == 429:  # Rate limit error
-                    # Extract retry delay from error details if available
-                    details = e.details["error"]["details"]
-                    for d in details:
-                        if (rd := d.get("retryDelay")) and (m := re.match(r"^(\d+)s$", rd)):
-                            delay = int(m.group(1)) or delay
-                            break
-                
-                # Countdown with progress display
-                if hasattr(file, "wait_retry"):
-                    file.wait_retry(delay)
-                else:
-                    wait_retry(delay)
-                continue
-            else:
-                # Re-raise non-retryable errors
-                raise
-    raise RuntimeError("Max retries exceeded.")
+    generator = GeminiStreamGenerator(
+        model=model,
+        config=config,
+        contents=contents,
+        file=file,
+        max_length=max_length,
+        check_repetition=check_repetition,
+        include_thoughts=include_thoughts,
+    )
+    return generator.generate()
 
 
 def upload_file(path, mime_type):

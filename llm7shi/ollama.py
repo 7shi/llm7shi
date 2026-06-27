@@ -1,11 +1,47 @@
 import sys
 import ollama
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from .response import Response
 from .monitor import StreamProcessor
+from .stream import StreamGenerator
 
 DEFAULT_MODEL = "qwen3:4b"
+
+
+class OllamaStreamGenerator(StreamGenerator):
+    """Ollama-specific stream generator."""
+
+    def __init__(self, *args, client=None, messages=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.client = client
+        self.messages = messages
+
+    def make_stream(self):
+        return self.client.chat(
+            model=self.model,
+            messages=self.messages,
+            stream=True,
+            **self.config
+        )
+
+    def process_chunk(self, chunk, processor) -> bool:
+        # Handle thinking content
+        if getattr(chunk.message, 'thinking', None) is not None:
+            if not processor.add_thought(chunk.message.thinking):
+                self.client._client.close()
+                return False
+
+        # Handle regular content
+        if chunk.message.content:
+            if not processor.add_text(chunk.message.content):
+                self.client._client.close()
+                return False
+        return True
+
+    def handle_error(self, e: Exception) -> Optional[dict]:
+        # Ollama is local, no retry logic by default (returns None)
+        return None
 
 
 def generate_content(
@@ -31,46 +67,14 @@ def generate_content(
         if "thinking" not in model_info.capabilities:
             kwargs["think"] = False  # Workaround: graceful fallback for unsupported models
     
-    # Call API with streaming
-    response = client.chat(
-        model=model,
-        messages=messages,
-        stream=True,
-        **kwargs
-    )
-    
-    # Collect streamed response and chunks
-    chunks = []
-    processor = StreamProcessor(file=file, max_length=max_length, check_repetition=check_repetition)
-
-    # Stream inside the StreamProcessor context so buffered output is flushed and
-    # terminal formatting is reset on exit, whether the loop completes normally or
-    # is interrupted.
-    with processor:
-        for chunk in response:
-            chunks.append(chunk)
-
-            # Handle thinking content
-            if getattr(chunk.message, 'thinking', None) is not None:
-                if not processor.add_thought(chunk.message.thinking):
-                    client._client.close()
-                    break
-
-            # Handle regular content
-            if chunk.message.content:
-                if not processor.add_text(chunk.message.content):
-                    client._client.close()
-                    break
-
-    # Create Response object for Ollama
-    return Response(
+    generator = OllamaStreamGenerator(
         model=model,
         config=kwargs,
         contents=messages,
-        response=response,
-        chunks=chunks,
-        thoughts=processor.thoughts,
-        text=processor.text,
-        repetition=processor.repetition_detected,
-        max_length=processor.max_length_exceeded,
+        file=file,
+        max_length=max_length,
+        check_repetition=check_repetition,
+        client=client,
+        messages=messages,
     )
+    return generator.generate()

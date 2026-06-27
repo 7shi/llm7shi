@@ -38,12 +38,19 @@ from .gemini import (
 
 from .response import Response
 
+from .stream import (
+    DEFAULT_MAX_ATTEMPTS,
+    DEFAULT_RETRY_DELAY,
+    StreamGenerator,
+)
+
 from .terminal import (
     bold,
     convert_markdown,
     MarkdownStreamConverter,
     ConsoleStream,
     wait_retry,
+    error,
 )
 
 from .utils import (
@@ -80,6 +87,7 @@ __all__ = [
     "MarkdownStreamConverter",
     "ConsoleStream",
     "wait_retry",
+    "error",
     # utils.py
     "do_show_params",
     "contents_to_openai_messages",
@@ -93,4 +101,8 @@ __all__ = [
     "StreamMonitor",
     "StreamProcessor",
     "detect_repetition",
+    # stream.py
+    "DEFAULT_MAX_ATTEMPTS",
+    "DEFAULT_RETRY_DELAY",
+    "StreamGenerator",
 ]

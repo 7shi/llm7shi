@@ -64,6 +64,13 @@ Unit tests for vendor prefix functionality in `llm7shi/compat.py`.
 
 **Key Features**: Vendor prefix parsing, backward compatibility, default model delegation, error boundary validation.
 
+#### [test_stream.py](test_stream.py) - Stream Generator Module Tests
+Unit tests for the core `StreamGenerator` base class and execution loop in `llm7shi/stream.py`.
+
+**Documentation**: [test_stream.md](test_stream.md)
+
+**Key Features**: Streaming generator success, early stopping via monitor, rate-limit countdown retry execution, exception propagation, and backoff sleeps.
+
 #### [test_terminal.py](test_terminal.py) - Terminal Formatting Tests
 Unit tests for terminal output formatting in `llm7shi/terminal.py`.
 

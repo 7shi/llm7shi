@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **`ConsoleStream` and `wait_retry` utilities** - Added `ConsoleStream` line-buffered terminal stream utility to `llm7shi.terminal` (moved from `dante-corpus`) along with a module-level `wait_retry` countdown function. This allows CLI applications utilizing `llm7shi` to cleanly coordinate API rate-limit retry countdowns and error messages with active terminal progress bars (like Rich) by subclassing `ConsoleStream` and overriding hook methods (`print`, `wait_retry`, `error`).
+- **Unified Stream Processing and Retry (StreamGenerator)** - Introduced a new `stream.py` module defining the `StreamGenerator` base class using the Template Method Pattern. Refactored `gemini.py`, `openai.py`, and `ollama.py` to inherit from it, standardizing streaming, monitoring, and error-handling flows while extending rate-limit and connection error retries (with countdown displays) to OpenAI. Features globally configurable settings (`DEFAULT_MAX_ATTEMPTS` and `DEFAULT_RETRY_DELAY`), comprehensive unit tests (`tests/test_stream.py`), and documentation (`stream.md`, `test_stream.md`).
+- **`ConsoleStream` and stream utilities** - Added `ConsoleStream` line-buffered terminal stream utility to `llm7shi.terminal` (moved from `dante-corpus`) along with module-level `wait_retry` and `error` helper functions. This allows CLI applications to coordinate rate-limit retries and error logs with active progress bars by subclassing `ConsoleStream` and overriding hooks (`print`, `wait_retry`, `error`). The old callback properties (`retry_handler`, `error_handler`) were removed in favor of this clean inheritance model.
 - **Dynamic countdown alignment** - Aligned countdown display digits to the right with dynamic width calculated via `len(str(delay))` to keep the screen layout clean when values decrease, supporting custom messages.
 
 ## [0.12.0] - 2026-06-17

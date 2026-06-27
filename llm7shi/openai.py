@@ -1,12 +1,95 @@
 import sys
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from openai import OpenAI
 
 from .response import Response
 from .monitor import StreamProcessor, GptOssTemplateFilter
+from .stream import StreamGenerator
 
 DEFAULT_MODEL = "gpt-4.1-mini"
+
+
+class OpenAIStreamGenerator(StreamGenerator):
+    """OpenAI-specific stream generator."""
+
+    def __init__(self, *args, client=None, messages=None, needs_gpt_oss_filter=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.client = client
+        self.messages = messages
+        self.needs_gpt_oss_filter = needs_gpt_oss_filter
+        
+        # State variables for chunk processing (reset on each attempt)
+        self.content_filter = None
+        self.previous_thoughts_len = 0
+        self.previous_text_len = 0
+
+    def make_stream(self):
+        import openai
+        # Reset filter and offsets on retry
+        self.content_filter = GptOssTemplateFilter() if self.needs_gpt_oss_filter else None
+        self.previous_thoughts_len = 0
+        self.previous_text_len = 0
+        
+        return self.client.chat.completions.create(
+            model=self.model,
+            messages=self.messages,
+            stream=True,
+            **self.config
+        )
+
+    def process_chunk(self, chunk, processor) -> bool:
+        delta = chunk.choices[0].delta
+
+        # Handle reasoning content (OpenRouter / reasoning models expose delta.reasoning)
+        reasoning = getattr(delta, "reasoning", None)
+        if reasoning:
+            if not processor.add_thought(reasoning):
+                return False
+
+        if delta.content is not None:
+            content = delta.content
+
+            # Apply filter if present
+            if self.content_filter:
+                self.content_filter.feed(content)
+
+                # Output incremental thoughts (analysis channel)
+                if len(self.content_filter.thoughts) > self.previous_thoughts_len:
+                    new_thoughts = self.content_filter.thoughts[self.previous_thoughts_len:]
+                    self.previous_thoughts_len = len(self.content_filter.thoughts)
+                    if not processor.add_thought(new_thoughts):
+                        return False
+
+                # Output incremental text (final channel)
+                if len(self.content_filter.text) > self.previous_text_len:
+                    new_text = self.content_filter.text[self.previous_text_len:]
+                    self.previous_text_len = len(self.content_filter.text)
+                    if not processor.add_text(new_text):
+                        return False
+            else:
+                # No filter: direct passthrough
+                if not processor.add_text(content):
+                    return False
+        return True
+
+    def finalize_stream(self, processor) -> None:
+        if self.content_filter:
+            self.content_filter.flush()
+
+            # Output any remaining thoughts
+            if len(self.content_filter.thoughts) > self.previous_thoughts_len:
+                processor.add_thought(self.content_filter.thoughts[self.previous_thoughts_len:])
+
+            # Output any remaining text
+            if len(self.content_filter.text) > self.previous_text_len:
+                processor.add_text(self.content_filter.text[self.previous_text_len:])
+
+    def handle_error(self, e: Exception) -> Optional[dict]:
+        import openai
+        if isinstance(e, openai.APIError) and e.status_code in [429, 500, 502, 503, 504]:
+            return {"status_code": e.status_code}
+        return None
 
 
 def generate_content(
@@ -19,20 +102,7 @@ def generate_content(
     api_key_env: str = None,
     **kwargs
 ) -> Response:
-    """Generate with OpenAI API with streaming and monitoring.
-
-    Args:
-        messages: List of messages in OpenAI format
-        model: Model name
-        file: Output file for streaming
-        max_length: Maximum length of generated text
-        check_repetition: Whether to check for repetition
-        base_url: Custom API endpoint URL
-        api_key_env: Environment variable name containing API key.
-                     If None and base_url is specified, api_key will be set to ""
-                     to prevent leaking OPENAI_API_KEY to untrusted servers.
-        **kwargs: Additional arguments for OpenAI API
-    """
+    """Generate with OpenAI API with streaming and monitoring."""
 
     # Use default model if not provided
     if not model:
@@ -59,87 +129,15 @@ def generate_content(
         # (will automatically use OPENAI_API_KEY environment variable)
         client = OpenAI()
 
-    # Call API with streaming
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        stream=True,
-        **kwargs
-    )
-
-    # Collect streamed response and chunks
-    chunks = []
-    content_filter = GptOssTemplateFilter() if needs_gpt_oss_filter else None
-    processor = StreamProcessor(file=file, max_length=max_length, check_repetition=check_repetition)
-
-    # Track previous lengths for incremental display (gpt-oss filter only)
-    previous_thoughts_len = 0
-    previous_text_len = 0
-
-    # Stream inside the StreamProcessor context so buffered output is flushed and
-    # terminal formatting is reset on exit, whether the loop completes normally or
-    # is interrupted.
-    with processor:
-        for chunk in response:
-            chunks.append(chunk)
-            delta = chunk.choices[0].delta
-
-            # Handle reasoning content (OpenRouter / reasoning models expose delta.reasoning)
-            reasoning = getattr(delta, "reasoning", None)
-            if reasoning:
-                if not processor.add_thought(reasoning):
-                    response.close()
-                    break
-
-            if delta.content is not None:
-                content = delta.content
-
-                # Apply filter if present
-                if content_filter:
-                    content_filter.feed(content)
-
-                    # Output incremental thoughts (analysis channel)
-                    if len(content_filter.thoughts) > previous_thoughts_len:
-                        new_thoughts = content_filter.thoughts[previous_thoughts_len:]
-                        previous_thoughts_len = len(content_filter.thoughts)
-                        if not processor.add_thought(new_thoughts):
-                            response.close()
-                            break
-
-                    # Output incremental text (final channel)
-                    if len(content_filter.text) > previous_text_len:
-                        new_text = content_filter.text[previous_text_len:]
-                        previous_text_len = len(content_filter.text)
-                        if not processor.add_text(new_text):
-                            response.close()
-                            break
-                else:
-                    # No filter: direct passthrough
-                    if not processor.add_text(content):
-                        response.close()  # Close stream connection
-                        break
-
-        # Flush filter if present
-        if content_filter:
-            content_filter.flush()
-
-            # Output any remaining thoughts
-            if len(content_filter.thoughts) > previous_thoughts_len:
-                processor.add_thought(content_filter.thoughts[previous_thoughts_len:])
-
-            # Output any remaining text
-            if len(content_filter.text) > previous_text_len:
-                processor.add_text(content_filter.text[previous_text_len:])
-
-    # Create Response object for OpenAI
-    return Response(
+    generator = OpenAIStreamGenerator(
         model=model,
         config=kwargs,
         contents=messages,
-        response=response,
-        chunks=chunks,
-        thoughts=processor.thoughts,
-        text=processor.text,
-        repetition=processor.repetition_detected,
-        max_length=processor.max_length_exceeded,
+        file=file,
+        max_length=max_length,
+        check_repetition=check_repetition,
+        client=client,
+        messages=messages,
+        needs_gpt_oss_filter=needs_gpt_oss_filter,
     )
+    return generator.generate()
