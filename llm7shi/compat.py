@@ -2,7 +2,7 @@ import json
 import sys
 import inspect
 import re
-from typing import Dict, Any, List, Union, Type
+from typing import Dict, Any, List, Union, Type, Optional
 from pydantic import BaseModel
 
 from .utils import contents_to_openai_messages, add_additional_properties_false, do_show_params, inline_defs
@@ -46,13 +46,13 @@ def generate_with_schema(
     schema: Union[Dict[str, Any], Type[BaseModel], None] = None,
     *,
     model: str = "",
-    temperature: float = None,
-    system_prompt: str = None,
+    temperature: Optional[float] = None,
+    system_prompt: Optional[str] = None,
     include_thoughts: bool = True,
-    thinking_budget=None,
+    thinking_budget: Optional[int] = None,
     file=sys.stdout,
     show_params: bool = True,
-    max_length=None,
+    max_length: Optional[int] = None,
     check_repetition: bool = True,
 ) -> Response:
     """Generate content using OpenAI, Gemini, or Ollama API.

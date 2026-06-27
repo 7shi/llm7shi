@@ -64,6 +64,8 @@ from .utils import (
     openai_messages_to_contents,
 )
 
+from .client import Client
+
 from .monitor import (
     StreamMonitor,
     StreamProcessor,
@@ -105,4 +107,6 @@ __all__ = [
     "DEFAULT_MAX_ATTEMPTS",
     "DEFAULT_RETRY_DELAY",
     "StreamGenerator",
+    # client.py
+    "Client",
 ]

@@ -150,6 +150,19 @@ XML serialization/deserialization utilities for message logs, with flat style fo
 - CDATA end sequence (`]]>`) escape/unescape handling to prevent parsing errors
 
 
+### [client.py](client.py) - LLM Client
+Stateful LLM client encapsulating chat history tracking, XML serialization integration, and application-layer quality retries (runaway-guarding).
+
+**Documentation**: [client.md](client.md)
+
+**Key Features**:
+- `Client` stateful, callable class (invoked via `client(...)`)
+- Configuration via instance properties (model, temperature, etc.) for a clean call signature
+- Integrated quality retry logic (detecting repetition, empty output, or length cap limits)
+- Auto-appending conversation query/responses to history
+- `to_xml()` and `load_xml()` helper methods for seamless history persistence
+
+
 
 ### [monitor.py](monitor.py) - Stream Output Monitoring
 Stream monitoring for output quality control, including repetition detection and length limits.
@@ -285,7 +298,8 @@ llm7shi/
 ├── compat.py        # Multi-provider compatibility
 ├── terminal.py      # Output formatting
 ├── monitor.py       # Stream output monitoring
-└── xml.py           # XML serialization/deserialization
+├── xml.py           # XML serialization/deserialization
+└── client.py        # Stateful LLM client
 ```
 
 Each module:

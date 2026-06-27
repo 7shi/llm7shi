@@ -115,6 +115,20 @@ Features:
 uv run examples/multiturn.py
 ```
 
+### [client.py](client.py) - Stateful Client Conversation
+Demonstrates multi-turn conversations using the stateful `Client` class, showing automatic history tracking and flat XML serialization.
+
+**Documentation**: [client.md](client.md)
+
+Features:
+- Stateful `Client` initialization and callable syntax (`client(...)`)
+- Automatic conversation history management and system prompt prepending
+- Raw XML history persistence and restoration via `to_xml()` and `load_xml()`
+
+```bash
+uv run examples/client.py
+```
+
 ### [openrouter.py](openrouter.py) - OpenRouter Reasoning Control
 Demonstrates how `include_thoughts` controls the reasoning behavior of thinking-capable models via OpenRouter, using a free tier model.
 

@@ -92,6 +92,13 @@ Unit tests for the XML serialization/deserialization helper functions in `llm7sh
 
 **Key Features**: CDATA escaping, roundtrip data integrity, flat formatting style (no indentation, newline-separated), handling of empty content.
 
+#### [test_client.py](test_client.py) - LLM Client Tests
+Unit tests for the stateful Client implementation in `llm7shi/client.py`.
+
+**Documentation**: [test_client.md](test_client.md)
+
+**Key Features**: Initialization, deep copying of history state, callable syntax (`client(...)`), parameter propagation validation, quality retry execution (repetition, empty, max length), XML state loading and saving.
+
 ## Running Tests
 
 Execute all tests with:
