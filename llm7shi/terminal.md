@@ -66,8 +66,14 @@ Bold text is rendered with `BOLD_ON = Style.BRIGHT + Fore.RED` rather than a sin
 
 In most terminals, `Style.BRIGHT` (`\033[1m`) increases color intensity rather than rendering a bold font. This means `Style.BRIGHT + Fore.RED` produces the same visual result as `Fore.LIGHTRED_EX` (`\033[91m`). The two-part form was chosen intentionally: it expresses the intent as "bright red" (base color + intensity modifier) rather than hardcoding the pre-brightened variant, making the color customizable by changing only `Fore.RED`.
 
-### Duck-Typed Retry Interface
-`ConsoleStream` supports a dynamic `retry_handler` callback. The library `llm7shi` calls `file.wait_retry()` if available, allowing downstream applications (like `dante-corpus`) to intercept retries and render the countdown cleanly inside their custom UI layouts (like Rich `Progress` tasks) without creating tight coupling.
+### Subclassing and Override Hooks (ConsoleStream)
+`ConsoleStream` is designed as an extensible base class that developers can inherit and subclass to integrate output streams with advanced UI frameworks like `rich`. Rather than relying on fragile callback delegation, downstream applications (like `dante-corpus`) can subclass `ConsoleStream` and override specific hook methods to route and style outputs:
+
+- `print(self, text: str, end: str)`: Hook for standard streaming chunk writes. Subclasses can override this to write directly to custom Rich panels or GUI text areas.
+- `wait_retry(self, delay: int, message: str)`: Hook for the rate-limit retry countdown. Subclasses can override this to add, update, and remove countdown tasks inside `rich`'s progress bar contexts.
+- `error(self, text: str)`: Hook for API errors or warning messages. Subclasses can override this to output styled error messages (such as applying `[red]` styling) or pop up alert dialogs.
+
+This inheritance-based design decouples CLI UI orchestration from the core library, ensuring standard terminal outputs and custom Rich displays can coexist cleanly without layout corruption.
 
 ### Dynamic Countdown Padding
 To prevent trailing character garbage when digit counts decrease (e.g., from `10s` to `9s`), we calculate the maximum digit width dynamically using `len(str(delay))` and format the output with right-alignment (`f"{i:>{width}}s"`), avoiding static padding while keeping output clean on all terminals.

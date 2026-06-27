@@ -747,24 +747,8 @@ class TestConsoleStream:
             stream.write("hello\n")
             mock_print.assert_called_once_with("hello", end="\n")
 
-    def test_wait_retry_with_handler(self):
-        """Test wait_retry calls custom handler when registered"""
-        from unittest.mock import MagicMock
-        mock_console = MagicMock()
-        stream = ConsoleStream(mock_console)
-        mock_handler = MagicMock()
-        stream.retry_handler = mock_handler
-
-        stream.wait_retry(5)
-        mock_handler.assert_called_once_with(5, "Retrying...")
-
-        mock_handler.reset_mock()
-        stream.wait_retry(5, message="Waiting...")
-        mock_handler.assert_called_once_with(5, "Waiting...")
-        mock_console.print.assert_not_called()
-
     def test_wait_retry_default_fallback(self):
-        """Test wait_retry falls back to standard countdown printing when no handler is registered"""
+        """Test wait_retry falls back to standard countdown printing"""
         from unittest.mock import MagicMock, patch
         mock_console = MagicMock()
         stream = ConsoleStream(mock_console)
@@ -776,6 +760,44 @@ class TestConsoleStream:
             mock_console.print.assert_any_call("\rWaiting... 1s", end="", highlight=False)
             mock_console.print.assert_any_call("\rWaiting... 0s", end="", highlight=False)
             mock_console.print.assert_any_call("", end="\n", highlight=False)
+
+    def test_error_default_fallback(self):
+        """Test error falls back to standard print"""
+        from unittest.mock import MagicMock
+        mock_console = MagicMock()
+        stream = ConsoleStream(mock_console)
+
+        stream.error("Error occurred")
+        mock_console.print.assert_called_once_with("Error occurred", end="\n", highlight=False)
+
+    def test_console_stream_subclassing(self):
+        """Test subclassing ConsoleStream and overriding hooks"""
+        from unittest.mock import MagicMock
+        
+        class CustomConsoleStream(ConsoleStream):
+            def print(self, text, end="\n"):
+                self._console.write(f"PRINT: {text}{end}")
+            
+            def wait_retry(self, delay, message="Retrying..."):
+                self._console.write(f"RETRY: {message} {delay}s")
+                
+            def error(self, text):
+                self._console.write(f"ERROR: {text}")
+
+        mock_console = MagicMock()
+        stream = CustomConsoleStream(mock_console)
+        
+        stream.write("hello\n")
+        mock_console.write.assert_called_with("PRINT: hello\n")
+        
+        mock_console.reset_mock()
+        stream.wait_retry(5, "Wait")
+        mock_console.write.assert_called_with("RETRY: Wait 5s")
+        
+        mock_console.reset_mock()
+        stream.error("Failed")
+        mock_console.write.assert_called_with("ERROR: Failed")
+
 
 
 class TestModuleWaitRetry:

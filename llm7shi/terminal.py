@@ -458,11 +458,12 @@ class ConsoleStream:
             self._buf += text
             while "\n" in self._buf:
                 line, self._buf = self._buf.split("\n", 1)
-                self._print(line, end="\n")
+                self.print(line, end="\n")
         else:
-            self._print(text, end="")
+            self.print(text, end="")
 
-    def _print(self, text: str, end: str = "\n") -> None:
+    def print(self, text: str, end: str = "\n") -> None:
+        """Hook for basic stream output. Override to redirect to custom UI/consoles."""
         if hasattr(self._console, "print"):
             try:
                 self._console.print(text, end=end, highlight=False)
@@ -474,7 +475,8 @@ class ConsoleStream:
                 self._console.flush()
         else:
             # Fallback to standard print
-            print(text, end=end)
+            import builtins
+            builtins.print(text, end=end)
 
     def flush(self) -> None:
         pass
@@ -483,21 +485,21 @@ class ConsoleStream:
         """Flush any trailing partial line (no newline) after a generation finishes."""
         if self.line_buffered:
             if self._buf.strip():
-                self._print(self._buf, end="\n")
+                self.print(self._buf, end="\n")
             self._buf = ""
 
     def wait_retry(self, delay: int, message: str = "Retrying...") -> None:
-        handler = getattr(self, "retry_handler", None)
-        if handler is not None:
-            handler(delay, message)
-            return
-
+        """Hook for retry countdown. Override to custom progress bar / UI components."""
         import time
         width = len(str(delay))
         for i in range(delay, -1, -1):
-            self._print(f"\r{message} {i:>{width}}s", end="")
+            self.print(f"\r{message} {i:>{width}}s", end="")
             time.sleep(1)
-        self._print("", end="\n")
+        self.print("", end="\n")
+
+    def error(self, text: str) -> None:
+        """Hook for error messages. Override to custom alert/logging/styling components."""
+        self.print(text, end="\n")
 
 
 def wait_retry(delay: int, message: str = "Retrying...", file=None) -> None:
