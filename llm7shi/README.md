@@ -138,6 +138,19 @@ Terminal output formatting utilities for better display of streaming responses.
 - Windows console compatibility
 
 
+### [xml.py](xml.py) - XML Serialization
+XML serialization/deserialization utilities for message logs, with flat style formatting and robust CDATA escape handling.
+
+**Documentation**: [xml.md](xml.md)
+
+**Key Features**:
+- `messages_to_xml()` - Convert message lists to a minidom Document object
+- `xml_to_str()` - Serialize a minidom Document object to a flat XML string (no indentation, newline-separated)
+- `xml_to_messages()` - Convert a minidom Document back to a list of message dicts
+- CDATA end sequence (`]]>`) escape/unescape handling to prevent parsing errors
+
+
+
 ### [monitor.py](monitor.py) - Stream Output Monitoring
 Stream monitoring for output quality control, including repetition detection and length limits.
 
@@ -271,7 +284,8 @@ llm7shi/
 ├── utils.py         # Shared utility functions
 ├── compat.py        # Multi-provider compatibility
 ├── terminal.py      # Output formatting
-└── monitor.py       # Stream output monitoring
+├── monitor.py       # Stream output monitoring
+└── xml.py           # XML serialization/deserialization
 ```
 
 Each module:

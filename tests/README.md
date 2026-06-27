@@ -85,6 +85,13 @@ Unit tests for the gpt-oss template filter in `llm7shi/monitor.py`.
 
 **Key Features**: Control token parsing, channel-based routing, role filtering, filter activation logic, stream chunk boundary handling.
 
+#### [test_xml.py](test_xml.py) - XML Serialization Tests
+Unit tests for the XML serialization/deserialization helper functions in `llm7shi/xml.py`.
+
+**Documentation**: [test_xml.md](test_xml.md)
+
+**Key Features**: CDATA escaping, roundtrip data integrity, flat formatting style (no indentation, newline-separated), handling of empty content.
+
 ## Running Tests
 
 Execute all tests with:
