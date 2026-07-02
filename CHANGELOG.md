@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-07-03
+
 ### Changed
 - **Attempt count in retry message** - The default retry message now reads `Retrying (1/5)...` etc., showing the failed attempt number out of `DEFAULT_MAX_ATTEMPTS`
 
