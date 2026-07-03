@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Retry count in retry message** - The default retry message now counts retries (`Retrying (1/4)...` through `(4/4)...`) instead of attempts, so the counter can actually reach its maximum; previously it counted failed attempts out of `DEFAULT_MAX_ATTEMPTS`, which never reached that number since the final attempt is not followed by a retry
+
 ## [0.13.1] - 2026-07-03
 
 ### Changed

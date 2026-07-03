@@ -19,7 +19,7 @@ class StreamGenerator:
         file = sys.stdout,
         max_length: Optional[int] = None,
         check_repetition: bool = True,
-        message: str = "Retrying ({attempt}/{max_attempts})...",
+        message: str = "Retrying ({retry}/{max_retries})...",
     ):
         self.model = model
         self.config = config
@@ -98,8 +98,9 @@ class StreamGenerator:
                 if attempt == 1:
                     continue
 
-                completed = DEFAULT_MAX_ATTEMPTS - attempt + 1
-                message = self.message.format(attempt=completed, max_attempts=DEFAULT_MAX_ATTEMPTS)
+                retry = DEFAULT_MAX_ATTEMPTS - attempt + 1
+                max_retries = DEFAULT_MAX_ATTEMPTS - 1
+                message = self.message.format(retry=retry, max_retries=max_retries)
                 wait_retry(delay, message=message, file=self.file)
                 continue
 
