@@ -78,6 +78,13 @@ Unit tests for terminal output formatting in `llm7shi/terminal.py`.
 
 **Key Features**: Bold formatting, markdown conversion, streaming processing, Windows compatibility.
 
+#### [test_statusline.py](test_statusline.py) - Progress Display Tests
+Unit tests for the Rich-based `StatusLine`/`StatusLineConsoleStream` in `llm7shi/statusline.py` (requires the `statusline` extra).
+
+**Documentation**: [test_statusline.md](test_statusline.md)
+
+**Key Features**: Headless Rich console output verification, retry countdown with and without an active progress bar, `active_progress` lifecycle.
+
 #### [test_gpt_oss.py](test_gpt_oss.py) - gpt-oss Template Filter Tests
 Unit tests for the gpt-oss template filter in `llm7shi/monitor.py`.
 

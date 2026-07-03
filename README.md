@@ -27,6 +27,7 @@ llm7shi is intentionally a **thin wrapper** around LLM APIs - it doesn't attempt
 - **Thinking Process Visualization**: Leverage thinking capabilities in Gemini 2.5, Ollama models, and reasoning-capable custom endpoints
 - **Schema-based Generation**: JSON schema and Pydantic model support for structured outputs
 - **Terminal Formatting**: Convert Markdown formatting to colored terminal output
+- **Progress Display** (optional `statusline` extra): Rich-based progress bars that coexist with streamed model output
 - **Repetition Detection**: Automatic detection and stopping of repetitive output patterns (configurable)
 - **Battle-Tested**: Handles the tedious but essential production concerns
 
@@ -46,6 +47,12 @@ To use llm7shi as a library in your project:
 
 ```bash
 uv add https://github.com/7shi/llm7shi.git
+```
+
+To also include the `statusline` module (Rich-based progress display, see [llm7shi/statusline.md](llm7shi/statusline.md)), install the `statusline` extra:
+
+```bash
+uv add "llm7shi[statusline] @ git+https://github.com/7shi/llm7shi.git"
 ```
 
 ### For development

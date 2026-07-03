@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **statusline module** (optional `statusline` extra) - Rich-based `StatusLine`/`StatusLineConsoleStream` for progress bars that coexist with streamed model output, promoted from dante-corpus
+
 ### Fixed
 - **Retry count in retry message** - The default retry message now counts retries (`Retrying (1/4)...` through `(4/4)...`) instead of attempts, so the counter can actually reach its maximum; previously it counted failed attempts out of `DEFAULT_MAX_ATTEMPTS`, which never reached that number since the final attempt is not followed by a retry
 

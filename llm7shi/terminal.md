@@ -67,7 +67,7 @@ Bold text is rendered with `BOLD_ON = Style.BRIGHT + Fore.RED` rather than a sin
 In most terminals, `Style.BRIGHT` (`\033[1m`) increases color intensity rather than rendering a bold font. This means `Style.BRIGHT + Fore.RED` produces the same visual result as `Fore.LIGHTRED_EX` (`\033[91m`). The two-part form was chosen intentionally: it expresses the intent as "bright red" (base color + intensity modifier) rather than hardcoding the pre-brightened variant, making the color customizable by changing only `Fore.RED`.
 
 ### Subclassing and Override Hooks (ConsoleStream)
-`ConsoleStream` is designed as an extensible base class that developers can inherit and subclass to integrate output streams with advanced UI frameworks like `rich`. Rather than relying on fragile callback delegation, downstream applications (like `dante-corpus`) can subclass `ConsoleStream` and override specific hook methods to route and style outputs:
+`ConsoleStream` is designed as an extensible base class that developers can inherit and subclass to integrate output streams with advanced UI frameworks like `rich`. Rather than relying on fragile callback delegation, applications can subclass `ConsoleStream` and override specific hook methods to route and style outputs — see [statusline.md](statusline.md) for a built-in Rich-based implementation:
 
 - `print(self, text: str, end: str)`: Hook for standard streaming chunk writes. Subclasses can override this to write directly to custom Rich panels or GUI text areas.
 - `wait_retry(self, delay: int, message: str)`: Hook for the rate-limit retry countdown. Subclasses can override this to add, update, and remove countdown tasks inside `rich`'s progress bar contexts.

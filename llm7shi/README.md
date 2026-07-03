@@ -138,6 +138,26 @@ Terminal output formatting utilities for better display of streaming responses.
 - Windows console compatibility
 
 
+### [statusline.py](statusline.py) - Rich-Based Progress Display
+Rich-based progress bar display (`StatusLine`) that coexists with streamed LLM output, for build-time and batch-processing scripts.
+
+**Documentation**: [statusline.md](statusline.md)
+
+**Key Features**:
+- `StatusLine` - Owns a Rich `Console`; `status_line.progress(total, label=...)` gives a live progress bar
+- `StatusLineConsoleStream` - `ConsoleStream` subclass that routes streamed output and retry countdowns through the same `Console` as the progress bar
+- Retry countdowns render as a temporary progress row instead of a raw `\r` countdown
+- Process-wide elapsed time display, independent of individual task lifetimes
+
+**Note**: This module requires the optional `statusline` extra (for `rich`) and is not exported in `__init__.py`. Install with:
+```bash
+uv add "llm7shi[statusline] @ git+https://github.com/7shi/llm7shi.git"
+```
+Import explicitly:
+```python
+from llm7shi.statusline import StatusLine
+```
+
 ### [xml.py](xml.py) - XML Serialization
 XML serialization/deserialization utilities for message logs, with flat style formatting and robust CDATA escape handling.
 
@@ -297,6 +317,7 @@ llm7shi/
 ├── utils.py         # Shared utility functions
 ├── compat.py        # Multi-provider compatibility
 ├── terminal.py      # Output formatting
+├── statusline.py    # Rich-based progress display (optional)
 ├── monitor.py       # Stream output monitoring
 ├── xml.py           # XML serialization/deserialization
 └── client.py        # Stateful LLM client
@@ -347,5 +368,6 @@ Then use with vendor prefixes: `model="openrouter:"`, `model="groq:llama-3.3-70b
 - `openai` - OpenAI API client (for compat.py)
 - `ollama` - Ollama API client (for ollama.py)
 - `pydantic` - Data validation (for schema support)
+- `rich` - Progress display (optional, for statusline.py; install via the `statusline` extra)
 
 See the main project README for installation instructions.

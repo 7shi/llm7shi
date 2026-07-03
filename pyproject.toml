@@ -14,9 +14,15 @@ dependencies = [
     "pytest>=9.1.0",
 ]
 
+[project.optional-dependencies]
+statusline = [
+    "rich>=15.0.0",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=8.4.1",
+    "rich>=15.0.0",
 ]
 
 [build-system]
