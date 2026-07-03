@@ -23,3 +23,13 @@ To handle multi-turn conversational agents with built-in execution safety, we en
 **Problem**: In conversational systems, maintaining the message history list and coordinating the safety wrappers (like runaway-guarding repetition checks) requires boilerplate code that is often duplicated across different callers.
 
 **Solution**: Grouped chat history management, system prompt assembly, and the quality retry loop into the `Client` class, using python's `__call__` syntax for the primary generation entry point. Calling code simply invokes the client object (e.g. `client(prompt)`), which transparently ensures robust execution and history preservation.
+
+### Inflexible, Hardcoded Retry Judgment
+**Problem**: The decision of whether a response is "good enough" to stop retrying was inlined directly in the `__call__` loop. Callers with different quality needs (e.g. requiring valid JSON instead of just non-repetitive text) had no way to change this judgment without copying the whole retry loop.
+
+**Solution**: Extracted the judgment into a `should_retry(resp, schema)` method that returns a reason string (or `None` to accept). Subclasses can override it to implement custom quality gates while reusing the constructor, history management, and retry loop unchanged.
+
+### Schema Validity Is a Stronger Signal Than Text Heuristics
+**Problem**: When a `schema` is supplied, checks like repetition/max_length/empty-text are redundant proxies for quality — a response that fails to parse or validate against the schema should be rejected regardless of those heuristics, while a response that satisfies the schema is acceptable even if it happens to trip a heuristic (e.g. looking "repetitive" due to structured JSON keys).
+
+**Solution**: When `schema` is provided, `should_retry` skips the plain-text checks entirely and instead validates `resp.text` as JSON against the schema (full validation via `model_validate_json` for Pydantic models, parseability only for plain JSON-schema dicts since no schema-validation library is a project dependency). The parsed result is stored on `resp.data` so callers don't need to re-parse `resp.text` themselves.

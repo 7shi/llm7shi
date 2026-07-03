@@ -17,6 +17,8 @@ class Response:
         text: The final generated text
         repetition: Whether repetitive patterns were detected during generation
         max_length: Set to the length limit if generation was truncated (None for normal completion)
+        data: Parsed JSON content of text (dict/list, or a Pydantic instance when a
+            Pydantic schema was used), set when a schema is passed to Client.__call__
     """
     model: Optional[str] = None
     config: Optional[Any] = None
@@ -27,6 +29,7 @@ class Response:
     text: str = ""
     repetition: bool = False
     max_length: Optional[int] = None
+    data: Optional[Any] = None
     
     def __str__(self) -> str:
         """Return the text content when converting to string."""

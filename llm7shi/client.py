@@ -1,3 +1,4 @@
+import json
 import sys
 from typing import List, Dict, Optional, Any, Union, Type
 from xml.dom.minidom import parseString
@@ -62,6 +63,43 @@ class Client:
         else:
             self.history.insert(0, {'role': 'system', 'content': system_prompt})
 
+    def should_retry(
+        self,
+        resp: Response,
+        schema: Union[Dict[str, Any], Type[BaseModel], None] = None,
+    ) -> Optional[str]:
+        """Decide whether a response should be regenerated.
+
+        Override in a subclass to customize quality checks.
+
+        Args:
+            resp: The response to evaluate
+            schema: The schema passed to __call__. When given, resp.text is validated
+                as JSON against it instead of the plain-text quality checks (Pydantic
+                models are validated in full; dict JSON schemas are only checked for
+                parseability)
+
+        Returns:
+            A reason string if the response should be retried, or None if it is acceptable.
+        """
+        if schema is not None:
+            try:
+                if isinstance(schema, type) and issubclass(schema, BaseModel):
+                    resp.data = schema.model_validate_json(resp.text)
+                else:
+                    resp.data = json.loads(resp.text)
+            except Exception as e:
+                return f"invalid JSON ({e})"
+            return None
+
+        if resp.repetition:
+            return "repetition"
+        if resp.max_length is not None:
+            return f"max_length ({self.max_length} chars) exceeded"
+        if not resp.text.strip():
+            return "empty reply"
+        return None
+
     def __call__(
         self,
         prompt: str,
@@ -94,23 +132,16 @@ class Client:
                 file=self.file
             )
 
-            # Quality checks
-            if not resp.repetition and resp.max_length is None and resp.text.strip():
+            reason = self.should_retry(resp, schema)
+            if reason is None:
                 break
-
-            if resp.repetition:
-                reason = "repetition"
-            elif resp.max_length is not None:
-                reason = f"max_length ({self.max_length} chars) exceeded"
-            else:
-                reason = "empty reply"
 
             # Print warnings
             error(
                 f"Client: attempt {attempt}/{self.retries} hit {reason}; regenerating",
                 file=self.file
             )
-        
+
         # Add to history
         self.history.append({'role': 'user', 'content': prompt})
         self.history.append({'role': 'assistant', 'content': resp.text.strip()})
