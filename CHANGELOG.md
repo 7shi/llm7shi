@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-07-03
+
 ### Added
 - **Overridable retry judgment in `Client`** - New `should_retry(resp, schema)` method factors out the quality-retry decision so subclasses can customize it; when a `schema` is passed to `Client.__call__`, it validates the response as JSON against the schema instead of the plain-text quality checks
 - **`Response.data` field** - Holds the parsed JSON (or validated Pydantic instance) when `Client.__call__` is given a schema
