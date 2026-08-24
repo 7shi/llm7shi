@@ -494,8 +494,8 @@ class ConsoleStream:
         width = len(str(delay))
         for i in range(delay, -1, -1):
             self.print(f"\r{message} {i:>{width}}s", end="")
-            if i > 0:
-                time.sleep(1)
+            # Sleep on 0s as well to provide a 1-second safety margin
+            time.sleep(1)
         self.print("", end="\n")
 
     def error(self, text: str) -> None:
@@ -505,26 +505,15 @@ class ConsoleStream:
 
 def error(text: str, file=None) -> None:
     """Print an error message. Delegates to file.error() if available, otherwise falls back to stderr."""
-    import sys
-    if file is not None and hasattr(file, "error"):
-        file.error(text)
-    else:
-        target_file = file or sys.stderr
-        print(text, file=target_file)
+    if not (file is not None and hasattr(file, "error")):
+        import sys
+        file = ConsoleStream(file or sys.stderr)
+    file.error(text)
 
 
 def wait_retry(delay: int, message: str = "Retrying...", file=None) -> None:
     """Sleep with a visual countdown. Delegates to file.wait_retry() if available, otherwise falls back to stderr."""
-    if file is not None and hasattr(file, "wait_retry"):
-        file.wait_retry(delay, message)
-        return
-
-    import sys
-    import time
-    target_file = file or sys.stderr
-    width = len(str(delay))
-    for i in range(delay, -1, -1):
-        print(f"\r{message} {i:>{width}}s", end="", file=target_file, flush=True)
-        if i > 0:
-            time.sleep(1)
-    print(file=target_file)
+    if not (file is not None and hasattr(file, "wait_retry")):
+        import sys
+        file = ConsoleStream(file or sys.stderr)
+    file.wait_retry(delay, message)

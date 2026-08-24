@@ -77,9 +77,9 @@ def test_stream_generator_retry_success():
         response = generator.generate()
         assert response.text == "success"
         assert generator.call_count == 2
-        # delay = 2s, so wait_retry calls sleep(1) two times (for 2, 1)
-        assert mock_sleep.call_count == 2
-        mock_sleep.assert_has_calls([call(1), call(1)])
+        # delay = 2s, so wait_retry calls sleep(1) three times (for 2, 1, 0)
+        assert mock_sleep.call_count == 3
+        mock_sleep.assert_has_calls([call(1), call(1), call(1)])
 
 
 def test_stream_generator_non_retryable_error():
@@ -109,8 +109,8 @@ def test_stream_generator_max_retries_exceeded():
         with pytest.raises(RuntimeError, match="Max retries exceeded"):
             generator.generate()
         assert generator.call_count == DEFAULT_MAX_ATTEMPTS
-        # 4 retries, each delay = 2s (2 sleep calls each) -> 8 sleep calls
-        assert mock_sleep.call_count == 8
+        # 4 retries, each delay = 2s (3 sleep calls each) -> 12 sleep calls
+        assert mock_sleep.call_count == 12
 
 
 def test_module_helpers_delegation():
@@ -134,6 +134,6 @@ def test_module_helpers_delegation():
     fallback_file = StringIO()
     with patch("time.sleep") as mock_sleep:
         wait_retry(2, "wait", file=fallback_file)
-        assert mock_sleep.call_count == 2
+        assert mock_sleep.call_count == 3
         assert fallback_file.getvalue() == "\rwait 2s\rwait 1s\rwait 0s\n"
 

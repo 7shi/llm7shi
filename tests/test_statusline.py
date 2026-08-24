@@ -28,7 +28,7 @@ class TestStatusLineConsoleStream:
         status_line = make_status_line()
         with patch("time.sleep") as mock_sleep:
             status_line.stream.wait_retry(2, message="Retrying (1/4)...")
-            assert mock_sleep.call_count == 2
+            assert mock_sleep.call_count == 3
         output = status_line.console.file.getvalue()
         assert "Retrying (1/4)... 2s" in output
         assert "Retrying (1/4)... 0s" in output
@@ -38,7 +38,7 @@ class TestStatusLineConsoleStream:
         with status_line.progress(total=10, label="task") as ctx:
             with patch("time.sleep") as mock_sleep:
                 status_line.stream.wait_retry(2, message="Retrying (1/4)...")
-                assert mock_sleep.call_count == 2
+                assert mock_sleep.call_count == 3
         output = status_line.console.file.getvalue()
         assert "Retrying (1/4)..." in output
 
