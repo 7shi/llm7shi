@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.2] - 2026-08-24
+
 ### Changed
 - **Safety margin in retry countdown** - `ConsoleStream.wait_retry` and `StatusLineConsoleStream.wait_retry` now sleep for 1 second on 0s as well to provide a 1-second safety margin before retrying
 
