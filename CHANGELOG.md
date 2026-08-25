@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Automatic function calling warning** - Gemini configs now explicitly disable automatic function calling, suppressing the `google-genai` library's "Direct use of automatic function calling (AFC) ... is not recommended" warning
+
 ## [0.14.2] - 2026-08-24
 
 ### Changed

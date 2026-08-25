@@ -32,7 +32,21 @@ def _get_client():
         _client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
     return _client
 
+def _disable_afc(config):
+    """Disable automatic function calling on a GenerateContentConfig.
+
+    Avoids AFC warning: "Direct use of automatic function calling (AFC) in
+    Models.generate_content_stream is not recommended..."
+    """
+    config.automatic_function_calling = types.AutomaticFunctionCallingConfig(disable=True)
+    return config
+
+
 # config_text is dynamically generated via __getattr__ to prevent mutation
+def _make_config_text():
+    return _disable_afc(types.GenerateContentConfig(
+        response_mime_type="text/plain",
+    ))
 
 
 def build_schema_from_json(json_data):
@@ -107,10 +121,10 @@ def config_from_schema(schema):
     Returns:
         types.GenerateContentConfig: Configuration for structured JSON output
     """
-    return types.GenerateContentConfig(
+    return _disable_afc(types.GenerateContentConfig(
         response_mime_type="application/json",
         response_schema=schema,
-    )
+    ))
 class GeminiStreamGenerator(StreamGenerator):
     """Gemini-specific stream generator."""
 
@@ -186,7 +200,7 @@ def generate_content_retry(
         
         # Create new config with thinking configuration
         if config is None:
-            config = types.GenerateContentConfig()
+            config = _make_config_text()
         config.thinking_config = thinking_config
     
     generator = GeminiStreamGenerator(
@@ -251,7 +265,5 @@ def __getattr__(name):
     if name == "client":
         return _get_client()
     if name == "config_text":
-        return types.GenerateContentConfig(
-            response_mime_type="text/plain",
-        )
+        return _make_config_text()
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
