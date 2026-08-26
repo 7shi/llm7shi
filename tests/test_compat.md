@@ -18,8 +18,3 @@ Testing the compatibility layer required solving unique challenges around multi-
 **Problem**: Different providers require different schema formats, and the processing pipeline (Pydantic→JSON→Provider-specific) has multiple transformation steps that could introduce errors.
 
 **Solution**: End-to-end tests that verify schema transformations preserve semantic meaning while meeting each provider's specific format requirements.
-
-### Import and Mocking Complexity
-**Problem**: The compat module delegates OpenAI processing to the dedicated `openai.py` module, which creates client instances dynamically per request. This required specific mocking strategies to properly intercept API calls without triggering actual OpenAI authentication.
-
-**Solution**: Mocking of the OpenAI class constructor (`llm7shi.openai.OpenAI`) to return a mock client instance, ensuring tests intercept client creation and subsequent API calls while avoiding real network requests. This approach supports the dynamic client creation pattern and enables testing of custom `base_url` parameter handling.

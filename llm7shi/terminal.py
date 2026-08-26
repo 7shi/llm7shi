@@ -3,6 +3,8 @@ from colorama import just_fix_windows_console, Fore, Back, Style
 # Fix Windows console to properly display ANSI color codes
 just_fix_windows_console()
 
+# "bright red" (base color + intensity modifier) rather than the pre-brightened Fore.LIGHTRED_EX,
+# so the color stays customizable by changing only Fore.RED
 BOLD_ON = Style.BRIGHT + Fore.RED
 BOLD_OFF = Style.NORMAL + Fore.RESET
 
@@ -54,6 +56,9 @@ def _close_all_inline(stack):
 # Fenced code block contents are rendered with a gray background (only the inner
 # lines are shaded, not the ``` delimiter lines). Background ON/OFF is emitted
 # just before the surrounding newline so each shaded line ends cleanly.
+# Colorama only models the 16 standard ANSI colors (no 256-color/true-color, which
+# would be VT-dependent and untranslated on legacy Windows consoles), so LIGHTBLACK_EX
+# is the available gray.
 BLOCK_ON = Back.LIGHTBLACK_EX
 BLOCK_OFF = Back.RESET
 
@@ -491,7 +496,7 @@ class ConsoleStream:
     def wait_retry(self, delay: int, message: str = "Retrying...") -> None:
         """Hook for retry countdown. Override to custom progress bar / UI components."""
         import time
-        width = len(str(delay))
+        width = len(str(delay))  # right-align so digit count shrinking (10s -> 9s) leaves no garbage char
         for i in range(delay, -1, -1):
             self.print(f"\r{message} {i:>{width}}s", end="")
             # Sleep on 0s as well to provide a 1-second safety margin

@@ -29,7 +29,7 @@ def do_show_params(contents, *, model=None, file=sys.stdout, **kwargs):
     for k, v in params.items():
         print(f"- {k:<{max_key_len}}: {v}", file=file)
 
-    # Display contents based on format
+    # Display contents based on format (message format needs role labels for readability)
     if contents and isinstance(contents[0], dict):
         # OpenAI message format
         for msg in contents:
@@ -80,7 +80,7 @@ def contents_to_openai_messages(
             openai_messages.extend(contents)
             return openai_messages
         else:
-            # Return contents as-is
+            # No copy/transform needed: avoids unnecessary object creation when nothing changes
             return contents
     else:
         # Legacy List[str] format
@@ -97,6 +97,7 @@ def contents_to_openai_messages(
 
 def add_additional_properties_false(schema: Dict[str, Any]) -> Dict[str, Any]:
     """Add additionalProperties: false to schema for OpenAI compatibility."""
+    # OpenAI's strict mode rejects schemas without this set explicitly
     def process_schema(obj: Any) -> Any:
         if isinstance(obj, dict):
             obj = obj.copy()
@@ -136,6 +137,7 @@ def inline_defs(schema: Dict[str, Any]) -> Dict[str, Any]:
     Raises:
         ValueError: If a circular reference is detected in the schema.
     """
+    # Pydantic emits $defs refs and title fields that OpenAI doesn't accept; inline and strip them
     schema = schema.copy()
     defs = schema.pop("$defs", {})
     
@@ -172,6 +174,7 @@ def extract_descriptions(schema: Dict[str, Any]) -> Dict[str, str]:
     Returns:
         Dictionary mapping parent keys to their description values
     """
+    # lets descriptions be re-embedded into prompts for models that ignore schema `description` fields
     descriptions = {}
     
     def traverse_schema(obj: Any, parent_key: str = None) -> None:
@@ -212,6 +215,8 @@ def create_json_descriptions_prompt(schema: Union[Dict[str, Any], Type[BaseModel
     Returns:
         String prompt with field descriptions
     """
+    # explicit client-side call (not automatic) so users retain visibility/control over what's sent;
+    # Ollama in particular ignores schema description fields entirely
     # Convert Pydantic model to JSON schema if needed
     if inspect.isclass(schema) and issubclass(schema, BaseModel):
         schema = schema.model_json_schema()
@@ -236,6 +241,7 @@ def is_openai_messages(contents: Union[List[str], List[Dict[str, str]]]) -> bool
     Raises:
         ValueError: If format is ambiguous or invalid
     """
+    # validates role/content keys and role values so malformed input fails fast, not deep in a provider call
     if not contents:
         return False
 
@@ -280,6 +286,7 @@ def openai_messages_to_contents(messages: List[Dict[str, str]]) -> tuple[List, U
     """
     from google.genai import types
 
+    # single pass: converts and extracts system_prompt together instead of a separate extraction step
     contents = []
     system_prompt = None
 

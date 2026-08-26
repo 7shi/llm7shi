@@ -7,11 +7,12 @@ from .response import Response
 from .monitor import StreamProcessor, GptOssTemplateFilter
 from .stream import StreamGenerator
 
-DEFAULT_MODEL = "gpt-4.1-mini"
+DEFAULT_MODEL = "gpt-4.1-mini"  # optional model param, matching gemini.py's default-model pattern
 
 
 class OpenAIStreamGenerator(StreamGenerator):
     """OpenAI-specific stream generator."""
+    # thoughts/text split mirrors the 🤔/💡 display convention from gemini.py and ollama.py
 
     def __init__(self, *args, client=None, messages=None, needs_gpt_oss_filter=False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -41,7 +42,8 @@ class OpenAIStreamGenerator(StreamGenerator):
     def process_chunk(self, chunk, processor) -> bool:
         delta = chunk.choices[0].delta
 
-        # Handle reasoning content (OpenRouter / reasoning models expose delta.reasoning)
+        # some providers put thinking in delta.reasoning instead of delta.content; independent of
+        # the gpt-oss filter below (control-token providers never populate this field)
         reasoning = getattr(delta, "reasoning", None)
         if reasoning:
             if not processor.add_thought(reasoning):
@@ -98,7 +100,7 @@ def generate_content(
     file=sys.stdout,
     max_length=None,
     check_repetition: bool = True,
-    base_url: str = None,
+    base_url: str = None,  # points at OpenAI-compatible endpoints (llama.cpp, LocalAI, etc.)
     api_key_env: str = None,
     **kwargs
 ) -> Response:
@@ -108,14 +110,15 @@ def generate_content(
     if not model:
         model = DEFAULT_MODEL
 
-    # Detect if model uses gpt-oss template (needs filtering)
-    # Only activate filter for exact match of "llama.cpp/gpt-oss"
-    # Skip filter for structured output (response_format specified) as llama.cpp
-    # does not emit control tokens in JSON mode
+    # llama-server ignores the model name and serves one model at a time, so
+    # "llama.cpp/gpt-oss" is repurposed as a client-side marker to select this template's
+    # filter, not an actual model identifier. Skipped for structured output because
+    # llama.cpp doesn't emit control tokens in JSON mode.
     has_response_format = 'response_format' in kwargs
     needs_gpt_oss_filter = (model == "llama.cpp/gpt-oss") and not has_response_format
 
-    # Determine API key based on api_key_env and base_url
+    # client is created per request (not a global singleton) so base_url can vary per call;
+    # connection pooling at the HTTP level keeps this efficient
     if api_key_env is not None:
         # Use specified environment variable
         api_key = os.environ.get(api_key_env, "")

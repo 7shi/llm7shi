@@ -158,9 +158,11 @@ class GeminiStreamGenerator(StreamGenerator):
         return True
 
     def handle_error(self, e: Exception) -> Optional[dict]:
+        # 429/500/502/503 are transient; other errors fail immediately (not retried)
         if isinstance(e, genai.errors.APIError) and hasattr(e, "code") and e.code in [429, 500, 502, 503]:
             delay = None
             if e.code == 429:
+                # 429 carries an explicit retryDelay; other codes fall back to DEFAULT_RETRY_DELAY
                 details = e.details["error"]["details"]
                 for d in details:
                     if (rd := d.get("retryDelay")) and (m := re.match(r"^(\d+)s$", rd)):
@@ -217,14 +219,15 @@ def generate_content_retry(
 
 def upload_file(path, mime_type):
     """Upload file to Gemini API with explicit mime_type.
-    
+
     Args:
         path: Path to the file to upload
         mime_type: MIME type of the file (e.g., 'image/jpeg', 'application/pdf')
-        
+
     Returns:
         File object from Gemini API after processing is complete
     """
+    # Gemini requires files to be uploaded first and referenced by name in requests
     # Upload file to Gemini
     file = _get_client().files.upload(
         file=path,

@@ -12,4 +12,4 @@ This example demonstrates the ultimate goal of the compatibility layer - making 
 ### Pydantic Model Compatibility with Enhancement Patterns
 **Problem**: While Pydantic models provide excellent type safety and IDE support, they still face the same cross-provider compatibility challenges as raw JSON schemas when it comes to field description handling.
 
-**Solution**: Shows that the same enhancement techniques used for JSON schemas (see [compat1.md](compat1.md)) work seamlessly with Pydantic models. The `create_json_descriptions_prompt()` function automatically extracts field descriptions from Pydantic models' generated JSON schema, maintaining the benefits of both type-safe development and cross-provider reliability without requiring developers to abandon modern Python patterns.
+**Solution**: Shows that the same enhancement techniques used for JSON schemas (see [compat1.md](compat1.md)) work seamlessly with Pydantic models, maintaining the benefits of both type-safe development and cross-provider reliability without requiring developers to abandon modern Python patterns.

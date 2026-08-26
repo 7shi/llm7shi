@@ -73,7 +73,9 @@ def generate_with_schema(
     Returns:
         Response: Response object containing generated text and metadata
     """
-    # Parse vendor prefix from model name
+    # Parse vendor prefix from model name (e.g. "openai:gpt-4.1-mini"); unprefixed
+    # names fall back to legacy behavior (gemini* -> Gemini, else -> OpenAI) for
+    # backward compatibility with model strings predating vendor prefixes
     actual_model = model
     vendor_prefix = "google"  # default to Google
 
@@ -91,7 +93,7 @@ def generate_with_schema(
             else:
                 vendor_prefix = "openai"
 
-    # Check if vendor is OpenAI-compatible (openrouter, groq, grok)
+    # Pre-configured so users don't have to specify base_url/api_key_env by hand for each request
     if vendor_prefix in OPENAI_COMPATIBLE_VENDORS:
         vendor_config = OPENAI_COMPATIBLE_VENDORS[vendor_prefix]
 
@@ -107,6 +109,7 @@ def generate_with_schema(
         # OpenRouter-only: explicitly toggle reasoning via include_thoughts.
         # Some models (e.g. google/gemma) do not emit reasoning unless
         # enabled is sent explicitly, so set it for both True and False.
+        # (distinct from `exclude`, which only hides reasoning tokens while still thinking)
         extra_body = None
         if vendor_prefix == "openrouter":
             extra_body = {"reasoning": {"enabled": include_thoughts}}
@@ -208,6 +211,7 @@ def _generate_with_openai(
 
     # Extract base_url and api_key_env from model if present
     # Format: model@base_url|api_key_env
+    # keeps endpoint config in one string param instead of adding args to every call site
     base_url = None
     api_key_env = None
     if model and "@" in model:

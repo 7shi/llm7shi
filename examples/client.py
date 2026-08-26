@@ -3,11 +3,12 @@ from llm7shi import Client
 # Initialize client with a model (using Ollama as default, matching multiturn.py)
 client = Client(model="ollama:", include_thoughts=False)
 
-# Configure system prompt using the dedicated method
+# set via dedicated method, not the constructor, so model config and system role stay independently settable
 system_prompt = "You are a helpful assistant that answers questions concisely."
 client.set_system_prompt(system_prompt)
 
 print("--- First turn: call with a system prompt ---")
+# no print(response1) here: the client already echoes generation to the console
 response1 = client(
     prompt="What is the capital of France?"
 )

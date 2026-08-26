@@ -3,9 +3,10 @@ from xml.dom.minidom import Document
 
 def escape_cdata_content(s: str) -> str:
     """Escape CDATA end tags (]]>) to prevent XML parsing issues.
-    
+
     Inserts a space before the final '>' of any ']]>' sequence.
     """
+    # mbox-style escaping (like ">From "): pragmatic text fix-up, keeps raw logs maximally readable
     if not isinstance(s, str):
         s = str(s)
     return re.sub(r"\]\](\s*)\>", lambda m: f"]]{m.group(1)} >", s)
@@ -38,6 +39,7 @@ def messages_to_xml(messages, response: str = None) -> Document:
                 content = msg.get("content", "")
                 msg_el = doc.createElement("message")
                 msg_el.setAttribute("role", role)
+                # CDATA avoids escaping <, & etc., keeping raw conversation text readable in the XML
                 cdata = doc.createCDATASection(prepare_text(content))
                 msg_el.appendChild(cdata)
                 messages_el.appendChild(msg_el)
@@ -60,6 +62,7 @@ def messages_to_xml(messages, response: str = None) -> Document:
 
 def xml_to_str(doc: Document) -> str:
     """Serialize a minidom Document to a flat XML string (no indentation, newline-separated)."""
+    # indent="" avoids indentation eating into CDATA content while still newline-separating tags
     return doc.toprettyxml(indent="", encoding="utf-8").decode("utf-8")
 
 def xml_to_messages(doc: Document) -> list:

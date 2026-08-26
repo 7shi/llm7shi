@@ -9,11 +9,6 @@ This module was created to eliminate code duplication between Gemini and OpenAI 
 
 **Solution**: Extracted common monitoring logic into `StreamMonitor` class that encapsulates all output validation concerns, allowing both providers to share the same quality control implementation.
 
-### Real-time Pattern Detection
-**Problem**: LLMs can sometimes generate repetitive patterns or excessive whitespace during streaming, requiring immediate detection and interruption to avoid wasting tokens and time.
-
-**Solution**: Implemented incremental checking that monitors output every 128 characters for weighted whitespace and every 512 characters for repetition patterns, enabling early termination of problematic generations.
-
 ### Provider-agnostic Design
 **Problem**: Different LLM providers have different streaming APIs and response structures, but output quality concerns are universal.
 
@@ -24,22 +19,7 @@ This module was created to eliminate code duplication between Gemini and OpenAI 
 ### Optimized Frequency Settings
 **Problem**: Initial detection frequencies (every 1024 characters) were too slow to catch problems early, wasting tokens and time on problematic generations.
 
-**Solution**: Optimized detection based on improved algorithm efficiency:
-- **Pattern detection**: Every 512 characters using the optimized `detect_repetition` algorithm
-- **Whitespace detection**: Every 128 characters using weighted whitespace calculation (newlines: 8×, tabs: 4×, spaces: 1×; threshold: 512 weighted units)
-- **Rationale**: The optimized algorithm (see [docs/20250629-repetition-detection.md](../docs/20250629-repetition-detection.md)) is efficient enough to run more frequently without performance impact
-
-### Weighted Whitespace Detection
-**Problem**: Different types of trailing whitespace have different severity levels. Tabs and newlines are more problematic than spaces as they can continue repeating, but a uniform threshold treats all whitespace equally.
-
-**Solution**: Implemented weighted whitespace calculation with threshold of 512 (checked every 128 characters). Weights: newlines (\n, \r\n, \r) = 8, tabs = 4, spaces = 1. This catches 512 spaces OR 128 tabs OR 64 newlines OR equivalent combinations, providing nuanced detection while maintaining frequent checking.
-
-### Stream Interruption Handling
-**Problem**: Different providers have different mechanisms for closing streaming connections when stopping generation early.
-
-**Solution**: `StreamMonitor` returns a simple boolean, letting each provider handle connection cleanup according to their specific requirements:
-- **Gemini**: Simply break from the iterator loop (automatic cleanup)
-- **OpenAI**: Call `response.close()` to properly release HTTP connections
+**Solution**: Optimized detection based on improved algorithm efficiency: pattern detection every 512 characters, weighted whitespace detection every 128 characters. The optimized algorithm (see [docs/20250629-repetition-detection.md](../docs/20250629-repetition-detection.md)) is efficient enough to run more frequently without performance impact.
 
 ## Repetition Detection Algorithm
 
@@ -50,10 +30,8 @@ This module was created to eliminate code duplication between Gemini and OpenAI 
 
 For detailed information about the algorithm, optimization strategy, and implementation details, see [Repetition Detection Algorithm](../docs/20250629-repetition-detection.md).
 
-### Threshold Adjustment for Coordination
-**Problem**: The original repetition detection threshold (base=100, requiring 100 repetitions for single characters) was too low in production use, triggering false positives on legitimate repetitive content. Additionally, when weighted whitespace detection was enhanced (threshold increased from 128 to 512), the repetition threshold became misaligned, breaking the original design's balanced detection sensitivity.
-
-**Solution**: Adjusted repetition detection thresholds using dynamic base algorithm (base=340) to maintain coordination with weighted whitespace detection. The new implementation uses a lookup table for pattern lengths 1-20 and a fixed value of 20 repetitions for patterns ≥ 21 characters, ensuring monotonic non-decreasing behavior for early termination optimization while reducing false positives. This maintains the original design philosophy of balanced detection across different pattern types.
+### Threshold Adjustment for Coordination (Historical)
+**Problem**: The original repetition detection threshold (base=100, requiring 100 repetitions for single characters) was too low in production use, triggering false positives on legitimate repetitive content.
 
 For detailed threshold selection rationale and algorithm investigation, see [Repetition Detection Threshold Adjustment](../docs/20251206-repetition-threshold.md).
 
@@ -85,53 +63,4 @@ For detailed algorithm design and edge case analysis, see [Quasi-Repetition Dete
 
 **Solution**: Introduced `StreamProcessor`, a higher-level class that owns the `MarkdownStreamConverter` and both `StreamMonitor` instances and exposes a tiny provider-facing API: `add_thought(chunk)`, `add_text(chunk)`, and `finalize()`. Providers no longer touch the converter or monitors directly; each streaming loop collapses to feeding chunks and breaking when a method returns `False`. This keeps `StreamMonitor` a pure, provider-agnostic text checker while concentrating the display/state concerns in one place.
 
-### Exactly One Blank Line at the Section Boundary
-**Problem**: Because providers disagreed on the answer-header newline and passed model trailing newlines straight through, the visual gap between the thinking and answer sections was inconsistent — sometimes zero blank lines, sometimes several, depending on the model's output.
-
-**Solution**: `StreamProcessor` holds back trailing newlines from the terminal (caching them in a display-only buffer) and discards them at a section boundary, then relies on the unified `\n💡 **Answer:**\n` header to insert exactly one blank line. Newlines that appear *between* content are flushed as soon as more text arrives, so internal blank lines are preserved while trailing ones are trimmed. Symmetrically, **leading** newlines at the start of each section are dropped (a `_leading` flag, reset at every section boundary) so a section never opens with stray blank lines before its first content; leading spaces/tabs on the first content line are kept (only newlines are trimmed).
-
-### Display-Only Formatting Preserves Verbatim Text
-**Problem**: Trimming leading/trailing newlines for display must not alter the text returned to callers. The `Response` stores `thoughts`/`text` that may be resent as conversation history; if the stored text diverged from the server output, it would desync the server-side KV cache.
-
-**Solution**: The blank-line suppression operates strictly on the terminal output path. `add_thought`/`add_text` accumulate the raw chunks verbatim, and the monitors check those raw strings, so `processor.thoughts` and `processor.text` always match exactly what the server streamed.
-
-### Resetting Formatting on Interrupted Streaming
-**Problem**: When an exception (a network error, or a Ctrl-C interrupt) breaks off generation while a `**bold**`, `` `code` ``, or fenced code block is still open, the converter's closing ANSI codes are never emitted. The exception must still propagate, but the terminal is left stuck in the colored/bold/background state, bleeding into the shell prompt and the exception traceback that follows.
-
-**Solution**: `StreamProcessor` is a context manager whose `__exit__` always calls `finalize()`, which resolves any incomplete markers, closes open formatting, and emits a trailing newline. Cleanup on a normal end and on an abort are therefore identical — there is no separate "reset" path — so each provider simply runs its streaming loop inside `with processor:`. On a normal exit the buffered output is flushed; on an exception `__exit__` runs the same cleanup and then (by returning `None`) lets the original exception propagate unchanged. The trailing newline keeps the following traceback readable, and the accumulated `thoughts`/`text` are untouched.
-
 ## Template Filter Integration
-
-### gpt-oss Template Parsing Challenge
-**Problem**: Some OpenAI-compatible servers (particularly llama.cpp with gpt-oss template) emit control tokens that structure the output into channels, mixing reasoning process with final answer in a single stream that needs real-time parsing.
-
-**Solution**: Created `GptOssTemplateFilter` class that parses control tokens and separates content into appropriate channels during streaming, enabling clean separation of thoughts from final text without buffering the entire response.
-
-**Design Context**: llama-server provides only one model at a time and ignores the model name in API requests. The filter activates based on the exact model name `"llama.cpp/gpt-oss"`, which serves as a client-side template identifier rather than an actual model name. This allows users to signal which template parser to use based on their server's prompt template configuration, independent of which model is actually being served.
-
-### Control Token Protocol
-**Problem**: The gpt-oss template uses multiple control tokens (`<|channel|>`, `<|message|>`, `<|start|>`, `<|end|>`) that can arrive split across multiple stream chunks, making naive string matching unreliable.
-
-**Solution**: Implemented stateful buffer-based parsing that handles partial tokens across chunk boundaries:
-- Maintains a buffer to handle tokens split across chunks
-- Uses state machine pattern to track expectations (channel name, role name, content)
-- Supports look-ahead to detect potential control token starts without premature output
-
-### Channel-Based Content Routing
-**Problem**: gpt-oss template directs content to different channels (`analysis` for reasoning, `final` for output), but the streaming API provides no built-in way to separate these logically distinct content types.
-
-**Solution**: Implemented channel routing that accumulates content into separate properties:
-- `thoughts` property: Accumulates all content from `analysis` channel
-- `text` property: Accumulates all content from `final` channel
-- `feed()` method returns only `final` channel content for display
-- `flush()` method ensures remaining buffer content is properly routed
-
-### Role Token Filtering
-**Problem**: The `<|start|>` token is followed by role names (`assistant`, `user`, `system`) that are part of the protocol structure but should not appear in the final output.
-
-**Solution**: Implemented role name detection and filtering that activates after `<|start|>` tokens, discarding the role name while allowing subsequent content to flow through normally.
-
-### Incremental Display Support
-**Problem**: Users expect real-time streaming output, but channel parsing requires buffering to detect control tokens, potentially delaying visible output.
-
-**Solution**: Designed the filter to output `final` channel content immediately while only buffering enough to detect potential control token starts, ensuring minimal display latency while maintaining correct parsing.

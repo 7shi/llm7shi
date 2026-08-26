@@ -6,6 +6,8 @@ from llm7shi.utils import extract_descriptions, create_json_descriptions_prompt
 
 class TestExtractDescriptions:
     """Test description extraction from JSON schema"""
+    # Some LLMs ignore schema `description` fields; extracting them into a flat mapping
+    # lets callers inject that context explicitly into the prompt instead
     
     def test_simple_property_descriptions(self):
         """Test extracting descriptions from simple properties"""
@@ -153,6 +155,8 @@ class TestExtractDescriptions:
 
 class TestCreateJsonDescriptionsPrompt:
     """Test JSON descriptions prompt generation"""
+    # Standardizes prompt text generation so callers don't hand-format descriptions
+    # for each schema/provider combination
     
     def test_simple_json_schema(self):
         """Test prompt generation from simple JSON schema"""
@@ -177,6 +181,8 @@ class TestCreateJsonDescriptionsPrompt:
     
     def test_pydantic_model_schema(self):
         """Test prompt generation from Pydantic model"""
+        # Pydantic-generated schemas differ structurally from hand-written ones and must
+        # be converted to JSON schema before extraction, not handled as a separate path
         class LocationTemperature(BaseModel):
             reasoning: str
             location: str

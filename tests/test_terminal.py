@@ -179,6 +179,8 @@ class TestConvertMarkdown:
 
 class TestMarkdownStreamConverter:
     """Test streaming markdown conversion"""
+    # Covers markers split across feed() chunk boundaries, since the converter must
+    # buffer/reassemble state across calls for real-time LLM streaming to render correctly
     
     def test_converter_initialization(self):
         """Test MarkdownStreamConverter initialization"""
@@ -450,6 +452,8 @@ class TestMarkdownStreamConverter:
 
 class TestInlineCodeAndFence:
     """Test inline `code` and fenced ``` block conversion"""
+    # Toggling on every backtick would corrupt fences (```), which must be told apart
+    # from a single inline backtick
 
     def test_inline_code_one_shot(self):
         """Inline code is colored and its backtick markers are removed"""
@@ -509,6 +513,8 @@ class TestInlineCodeAndFence:
 
 class TestInlineCodeAndFenceStreaming:
     """Test streaming conversion of inline code and fences"""
+    # Backtick runs can be split across chunks just like **, and must stay
+    # equivalent to the one-shot conversion path
 
     def test_inline_split_across_chunks(self):
         """A backtick run split across chunks is buffered then resolved"""
@@ -637,6 +643,7 @@ class TestNewlineSemantics:
 
 class TestWindowsConsoleIntegration:
     """Test Windows console compatibility"""
+    # Verifies Colorama-based cross-platform ANSI support without needing a Windows test env
     
     def test_windows_console_import_works(self):
         """Test that terminal module imports successfully"""
@@ -649,6 +656,8 @@ class TestWindowsConsoleIntegration:
 
 class TestEdgeCases:
     """Test edge cases and error conditions"""
+    # Malformed/unclosed markers must degrade gracefully, not break or leave the terminal
+    # in an inconsistent formatting state
     
     def test_many_consecutive_asterisks(self):
         """Test handling of many consecutive asterisks"""
@@ -679,6 +688,8 @@ class TestEdgeCases:
 
 class TestConsoleStream:
     """Test ConsoleStream functionality"""
+    # Line buffering, dynamic countdown padding, and retry-handler delegation must hold
+    # across different console targets (Rich, sys.stdout, or a mock file)
 
     def test_console_print_buffered(self):
         """Test ConsoleStream line-buffered mode with print-based console"""
@@ -802,6 +813,7 @@ class TestConsoleStream:
 
 class TestModuleWaitRetry:
     """Test module-level wait_retry function"""
+    # Same countdown/formatting guarantees as ConsoleStream, exercised via the module-level entry point
 
     def test_module_wait_retry(self):
         from unittest.mock import patch

@@ -19,49 +19,8 @@ The vendor prefix feature required dedicated testing to ensure robust multi-prov
 
 **Solution**: Tests validating that empty model names are passed through to underlying providers where existing default model logic can handle them appropriately.
 
-### Error Boundary Validation
-**Problem**: Unknown vendor prefixes (`"unknown:model"`) should fail fast with clear error messages rather than silently defaulting to unexpected providers, preventing user confusion and debugging difficulties.
-
-**Solution**: Exception testing to verify that unsupported vendor prefixes raise `ValueError` with descriptive messages, maintaining predictable behavior for invalid input.
-
 ### Provider Routing Isolation
 **Problem**: The vendor prefix logic needed testing in isolation from the full API integration to ensure routing decisions were made correctly regardless of underlying provider behavior or availability.
 
 **Solution**: Mock-based testing approach that focuses purely on routing logic validation, separating vendor prefix parsing concerns from actual API interaction testing covered in the main test suite.
 
-### Base URL and API Key Environment Variable Parsing
-**Problem**: The extended syntax `model@base_url|api_key_env` required comprehensive testing to ensure correct parsing across various URL formats, environment variable names, and edge cases without breaking existing `model@base_url` syntax.
-
-**Solution**: Dedicated test class `TestBaseUrlAndApiKeyEnvParsing` with six test scenarios:
-
-1. **Basic base_url-only syntax**: Validates `model@base_url` without `api_key_env` correctly sets `api_key_env=None`
-2. **Full syntax with pipe delimiter**: Verifies `model@base_url|api_key_env` correctly extracts both components
-3. **No custom endpoint**: Confirms models without `@` syntax pass `None` for both parameters
-4. **URLs with ports and colons**: Tests parsing robustness with complex URLs like `http://192.168.0.8:8080/v1`
-5. **Empty api_key_env**: Validates `model@base_url|` correctly handles trailing pipe with empty string
-6. **Environment variable naming**: Ensures support for realistic env var names with underscores and numbers
-
-**Why this matters**: The pipe delimiter syntax enables secure custom endpoint usage by allowing explicit environment variable specification while maintaining backward compatibility with the simpler `@base_url` format. These tests ensure the parsing logic handles real-world URL formats and environment variable naming conventions correctly.
-
-### OpenAI-Compatible Vendor Prefix Routing
-**Problem**: Multiple OpenAI-compatible providers (OpenRouter, Groq, X.AI) required automatic configuration of base_url and api_key_env, but this automatic behavior needed verification to ensure correct defaults are applied without breaking user-specified overrides.
-
-**Solution**: Dedicated test class `TestOpenAICompatibleVendors` with six test scenarios:
-
-1. **Default model usage**: Validates empty model after prefix (e.g., `openrouter:`) correctly uses vendor's default model
-2. **Specific model specification**: Verifies custom model names are preserved while vendor defaults (base_url, api_key_env) are applied
-3. **Multi-vendor coverage**: Tests all three vendors (openrouter, groq, grok) to ensure consistent behavior
-4. **User override preservation**: Confirms that user-specified `@base_url|api_key_env` syntax takes precedence over vendor defaults
-5. **Correct parameter passing**: Validates that model, base_url, and api_key_env are correctly extracted and passed to underlying `generate_content()`
-6. **Automatic configuration**: Ensures vendor defaults are only applied when user hasn't specified custom endpoint
-
-**Why this matters**: OpenAI-compatible vendors share similar configuration needs (base_url + api_key_env), making them ideal candidates for automatic configuration. These tests ensure the convenience of pre-configured vendors doesn't compromise flexibility for users who need custom endpoints. The tests validate both the happy path (automatic configuration) and the escape hatch (user overrides).
-
-### OpenRouter Reasoning Control Routing
-**Problem**: Reasoning must be toggled explicitly via `extra_body={"reasoning": {"enabled": ...}}` and only for the `openrouter:` prefix — it must not leak to other OpenAI-compatible vendors that do not support the extension. Sending `enabled` explicitly for both states is required because some models (e.g. `google/gemma`) do not emit reasoning unless it is requested.
-
-**Solution**: Test class `TestOpenRouterReasoningControl` with three scenarios:
-
-1. **Disable on opt-out**: `openrouter:` with `include_thoughts=False` sets `extra_body={"reasoning": {"enabled": False}}`
-2. **Enable by default**: `openrouter:` with the default `include_thoughts` sets `extra_body={"reasoning": {"enabled": True}}`
-3. **OpenRouter-only scope**: `groq:` with `include_thoughts=False` sends no `extra_body`, confirming the control does not apply to other vendors

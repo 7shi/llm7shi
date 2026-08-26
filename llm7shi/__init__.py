@@ -23,7 +23,7 @@ Example usage:
 __name__ = "llm7shi"
 
 from importlib.metadata import version
-__version__ = version("llm7shi")
+__version__ = version("llm7shi")  # single source of truth, avoids hard-coding version here
 
 # Import main functions for convenience
 from .gemini import (

@@ -25,7 +25,7 @@ As the library evolved, we realized that different LLM providers have significan
 ### Feature Parity vs Specificity
 **Problem**: Some features are provider-specific (like Gemini's and Ollama's thinking process), but we wanted a way to use them when available without breaking compatibility.
 
-**Solution**: Made provider-specific parameters optional and ignored when not supported, allowing code to work across providers while leveraging unique features when available. For Ollama, the `include_thoughts` parameter is passed as `think` with automatic capability detection to prevent errors on models that don't support thinking.
+**Solution**: Made provider-specific parameters optional and ignored when not supported, allowing code to work across providers while leveraging unique features when available.
 
 ### Multi-Format Message Support
 **Problem**: Users needed a consistent way to handle both simple prompts and multi-turn conversations with conversation history:
@@ -44,29 +44,10 @@ As the library evolved, we realized that different LLM providers have significan
 
 ## Key Design Decisions
 
-### Vendor Prefix Model Detection
-**Problem**: Users needed a clear way to specify which API to use while maintaining backward compatibility with existing model names.
+### OpenRouter Reasoning Control (Historical)
+**Problem**: An earlier version sent `reasoning.enabled=False` only when opting out, leaving `include_thoughts=True` to rely on each model's default — which broke for models that do not reason unless asked (e.g. `google/gemma`), so their thinking process never appeared despite `include_thoughts=True`.
 
-**Solution**: Implemented vendor prefix support using regex pattern `([^:]+):(.*)` to parse model names. Legacy patterns continue to work for backward compatibility, with Gemini as the default when no vendor prefix is specified.
-
-### OpenAI-Compatible Vendor Prefixes
-**Problem**: Multiple providers offer OpenAI-compatible APIs, requiring users to manually specify base_url and api_key_env for each request.
-
-**Solution**: Pre-configured vendor prefixes with automatic base URL and API key environment variable configuration. When using these vendor prefixes, default models, endpoints, and credentials are automatically applied if not explicitly overridden by user configuration.
-
-### OpenRouter Reasoning Control
-**Problem**: The existing `include_thoughts` parameter governed reasoning visibility only for Gemini and Ollama. There was no way to control reasoning for OpenRouter models routed through this layer. An earlier version sent `reasoning.enabled=False` only when opting out, leaving `include_thoughts=True` to rely on each model's default — which broke for models that do not reason unless asked (e.g. `google/gemma`), so their thinking process never appeared despite `include_thoughts=True`.
-
-**Solution**: `generate_with_schema()` maps `include_thoughts` directly to `extra_body={"reasoning": {"enabled": include_thoughts}}` and hands it to the OpenAI delegate via the `extra_body` argument. Sending `enabled` explicitly for both states ensures reason-on-request models think when `True`, and fully disables the reasoning process when `False`. (`exclude: True` is a separate flag that only hides reasoning tokens from the response while the model still thinks.) The mapping is scoped to the `openrouter:` prefix (the only vendor here that supports it). Capturing and displaying any reasoning that OpenRouter returns is handled downstream in `openai.py`.
-
-### Base URL Embedding in Model String
-**Problem**: Users running OpenAI-compatible servers needed a way to specify custom endpoints without adding separate configuration parameters to every function call.
-
-**Solution**: Extended model string format to support `@base_url` suffix with optional `|api_key_env` for API key specification. Base URL is extracted using `rsplit("@", 1)` and passed to the underlying `generate_content()` function. This approach keeps model selection and endpoint configuration in a single string parameter.
-
-**API Key Security**: Without the `|` delimiter, empty API key is used as secure default for local servers, preventing accidental leakage of `OPENAI_API_KEY` to untrusted servers. With `|api_key_env`, the specified environment variable is read for authenticated proxy services or custom OpenAI-compatible APIs.
-
-**Client-Side Template Pattern**: Since llama-server provides only one model at a time and ignores the model name parameter in API requests, the model name portion serves as a client-side template identifier rather than selecting a specific model on the server. This enables users to signal which prompt template parser should be activated based on the server's configuration, independent of which model is actually being served.
+**Solution**: Sending `enabled` explicitly for both states ensures reason-on-request models think when `True`, and fully disables the reasoning process when `False`. The mapping is scoped to the `openrouter:` prefix (the only vendor here that supports it). Capturing and displaying any reasoning that OpenRouter returns is handled downstream in `openai.py`.
 
 ### Response Object Unification
 Extended the existing `Response` dataclass to work with all providers, ensuring the same fields are available regardless of which API was used.

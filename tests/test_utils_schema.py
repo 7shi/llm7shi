@@ -8,6 +8,8 @@ from llm7shi.utils import (
 
 class TestAddAdditionalPropertiesFalse:
     """Test schema modification for OpenAI compatibility"""
+    # OpenAI's structured output API requires additionalProperties: false on every object
+    # schema, which most schema generators omit by default; missing it fails the API call
     
     def test_simple_object_schema(self):
         """Test adding additionalProperties: false to simple object"""
@@ -112,6 +114,8 @@ class TestAddAdditionalPropertiesFalse:
 
 class TestInlineDefs:
     """Test schema reference inlining"""
+    # Some providers don't support $ref, so definitions must be inlined while
+    # preserving semantic meaning
     
     def test_simple_ref_inlining(self):
         """Test inlining of simple $ref"""
@@ -247,6 +251,7 @@ class TestInlineDefs:
     
     def test_circular_references(self):
         """Test handling of circular references"""
+        # Must fail fast with a clear ValueError rather than hang in infinite recursion
         schema = {
             "type": "object",
             "properties": {

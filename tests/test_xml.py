@@ -2,6 +2,7 @@ from xml.dom.minidom import parseString
 from llm7shi.xml import messages_to_xml, xml_to_str, xml_to_messages
 
 def test_history_serialization_roundtrip():
+    # Custom CDATA escape/unescape must not lose or corrupt a literal "]]>" in content
     history = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Hello! Let's write some code: ]]>"},
@@ -28,6 +29,8 @@ def test_history_serialization_roundtrip():
     assert restored == expected
 
 def test_messages_to_xml_with_response():
+    # Strict line-by-line check: stray indentation or newline drift degrades raw log
+    # readability and can break downstream parsers
     messages = [
         {"role": "system", "content": "System prompt"},
         {"role": "user", "content": "User prompt"}

@@ -32,7 +32,8 @@ def test_client_init_and_copy():
 
 def test_client_set_system_prompt():
     client = Client(model="dummy")
-    
+
+    # Must insert/replace at index 0 without disturbing later turns, or history order corrupts
     # 1. Insert new system prompt into empty history
     client.set_system_prompt("System V1")
     assert len(client.history) == 1
@@ -99,7 +100,8 @@ def test_client_call_parameter_propagation(mock_generate):
     
     # Call directly
     client(prompt="Test")
-    
+
+    # Confirms Client instance settings propagate down to generate_with_schema
     # Verify overrides were passed to generate_with_schema
     mock_generate.assert_called_once_with(
         [{"role": "user", "content": "Test"}],
@@ -116,6 +118,7 @@ def test_client_call_parameter_propagation(mock_generate):
 
 @patch("llm7shi.client.generate_with_schema")
 def test_client_call_quality_retry(mock_generate):
+    # Confirms history is only appended with the final successful response, not failed retries.
     # First attempt: repetition. Second attempt: empty text. Third attempt: success.
     mock_generate.side_effect = [
         Response(text="repeat repeat", repetition=True, max_length=None),

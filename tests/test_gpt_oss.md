@@ -39,55 +39,12 @@ Testing the gpt-oss template filter required comprehensive coverage of control t
 - **Negative test 1**: `test_filter_does_not_activate_for_other_models` - Ensures `"gpt-oss:120b"` does NOT activate filter
 - **Negative test 2**: `test_filter_does_not_activate_for_standard_models` - Ensures standard OpenAI models work without filter
 
-**Design Context**: Since llama-server ignores the model name parameter and provides only one model at a time, the model name `"llama.cpp/gpt-oss"` serves as a client-side template identifier. The exact match requirement prevents accidental filter activation for models with similar names.
-
-### Mock Integration Testing
-**Problem**: The filter integrates with `openai.py`'s `generate_content()` function, requiring proper mocking of the OpenAI client to test end-to-end behavior without real API calls.
-
-**Solution**: Tests use `@patch('llm7shi.openai.OpenAI')` to mock the OpenAI class constructor, returning a mock client instance. This approach:
-- Supports the dynamic client creation pattern (no global singleton)
-- Enables testing of custom `base_url` parameter handling
-- Simulates realistic chunk sequences from gpt-oss template
-
-### Complex Real-World Scenarios
-**Problem**: Real gpt-oss output combines multiple control tokens, channel switches, and role markers in complex sequences that simple unit tests might miss.
-
-**Solution**: Created `test_complex_scenario()` that simulates a complete real-world response:
-```
-<|channel|>analysis<|message|>User asks for greeting. Should respond politely.
-<|start|>assistant<|channel|>final<|message|>Hello! How can I help you?
-```
-
-This ensures the filter correctly:
-1. Routes analysis content to `thoughts`
-2. Filters role name after `<|start|>`
-3. Routes final content to `text`
-4. Produces clean display output without control tokens
-
-### Flush Behavior Validation
-**Problem**: When streaming ends, any remaining buffer content must be properly routed to the correct channel without data loss.
-
-**Solution**: `test_flush()` verifies:
-- Partial control tokens in buffer are output as literal text
-- Content is routed to the active channel
-- No data is lost during flush
-
-### Long Content Handling
-**Problem**: Real LLM responses can be lengthy, requiring verification that the filter maintains correct behavior over extended content.
-
-**Solution**: `test_long_content()` uses repeated strings (10x repetition) to ensure:
-- Large content doesn't break buffering logic
-- Channel accumulation works correctly for long text
-- No performance degradation or memory issues
-
 ### Reasoning Stream Extraction
 **Problem**: OpenAI-compatible reasoning providers (e.g. OpenRouter) deliver the thinking process in a separate `delta.reasoning` field rather than through gpt-oss control tokens. This path must be captured into `Response.thoughts` independently of the template filter, and must stay inert for providers that never emit the field.
 
 **Solution**: Test class `TestReasoningExtraction` covers:
 - **Reasoning separated from content**: chunks carrying `delta.reasoning` accumulate into `thoughts` while `delta.content` accumulates into `text`
 - **No reasoning leaves thoughts empty**: standard chunks without `delta.reasoning` leave `thoughts` empty and content flows to `text`
-
-The shared chunk helper sets `delta.reasoning = None` by default so mock chunks behave like real standard-OpenAI chunks (where the attribute is absent), preventing `MagicMock` truthiness from triggering the reasoning path.
 
 ## Test Organization
 

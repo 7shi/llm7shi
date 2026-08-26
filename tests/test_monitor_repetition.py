@@ -51,6 +51,8 @@ def test_detect_repetition_edge_cases():
 
 def test_detect_repetition_adaptive_threshold():
     """Test adaptive threshold calculation."""
+    # threshold=None must scale with text length: small windows for short texts (efficiency),
+    # large windows for long texts (comprehensive detection)
     # Short text: threshold = len(text) // 10
     short_text = "a" * 340  # threshold = 340 // 10 = 34
     assert detect_repetition(short_text) == True  # 340 'a's detected
@@ -78,7 +80,7 @@ def test_detect_repetition_mixed_content():
     assert detect_repetition(prefix + "x" * 340) == True
     assert detect_repetition(prefix + "xy" * 170) == True
 
-    # Repetition in the middle doesn't count
+    # Repetition loops occur at text end in practice, so middle repetition must not count
     assert detect_repetition("a" * 340 + "different text") == False
 
     # Almost enough repetitions (6 chars needs 58 reps)
@@ -111,6 +113,8 @@ def test_detect_repetition_custom_threshold():
 
 def test_detect_repetition_formula():
     """Test the new formula: pattern_len < 21 uses dynamic base algorithm, >= 21 uses 20 reps"""
+    # Shorter patterns must require more reps (stricter) and longer patterns fewer,
+    # staying monotonic non-decreasing so early termination can rely on it
     # Pattern length 1: needs 340 repetitions
     assert detect_repetition("x" * 340) == True
     assert detect_repetition("x" * 339) == False
@@ -133,6 +137,8 @@ def test_detect_repetition_formula():
 
 def test_detect_quasi_repetition_basic():
     """Test quasi-repetition detection with gaps shorter than pattern."""
+    # Exact-match detection misses patterns with small variations, e.g. an incrementing
+    # counter like "foo1foo2foo3...", letting degenerate output continue undetected
     # Pattern "foo" (3 chars) with single-char gaps
     # Gap 1 char < pattern 3 chars, should detect
     text = "foo" + "1foo2foo3foo4foo" * 28 + "5foo"  # 114 occurrences
@@ -193,6 +199,7 @@ def test_detect_quasi_repetition_not_enough_reps():
 
 def test_detect_quasi_repetition_must_end_with_pattern():
     """Test that pattern must appear at the end of text."""
+    # Same end-of-text focus as exact repetition, to avoid false alarms on mid-text content
     # Pattern "foo" with gaps, but doesn't end with "foo"
     text = "foo1foo2foo3foo4foo5X"  # Ends with "X", not "foo"
     assert detect_repetition(text) == False

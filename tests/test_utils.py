@@ -11,6 +11,7 @@ from llm7shi.utils import (
 
 class TestDoShowParams:
     """Test parameter display functionality"""
+    # Covers console/file/disabled (file=None) output modes and content quoting/alignment
     
     @patch('sys.stdout', new_callable=StringIO)
     def test_show_params_to_stdout(self, mock_stdout):
@@ -90,6 +91,7 @@ class TestDoShowParams:
 
 class TestContentsToOpenaiMessages:
     """Test OpenAI message format conversion"""
+    # Bridges different provider message-format paradigms; must not lose content or misassign roles
     
     def test_contents_without_system_prompt(self):
         """Test conversion without system prompt"""

@@ -7,6 +7,8 @@ from llm7shi.response import Response
 
 class MockStreamGenerator(StreamGenerator):
     """A mock implementation of StreamGenerator for testing."""
+    # error_map keyed by call attempt triggers exceptions deterministically, avoiding
+    # patching internals of the real Gemini/OpenAI/Ollama SDK clients
 
     def __init__(self, *args, stream_data=None, error_map=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -73,6 +75,7 @@ def test_stream_generator_retry_success():
     )
     
     from unittest.mock import call
+    # Mocking sleep instead of waiting out real delays keeps this fast and deterministic
     with patch("time.sleep") as mock_sleep:
         response = generator.generate()
         assert response.text == "success"

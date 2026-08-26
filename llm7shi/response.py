@@ -21,19 +21,19 @@ class Response:
             Pydantic schema was used), set when a schema is passed to Client.__call__
     """
     model: Optional[str] = None
-    config: Optional[Any] = None
+    config: Optional[Any] = None  # provider-specific objects stay Any; only common fields are standardized
     contents: Optional[List[Any]] = None
     response: Optional[Any] = None
     chunks: List[Any] = field(default_factory=list)
     thoughts: str = ""
     text: str = ""
-    repetition: bool = False
-    max_length: Optional[int] = None
+    repetition: bool = False  # distinguishes early termination (repetition loop) from normal completion
+    max_length: Optional[int] = None  # set only when truncated by max_length; None means natural completion
     data: Optional[Any] = None
-    
+
     def __str__(self) -> str:
         """Return the text content when converting to string."""
-        return self.text
+        return self.text  # print(response) shows text directly, no need for response.text
     
     def __repr__(self) -> str:
         """Return a concise representation showing contents and text."""

@@ -9,6 +9,8 @@ don't clobber each other. Rate-limit retry countdowns become a temporary row wit
 the same live display instead of a raw `\\r` countdown.
 
 Requires the `statusline` extra (`pip install llm7shi[statusline]`) for Rich.
+This module is never imported by llm7shi/__init__.py, so `import llm7shi` alone
+never pulls in Rich, which is much heavier than terminal.py's colorama dependency.
 """
 
 import re
@@ -42,6 +44,9 @@ class _MofNColumn(ProgressColumn):
 class _ProcessElapsedColumn(ProgressColumn):
     """Elapsed time since process start (not since this task was added).
 
+    Rich's built-in elapsed column resets per task, which doesn't answer "how long
+    has this script been running" across a batch of many tasks.
+
     Suppressed for tasks with `show_elapsed=False` (e.g. the retry countdown row),
     since it would duplicate the elapsed time already shown on the main progress line.
     """
@@ -57,6 +62,8 @@ class _ProcessElapsedColumn(ProgressColumn):
 
 
 class StatusLineConsoleStream(ConsoleStream):
+    # routes through the same Rich Console that owns the progress bar, so streamed
+    # text and the live bar never race for the terminal and corrupt each other
     def __init__(self, console, status_line: "StatusLine"):
         super().__init__(console)
         self.status_line = status_line
@@ -65,6 +72,8 @@ class StatusLineConsoleStream(ConsoleStream):
         self._console.print(text, end=end, highlight=False)
 
     def wait_retry(self, delay: int, message: str = "Retrying...") -> None:
+        # a \r-based countdown (the base class behavior) would collide with an active
+        # Rich Live display the same way raw streamed text does, so use a temporary task row instead
         if self.status_line.active_progress is not None:
             m = re.match(r"(.+) \((\d+/\d+)\)", message)
             display_message = f"{m.group(1)} {m.group(2)}" if m else message

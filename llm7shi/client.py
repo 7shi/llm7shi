@@ -58,6 +58,7 @@ class Client:
         If the history starts with a system prompt, it is replaced.
         Otherwise, a new system prompt is inserted at the beginning.
         """
+        # kept inside history (not a separate field) so to_xml/load_xml round-trip it too
         if self.history and self.history[0].get('role') == 'system':
             self.history[0]['content'] = system_prompt
         else:
@@ -82,12 +83,14 @@ class Client:
         Returns:
             A reason string if the response should be retried, or None if it is acceptable.
         """
+        # overridable so callers can swap in custom quality gates without duplicating the retry loop
         if schema is not None:
+            # schema validity supersedes the text heuristics below (e.g. structured JSON can look "repetitive")
             try:
                 if isinstance(schema, type) and issubclass(schema, BaseModel):
                     resp.data = schema.model_validate_json(resp.text)
                 else:
-                    resp.data = json.loads(resp.text)
+                    resp.data = json.loads(resp.text)  # no schema-validation lib is a dependency, so parse-only
             except Exception as e:
                 return f"invalid JSON ({e})"
             return None
@@ -102,6 +105,7 @@ class Client:
 
     def __call__(
         self,
+        # only turn-specific args here; session-wide config lives on self from __init__
         prompt: str,
         schema: Union[Dict[str, Any], Type[BaseModel], None] = None,
     ) -> Response:

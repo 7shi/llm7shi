@@ -19,6 +19,8 @@ def test_calculate_trailing_whitespace_weight_basic():
 
 def test_calculate_trailing_whitespace_weight_crlf():
     """Test \r\n handling."""
+    # \r\n counting as one newline (not two) is non-obvious; documented here to prevent
+    # future maintainers from "fixing" it incorrectly
     # \r\n should count as single newline (weight 8)
     assert _calculate_trailing_whitespace_weight("text\r\n") == 8  # 2 + 1*7 - 1
     assert _calculate_trailing_whitespace_weight("text\r\n\r\n") == 16  # 4 + 2*7 - 2
@@ -54,6 +56,8 @@ def test_calculate_trailing_whitespace_weight_edge_cases():
 
 def test_calculate_trailing_whitespace_weight_threshold():
     """Test threshold values (512 weighted units)."""
+    # Baseline exact-threshold values to catch regressions immediately; this threshold
+    # is what stops runaway generations, so a silent break wastes tokens before anyone notices
     # Exactly at threshold
     assert _calculate_trailing_whitespace_weight("text" + " " * 512) == 512
     assert _calculate_trailing_whitespace_weight("text" + "\t" * 128) == 512

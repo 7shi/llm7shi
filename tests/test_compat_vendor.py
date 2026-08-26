@@ -110,6 +110,7 @@ class TestVendorPrefixSelection:
     
     def test_unsupported_vendor_prefix(self):
         """Test unsupported vendor prefix raises ValueError"""
+        # Must fail fast with a clear message rather than silently defaulting to a provider
         with pytest.raises(ValueError, match="Unsupported vendor prefix: unknown"):
             generate_with_schema(
                 contents=["Test"],
@@ -164,6 +165,8 @@ class TestVendorPrefixSelection:
 
 class TestBaseUrlAndApiKeyEnvParsing:
     """Test base_url and api_key_env parsing from model string"""
+    # Pipe delimiter lets users specify a custom endpoint's key env var explicitly
+    # while keeping the simpler @base_url form backward compatible
 
     @patch('llm7shi.openai.generate_content')
     def test_model_with_base_url_only(self, mock_generate):
@@ -285,6 +288,8 @@ class TestBaseUrlAndApiKeyEnvParsing:
 
 class TestOpenAICompatibleVendors:
     """Test OpenAI-compatible vendor prefixes (openrouter, groq, grok)"""
+    # Covers both automatic base_url/api_key_env defaults and that user-specified
+    # @base_url|api_key_env overrides still take precedence
 
     @patch('llm7shi.openai.generate_content')
     def test_openrouter_with_default_model(self, mock_generate):
@@ -403,6 +408,8 @@ class TestOpenAICompatibleVendors:
 
 class TestOpenRouterReasoningControl:
     """Test OpenRouter-only reasoning suppression via include_thoughts"""
+    # enabled must be sent explicitly for both states: some models (e.g. google/gemma)
+    # don't emit reasoning unless requested, and the control must not leak to other vendors
 
     @patch('llm7shi.openai.generate_content')
     def test_openrouter_disable_reasoning(self, mock_generate):

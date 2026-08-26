@@ -19,23 +19,11 @@ The Gemini API client was built to address several key challenges when working w
 ### Response Object
 Created a comprehensive `Response` dataclass to capture all aspects of generation - not just the final text, but the model used, configuration, raw API response, streaming chunks, and thinking process. This enables debugging and analysis of API interactions.
 
-### Retry Strategy
-Implemented specific retry logic for different error types:
-- Rate limits (429): Respect the API's retryDelay
-- Server errors (500, 502, 503): Fixed 15-second delays
-- Other errors: Fail immediately
-
 ### Output Length Control
 Added `max_length` parameter to prevent runaway generation costs and `check_repetition` to detect when models get stuck in loops. Quality control logic is now handled by the `StreamMonitor` class (see [monitor.md](monitor.md))
-
-### File Upload Handling
-Gemini's file API requires uploading first, then referencing in requests. We abstracted this complexity while ensuring proper cleanup with delete functionality.
 
 ### Stream Interruption
 Streaming responses can be safely interrupted by simply breaking out of the loop consuming the iterator. No explicit `close()` method is required - the underlying HTTP client libraries (httpx/aiohttp) automatically handle resource cleanup when the generator is garbage collected.
 
-### Immutable Module Constants
-The `config_text` constant uses Python's `__getattr__` mechanism to return a fresh `GenerateContentConfig` instance on every access. While it appears as a module-level constant, each access creates a new object, preventing unintended mutations from affecting other code. This maintains backward compatibility with existing code that references `config_text` while eliminating the risk of shared mutable state.
-
 ### Lazy Client Initialization
-The `genai.Client` was originally created at module load time, which caused a `ValueError` whenever the module was imported without `GEMINI_API_KEY` set — even when only OpenAI or Ollama providers were being used. The client is now a lazy singleton initialized on first use via `_get_client()`, matching the pattern already used by `openai.py` and `ollama.py`. The `client` name remains accessible as a module property via `__getattr__` for backward compatibility with external code that references `llm7shi.gemini.client`.
+The lazy-singleton pattern for the API client (initialized on first use rather than at import time) is shared across `gemini.py`, `openai.py`, and `ollama.py`, so a project using only one provider never needs the other providers' API keys set.

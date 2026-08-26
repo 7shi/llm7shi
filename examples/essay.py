@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from llm7shi.compat import generate_with_schema
 
-# Define evaluation criteria and their descriptions
+# single source of truth: schema and prompt are both derived from this dict, so criteria stay in sync
 CRITERIA = {
     "clarity_of_argument": "How clear and well-defined is the main argument?",
     "supporting_evidence": "How well is the argument supported with facts and examples?",
@@ -18,7 +18,7 @@ def generate_schema(criteria):
         properties[key] = {
             "type": "object",
             "properties": {
-                "reasoning": {"type": "string"},
+                "reasoning": {"type": "string"},  # ordered before score so the model reasons before judging, not after
                 "score": {"type": "integer", "minimum": 1, "maximum": 5}
             },
             "required": ["reasoning", "score"]
@@ -34,7 +34,8 @@ def generate_schema(criteria):
 
 def generate_prompt(criteria, essay_text):
     """Generate prompt from criteria dictionary and essay text."""
-    criteria_list = "\n".join([f"- {key}: {desc}" 
+    # descriptions go in the prompt, not schema `description` fields, since some providers ignore the latter
+    criteria_list = "\n".join([f"- {key}: {desc}"
                               for key, desc in criteria.items()])
     
     return f"""Evaluate the following argumentative essay on each criterion using a 5-point scale:

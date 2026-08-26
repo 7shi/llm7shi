@@ -9,11 +9,6 @@ This example addresses the need for structured data extraction from LLM outputs 
 
 **Solution**: Uses standard JSON Schema files with validation to ensure LLM outputs match expected structure, enabling reliable data extraction and integration.
 
-### Early Error Detection Philosophy
-**Problem**: Schema errors often surface during API calls, wasting time and tokens. The example shows the recommended pattern of early schema validation.
-
-**Solution**: Demonstrates `build_schema_from_json()` for validation at load time versus direct JSON usage, catching schema issues before expensive API calls.
-
 ### Reasoning Field for Quality and Debugging
 **Problem**: Structured output tasks can fail silently or produce incorrect results without visibility into the model's thought process, making debugging and quality assurance difficult.
 

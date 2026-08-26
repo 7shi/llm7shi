@@ -11,7 +11,7 @@ class LocationTemperature(BaseModel):
 class LocationsAndTemperatures(BaseModel):
     locations_and_temperatures: List[LocationTemperature]
 
-# Create enhanced prompt with field descriptions
+# Ollama ignores schema `description` fields; fold them into the prompt so they aren't dropped
 json_descriptions = create_json_descriptions_prompt(LocationsAndTemperatures)
 
 generate_with_schema(

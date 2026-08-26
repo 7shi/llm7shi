@@ -17,4 +17,4 @@ This example demonstrates that structured output can be provider-independent usi
 ### Multi-Provider Schema Description Enhancement
 **Problem**: Some providers (particularly Ollama) completely ignore JSON schema `description` fields, leading to inconsistent structured output quality across providers. Testing revealed that models like qwen3:4b would fail to perform required conversions (e.g., Fahrenheit to Celsius) when schema descriptions weren't conveyed.
 
-**Solution**: Demonstrates practical application of `create_json_descriptions_prompt()` for cross-provider compatibility. Shows how the same client-side enhancement technique works uniformly across Gemini, OpenAI, and Ollama backends, ensuring consistent behavior regardless of provider-specific schema handling differences. The implementation pattern shown here can be applied to any multi-provider application requiring reliable structured output.
+**Solution**: Demonstrates practical application of `create_json_descriptions_prompt()` for cross-provider compatibility. The implementation pattern shown here can be applied to any multi-provider application requiring reliable structured output.

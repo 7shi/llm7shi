@@ -162,6 +162,8 @@ class TestGeminiIntegration:
 
 class TestOpenAIIntegration:
     """Test integration with OpenAI API"""
+    # Patch llm7shi.openai.OpenAI (not the openai package) since compat delegates to
+    # openai.py, which builds a client instance per request rather than reusing a module-level one
 
     @patch('llm7shi.openai.OpenAI')
     @patch('llm7shi.compat.contents_to_openai_messages')

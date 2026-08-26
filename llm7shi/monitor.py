@@ -26,7 +26,7 @@ def _initialize_required_reps_table():
     """
     global _REQUIRED_REPS_TABLE
 
-    base = 340
+    base = 340  # tuned to stay coordinated with the whitespace threshold (512); see docs/20251206-repetition-threshold.md
     prev_total = 0
 
     for pattern_len in range(1, 21):
@@ -252,6 +252,8 @@ class StreamMonitor:
         self.filter = filter
         self.repetition_detected = False
         self.max_length_exceeded = None
+        # frequent enough to catch problems early without wasting tokens; cheap since
+        # detect_repetition is O(1)-ish per call (see docs/20250629-repetition-detection.md)
         self.check_interval = 128  # Check trailing whitespace every 128 characters
         self.whitespace_threshold = self.check_interval * 4  # 512 weighted units for detection
         self.next_check = self.check_interval  # Initial whitespace check
@@ -266,7 +268,8 @@ class StreamMonitor:
             file: Optional file to write warning messages to
             
         Returns:
-            bool: True if generation should continue, False if it should stop
+            bool: True if generation should continue, False if it should stop.
+            Caller (each provider) is responsible for its own connection cleanup on False.
         """
         # Check max_length first
         if self.max_length is not None and len(text) >= self.max_length:
@@ -478,6 +481,9 @@ class GptOssTemplateFilter:
 
     Parses control tokens like <|channel|>analysis/final<|message|> to separate
     thoughts (analysis channel) from final text (final channel).
+
+    Stateful buffer-based parsing (not naive string matching) because control tokens
+    can arrive split across separate stream chunks.
     """
 
     def __init__(self):
@@ -512,6 +518,7 @@ class GptOssTemplateFilter:
         # Process buffer to detect control tokens and channel switches
         while self.buffer:
             # If we're expecting a role name, extract and discard it
+            # (role name after <|start|> is protocol structure, not output content)
             if self.expecting_role_name:
                 # Common role names: 'assistant', 'user', 'system'
                 role_names = ['assistant', 'user', 'system']
@@ -575,7 +582,8 @@ class GptOssTemplateFilter:
                 continue
 
             # No control token found, process regular content
-            # Look ahead to see if a control token is starting
+            # Look ahead to see if a control token is starting (avoids delaying output
+            # any more than needed to detect a possible token boundary)
             min_pos = len(self.buffer)
             for token in self.control_tokens:
                 # Check if buffer might be starting a control token

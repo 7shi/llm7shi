@@ -16,6 +16,7 @@ from llm7shi.gemini import (
 
 class MockChunk:
     """Mock chunk for simulating Gemini API streaming responses"""
+    # Mirrors the nested candidates[0].content.parts[0] shape so tests avoid real streaming calls
     def __init__(self, text: str, is_thought: bool = False):
         self.candidates = [MagicMock()]
         self.candidates[0].content = MagicMock()
@@ -221,7 +222,7 @@ class TestGenerateContentRetry:
         # Mock a 429 error followed by success
         from google.genai.errors import APIError
         error_429 = APIError("Rate limit exceeded", {"error": {"details": []}})
-        error_429.code = 429
+        error_429.code = 429  # retry logic branches on this attribute
 
         mock_chunks = [MockChunk("Success after retry")]
 
@@ -265,6 +266,7 @@ class TestFileOperations:
     @patch('time.sleep')
     def test_upload_file_success(self, mock_sleep, mock_get_client):
         """Test successful file upload with processing wait"""
+        # Mocks the PROCESSING -> ACTIVE polling transition without a real upload
         mock_upload = mock_get_client.return_value.files.upload
         mock_get = mock_get_client.return_value.files.get
         # Mock upload response - initially PROCESSING
@@ -308,6 +310,7 @@ class TestBackwardCompatibility:
     @patch('llm7shi.gemini.generate_content_retry')
     def test_legacy_function_wrapper(self, mock_generate):
         """Test that legacy function names still work"""
+        # Guards against signature drift as the underlying implementation evolves
         mock_response = Response(text="Legacy response")
         mock_generate.return_value = mock_response
         

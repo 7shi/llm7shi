@@ -21,7 +21,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.command == "md":
-        render_file(args.file)
+        render_file(args.file)  # streams in chunks, exercising the same path as live LLM output
         return 0
 
     parser.error(f"unknown command: {args.command}")  # pragma: no cover

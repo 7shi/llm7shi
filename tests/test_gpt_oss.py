@@ -124,6 +124,7 @@ def test_control_token_across_chunks():
 
 def test_flush():
     """Test flushing remaining buffer."""
+    # Buffer contents must survive stream end without being silently dropped
     filter = GptOssTemplateFilter()
 
     # Set to final channel
@@ -142,6 +143,8 @@ def test_flush():
 
 def test_complex_scenario():
     """Test complex real-world scenario."""
+    # Exercises channel switches, role markers, and control tokens together,
+    # since real gpt-oss output combines them in ways unit tests miss individually
     filter = GptOssTemplateFilter()
 
     # Simulate real gpt-oss output
@@ -241,6 +244,7 @@ def test_empty_chunks():
 
 def test_long_content():
     """Test with longer content in each channel."""
+    # Confirms buffering/accumulation holds up beyond short test strings
     filter = GptOssTemplateFilter()
 
     analysis_text = "This is a detailed analysis. " * 10
@@ -263,6 +267,10 @@ def test_long_content():
 
 class TestFilterActivation:
     """Test filter activation based on model name."""
+    # llama-server ignores the model name param, so "llama.cpp/gpt-oss" is a client-side
+    # template identifier; exact match avoids false positives on similarly-named models.
+    # Patches llm7shi.openai.OpenAI (not the openai package) since each request builds
+    # its own client rather than reusing a global singleton.
 
     @patch('llm7shi.openai.OpenAI')
     def test_filter_activates_for_llama_cpp_gpt_oss(self, mock_openai_class):
@@ -362,7 +370,8 @@ class TestFilterActivation:
         chunk.choices = [MagicMock()]
         chunk.choices[0].delta = MagicMock()
         chunk.choices[0].delta.content = content
-        chunk.choices[0].delta.reasoning = None
+        chunk.choices[0].delta.reasoning = None  # absent in real standard-OpenAI chunks;
+        # explicit None avoids MagicMock's default truthy attribute triggering the reasoning path
         return chunk
 
 

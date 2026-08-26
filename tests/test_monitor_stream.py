@@ -8,6 +8,8 @@ from llm7shi.monitor import StreamProcessor
 
 def _strip_ansi(text):
     """Remove ANSI escape sequences so display assertions are readable."""
+    # MarkdownStreamConverter turns **bold** into ANSI codes; raw header strings wouldn't match
+
     return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
@@ -51,7 +53,11 @@ def test_thoughts_only_has_thinking_header():
 
 @pytest.mark.parametrize("thought_tail", ["", "\n", "\n\n", "\n\n\n\n"])
 def test_exactly_one_blank_line_between_sections(thought_tail):
-    """Regardless of trailing newlines in thoughts, sections are split by one blank line."""
+    """Regardless of trailing newlines in thoughts, sections are split by one blank line.
+
+    Providers used to disagree on the newline before the answer header, so the gap varied
+    with how many trailing newlines the model produced; the unified design normalizes this.
+    """
     _, display = _run(["reason" + thought_tail], ["answer"])
     # Find the boundary: thinking content followed by the answer header.
     match = re.search(r"reason(\n*)💡 Answer:", display)

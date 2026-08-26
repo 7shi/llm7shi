@@ -6,7 +6,7 @@ from .response import Response
 from .monitor import StreamProcessor
 from .stream import StreamGenerator
 
-DEFAULT_MODEL = "qwen3:4b"
+DEFAULT_MODEL = "qwen3:4b"  # balances thinking capability and resource needs for local deployment
 
 
 class OllamaStreamGenerator(StreamGenerator):
@@ -26,9 +26,11 @@ class OllamaStreamGenerator(StreamGenerator):
         )
 
     def process_chunk(self, chunk, processor) -> bool:
-        # Handle thinking content
+        # Handle thinking content (same 🤔/💡 display convention as gemini.py)
         if getattr(chunk.message, 'thinking', None) is not None:
             if not processor.add_thought(chunk.message.thinking):
+                # ollama has no cancellation endpoint; closing the httpx client is the only
+                # way to stop the server-side session when breaking out of the stream early
                 self.client._client.close()
                 return False
 
@@ -62,7 +64,7 @@ def generate_content(
     # Extract think parameter from kwargs
     think = kwargs.get("think", False)
     if think:
-        # Check if model supports thinking when requested
+        # not all models support thinking (e.g. Gemma3); check capabilities to avoid an API error
         model_info = client.show(model)
         if "thinking" not in model_info.capabilities:
             kwargs["think"] = False  # Workaround: graceful fallback for unsupported models
