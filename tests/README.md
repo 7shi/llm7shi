@@ -11,98 +11,70 @@ Tests are organized by module to provide comprehensive unit test coverage:
 #### [test_gemini.py](test_gemini.py) - Gemini API Module Tests
 Unit tests for the core Gemini API wrapper functionality in `llm7shi/gemini.py`.
 
-**Documentation**: [test_gemini.md](test_gemini.md)
-
 **Key Features**: Response dataclass, schema building, content generation with retry logic, file operations, thinking process extraction.
 
 #### [test_utils.py](test_utils.py) - Utility Functions Tests
 Unit tests for helper functions in `llm7shi/utils.py`.
-
-**Documentation**: [test_utils.md](test_utils.md)
 
 **Key Features**: Parameter display, OpenAI message conversion.
 
 #### [test_utils_schema.py](test_utils_schema.py) - Schema Processing Tests
 Unit tests for schema transformation functions in `llm7shi/utils.py`.
 
-**Documentation**: [test_utils_schema.md](test_utils_schema.md)
-
 **Key Features**: Schema modification for OpenAI compatibility, reference resolution and inlining, circular reference handling.
 
 #### [test_utils_descriptions.py](test_utils_descriptions.py) - Schema Description Processing Tests
 Unit tests for schema description extraction and prompt generation functions in `llm7shi/utils.py`.
-
-**Documentation**: [test_utils_descriptions.md](test_utils_descriptions.md)
 
 **Key Features**: Description extraction from JSON schemas and Pydantic models, cross-provider prompt generation, multi-provider consistency validation.
 
 #### [test_monitor_repetition.py](test_monitor_repetition.py) - Repetition Detection Tests
 Unit tests for the `detect_repetition()` function in `llm7shi/monitor.py`.
 
-**Documentation**: [test_monitor_repetition.md](test_monitor_repetition.md)
-
 **Key Features**: Pattern detection algorithms, threshold validation, edge case handling, LLM loop prevention.
 
 #### [test_monitor_whitespace.py](test_monitor_whitespace.py) - Whitespace Detection Tests
 Unit tests for the `_calculate_trailing_whitespace_weight()` function in `llm7shi/monitor.py`.
-
-**Documentation**: [test_monitor_whitespace.md](test_monitor_whitespace.md)
 
 **Key Features**: Weighted whitespace calculation, \r\n pair handling, threshold validation, edge case coverage, mixed whitespace combinations.
 
 #### [test_compat.py](test_compat.py) - Multi-Provider Compatibility Tests
 Unit tests for the compatibility layer in `llm7shi/compat.py`.
 
-**Documentation**: [test_compat.md](test_compat.md)
-
 **Key Features**: Model selection, multi-provider generation, schema processing, error handling.
 
 #### [test_compat_vendor.py](test_compat_vendor.py) - Vendor Prefix Routing Tests
 Unit tests for vendor prefix functionality in `llm7shi/compat.py`.
-
-**Documentation**: [test_compat_vendor.md](test_compat_vendor.md)
 
 **Key Features**: Vendor prefix parsing, backward compatibility, default model delegation, error boundary validation.
 
 #### [test_stream.py](test_stream.py) - Stream Generator Module Tests
 Unit tests for the core `StreamGenerator` base class and execution loop in `llm7shi/stream.py`.
 
-**Documentation**: [test_stream.md](test_stream.md)
-
 **Key Features**: Streaming generator success, early stopping via monitor, rate-limit countdown retry execution, exception propagation, and backoff sleeps.
 
 #### [test_terminal.py](test_terminal.py) - Terminal Formatting Tests
 Unit tests for terminal output formatting in `llm7shi/terminal.py`.
-
-**Documentation**: [test_terminal.md](test_terminal.md)
 
 **Key Features**: Bold formatting, markdown conversion, streaming processing, Windows compatibility.
 
 #### [test_statusline.py](test_statusline.py) - Progress Display Tests
 Unit tests for the Rich-based `StatusLine`/`StatusLineConsoleStream` in `llm7shi/statusline.py` (requires the `statusline` extra).
 
-**Documentation**: [test_statusline.md](test_statusline.md)
-
 **Key Features**: Headless Rich console output verification, retry countdown with and without an active progress bar, `active_progress` lifecycle.
 
 #### [test_gpt_oss.py](test_gpt_oss.py) - gpt-oss Template Filter Tests
 Unit tests for the gpt-oss template filter in `llm7shi/monitor.py`.
-
-**Documentation**: [test_gpt_oss.md](test_gpt_oss.md)
 
 **Key Features**: Control token parsing, channel-based routing, role filtering, filter activation logic, stream chunk boundary handling.
 
 #### [test_xml.py](test_xml.py) - XML Serialization Tests
 Unit tests for the XML serialization/deserialization helper functions in `llm7shi/xml.py`.
 
-**Documentation**: [test_xml.md](test_xml.md)
-
 **Key Features**: CDATA escaping, roundtrip data integrity, flat formatting style (no indentation, newline-separated), handling of empty content.
 
 #### [test_client.py](test_client.py) - LLM Client Tests
 Unit tests for the stateful Client implementation in `llm7shi/client.py`.
-
-**Documentation**: [test_client.md](test_client.md)
 
 **Key Features**: Initialization, deep copying of history state, callable syntax (`client(...)`), parameter propagation validation, quality retry execution (repetition, empty, max length), XML state loading and saving.
 

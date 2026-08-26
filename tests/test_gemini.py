@@ -1,3 +1,12 @@
+"""
+Tests for the Gemini API wrapper.
+
+build_schema_from_json() converts arbitrary JSON schemas into Gemini's own
+schema format; structured output depends on that conversion preserving
+semantics, so all supported types (object, string w/ enum, array, primitive)
+are covered.
+"""
+
 import os
 import pytest
 from unittest.mock import patch, MagicMock, call

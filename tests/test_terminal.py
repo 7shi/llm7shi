@@ -1,3 +1,11 @@
+"""
+Tests for terminal formatting.
+
+ANSI escape sequences are hard to assert on directly, so tests check content
+(markdown markers removed, expected text preserved) rather than exact
+escape-sequence output — decoupling tests from ANSI implementation details.
+"""
+
 import pytest
 
 from llm7shi.terminal import (

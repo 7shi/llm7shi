@@ -1,3 +1,12 @@
+"""
+Tests for StreamGenerator's retry loop and stream consumption.
+
+Real API rate limits/network errors are stochastic and depend on external
+services, so this suite validates retry budgets, backoff countdowns, stream
+termination, and exception propagation deterministically via a mock
+generator instead.
+"""
+
 import pytest
 from unittest.mock import MagicMock, patch
 from io import StringIO

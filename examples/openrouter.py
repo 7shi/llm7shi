@@ -1,3 +1,10 @@
+"""
+include_thoughts controls reasoning visibility via OpenRouter regardless of a
+model's default behavior: kimi reasons unless told not to, gemma stays silent
+unless asked. The nested loop over both models and both settings confirms the
+toggle overrides each model's default consistently.
+"""
+
 from llm7shi.compat import generate_with_schema
 
 # paired because they differ in default reasoning behavior: kimi reasons unless told not to, gemma stays silent unless asked

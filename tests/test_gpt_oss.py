@@ -1,4 +1,21 @@
-"""Tests for gpt-oss template filter."""
+"""
+Tests for gpt-oss template filter.
+
+- Control tokens (<|channel|>, <|message|>, <|start|>, <|end|>) can arrive
+  split across chunk boundaries, so parsing must be resilient to arbitrary
+  chunk splits, not just whole-token input.
+- Channel state decides routing: "analysis" -> thoughts only, "final" -> both
+  text and display output, unlabeled content -> text (backward compat).
+- <|start|> is followed by a role name that must be buffered/matched even
+  when split across chunks, then discarded from output.
+- Filter must activate only for the exact model "llama.cpp/gpt-oss" — a
+  dedicated TestFilterActivation class checks positive and near-miss cases
+  (e.g. "gpt-oss:120b") against real openai.py integration.
+- OpenAI-compatible providers that stream reasoning via a separate
+  `delta.reasoning` field (e.g. OpenRouter) need thoughts captured
+  independently of the gpt-oss control-token filter, and must stay inert
+  when that field is absent (TestReasoningExtraction).
+"""
 
 import pytest
 from unittest.mock import patch, MagicMock

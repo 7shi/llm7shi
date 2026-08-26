@@ -1,3 +1,9 @@
+"""
+Stateful Client vs. stateless multi-turn calls: manually building/passing message
+lists each turn is error-prone as conversations grow. Client manages history
+internally so turns are just function calls.
+"""
+
 from llm7shi import Client
 
 # Initialize client with a model (using Ollama as default, matching multiturn.py)

@@ -1,3 +1,12 @@
+"""
+Tests for extract_descriptions and create_json_descriptions_prompt.
+
+Some providers (e.g. Ollama) ignore schema `description` fields entirely, so
+the generated prompt must inject descriptions as explicit text; tests check
+the output is consistent whether the input schema came from raw JSON or a
+Pydantic model, since both must produce the same prompt-enhancement effect.
+"""
+
 import pytest
 from pydantic import BaseModel, Field
 

@@ -1,3 +1,11 @@
+"""
+Tests for Client, the stateful/callable chat execution wrapper.
+
+Covers history tracking, config propagation, system-prompt mutation, and XML
+persistence — checked for reliability and symmetry (e.g. copy() must deep-copy
+history so mutating the copy never leaks into the original).
+"""
+
 import pytest
 from unittest.mock import MagicMock, patch, ANY
 from llm7shi.client import Client

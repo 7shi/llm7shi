@@ -1,3 +1,17 @@
+"""
+Tests for the multi-provider compatibility layer (generate_with_schema).
+
+- Provider routing: same call must reach the right provider function for both
+  vendor-prefixed ("openai:...", "google:...") and legacy model names.
+- API abstraction: mocks both OpenAI and Gemini SDKs to confirm equivalent
+  Response objects come back regardless of provider.
+- Schema pipeline: Pydantic -> JSON -> provider-specific schema has several
+  transform steps; tests check semantics survive end-to-end.
+
+Vendor-prefix parsing edge cases (empty prefix, unknown vendor, malformed
+input) are split out into test_compat_vendor.py.
+"""
+
 import pytest
 from unittest.mock import patch, MagicMock
 from typing import List

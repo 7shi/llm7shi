@@ -1,3 +1,16 @@
+"""
+Structured extraction via a standard JSON Schema file (schema1.json), so LLM
+output is predictable and parseable instead of free-form text.
+
+schema1.json puts `reasoning` first, at the item level (inside each entry of
+locations_and_temperatures, not just once at the top). Item-level placement
+forces the model to think through each item's specific conversion (e.g.
+Fahrenheit->Celsius) before assigning its value, rather than reasoning once
+and applying it generically across items -- important whenever items may need
+different per-item processing. See also: schema2.py (same pattern in
+Pydantic).
+"""
+
 import json
 from pathlib import Path
 from llm7shi import build_schema_from_json, config_from_schema, generate_content_retry

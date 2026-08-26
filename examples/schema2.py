@@ -1,3 +1,11 @@
+"""
+Same structured-extraction task as schema1.py, but schema defined via Pydantic
+instead of a JSON Schema file: type hints give IDE completion/type checking
+and avoid hand-maintaining schema JSON, at the cost of an external
+dependency. See also: schema1.py for the reasoning-first, item-level ordering
+rationale (`reasoning` field placed first in LocationTemperature).
+"""
+
 from typing import List
 from pydantic import BaseModel, Field
 from llm7shi import config_from_schema, generate_content_retry

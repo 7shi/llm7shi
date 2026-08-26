@@ -1,3 +1,11 @@
+"""
+Automated essay evaluation via structured output. Runs the same essay through
+generate_with_schema across providers to compare evaluation tendencies/biases
+between model architectures. The essay in essay.txt is deliberately flawed
+(unsupported claims, ad hominem, informal language) so the evaluation can be
+checked for actually catching specific weaknesses, not just praising it.
+"""
+
 import json
 from pathlib import Path
 from llm7shi.compat import generate_with_schema

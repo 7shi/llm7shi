@@ -14,15 +14,19 @@ This project adopts a documentation structure that prioritizes **implementation 
 - When editing existing code, check whether nearby `.md` content has become localizable and move it into a comment; don't let both copies drift.
 
 ### Two-Tier Documentation Structure
-- **Module .md files**: Implementation rationale and design decisions that can't be localized to one spot in the code (for developers/maintainers)
+- **Module .md files** (`llm7shi/` only): Implementation rationale and design decisions that can't be localized to one spot in the code (for developers/maintainers)
 - **README.md files**: Usage instructions and practical information (for users)
 
-## Module Documentation (*.md) Guidelines
+### Scope: Paired .md Files Are for `llm7shi/` Only
+- `tests/` and `examples/` files are small, single-purpose, standalone scripts. A paired `.md` splits attention for no benefit at that size — put all rationale in a top-of-file docstring in the `.py` instead, and don't create a paired `.md` for these directories.
+- If a rationale is genuinely shared across multiple files (a common test strategy, a pattern reused by several examples), don't invent a cross-file doc for it — add a one-line "See also: `other_file.py`" note in the docstring instead.
+- Only `llm7shi/` (the core library) keeps the paired `.md` files described below, since its modules interact with each other and can carry cross-cutting architectural rationale that doesn't anchor to one file.
+
+## Module Documentation (*.md) Guidelines — `llm7shi/` Only
 
 ### Target Files
-Create `.md` files corresponding to each Python module:
-- `module.py` → `module.md`
-- `test_feature.py` → `test_feature.md`
+Create `.md` files corresponding to each core library module:
+- `llm7shi/module.py` → `llm7shi/module.md`
 
 ### Required Structure
 ```markdown

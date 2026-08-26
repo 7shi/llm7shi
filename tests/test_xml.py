@@ -1,3 +1,11 @@
+"""
+Tests for chat history XML serialization (messages_to_xml / xml_to_messages).
+
+Verifies escaping is robust against syntax collisions inside CDATA (e.g. a
+literal "]]>" in message content) and that serialize/deserialize round-trips
+are symmetric.
+"""
+
 from xml.dom.minidom import parseString
 from llm7shi.xml import messages_to_xml, xml_to_str, xml_to_messages
 

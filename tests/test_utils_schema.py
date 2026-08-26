@@ -1,3 +1,13 @@
+"""
+Tests for add_additional_properties_false and inline_defs.
+
+Both perform recursive schema transformations required for provider-specific
+API compatibility (e.g. OpenAI's structured output requires
+additionalProperties: false on every object). Tests cover nested structures,
+arrays, and edge cases to confirm the transforms preserve schema semantics
+rather than silently breaking validity.
+"""
+
 import pytest
 
 from llm7shi.utils import (

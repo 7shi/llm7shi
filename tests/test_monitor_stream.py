@@ -1,3 +1,20 @@
+"""
+Tests for StreamProcessor, the shared thinking/answer streaming state machine.
+
+Consolidates display logic (header emission, content streaming, accumulation,
+monitoring) that used to be duplicated with subtle differences across the
+Gemini/OpenAI/Ollama providers — a single bug here now affects all of them, so
+tests drive it directly with synthetic chunks to check headers print exactly
+once and the thinking->answer transition is provider-agnostic regardless of
+chunk splitting.
+
+Also covers the two owned StreamMonitor instances (answer/thoughts): max-length
+and repetition detection must stop generation and surface via
+max_length_exceeded/repetition_detected, empty output still terminates with a
+single newline (matching prior per-provider behavior), and file=None
+accumulates text without attempting any display.
+"""
+
 import io
 import re
 

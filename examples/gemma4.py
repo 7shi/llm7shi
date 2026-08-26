@@ -1,3 +1,10 @@
+"""
+Same open model (gemma-4-31b-it) hosted via Google, OpenRouter, and Ollama:
+confirms the unified interface, including include_thoughts, behaves
+identically regardless of hosting. For the raw per-provider API calls this
+replaces, see ../docs/20260608-provider-apis.md.
+"""
+
 from llm7shi.compat import generate_with_schema
 
 # same open model under 3 vendor prefixes, to show provider choice needs no code change

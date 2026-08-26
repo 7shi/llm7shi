@@ -43,8 +43,6 @@ generate_with_schema(["Your prompt"], model="ollama:")
 ### [hello.py](hello.py) - Basic Text Generation
 Simple text generation example showing the most basic usage of the library.
 
-**Documentation**: [hello.md](hello.md)
-
 ```bash
 uv run examples/hello.py
 ```
@@ -54,7 +52,6 @@ uv run examples/hello.py
 ### [schema1.py](schema1.py) - JSON Schema Example
 Demonstrates structured JSON output using manual JSON schema definition with validation.
 
-**Documentation**: [schema1.md](schema1.md)  
 **Schema**: [schema1.json](schema1.json)
 
 ```bash
@@ -63,8 +60,6 @@ uv run examples/schema1.py
 
 ### [schema2.py](schema2.py) - Pydantic Schema Example
 Shows how to use Pydantic models for type-safe schema definition and simpler code.
-
-**Documentation**: [schema2.md](schema2.md)
 
 ```bash
 uv run examples/schema2.py
@@ -75,8 +70,6 @@ uv run examples/schema2.py
 ### [compat0.py](compat0.py) - Multi-Provider Hello World
 Compatibility version of hello.py that works with both Gemini and OpenAI models.
 
-**Documentation**: [compat0.md](compat0.md)
-
 ```bash
 uv run examples/compat0.py
 ```
@@ -84,7 +77,6 @@ uv run examples/compat0.py
 ### [compat1.py](compat1.py) - Multi-Provider JSON Schema
 Compatibility version of schema1.py using the same JSON schema with both providers. Demonstrates schema description enhancement for better cross-provider compliance.
 
-**Documentation**: [compat1.md](compat1.md)  
 **Schema**: [schema1.json](schema1.json)
 
 ```bash
@@ -94,16 +86,12 @@ uv run examples/compat1.py
 ### [compat2.py](compat2.py) - Multi-Provider Pydantic Schema
 Compatibility version of schema2.py using Pydantic models with both providers. Demonstrates cross-provider schema description enhancement and automatic schema transformation.
 
-**Documentation**: [compat2.md](compat2.md)
-
 ```bash
 uv run examples/compat2.py
 ```
 
 ### [multiturn.py](multiturn.py) - Multi-Turn Conversation
 Demonstrates multi-turn conversations using OpenAI-compatible message format with role-based interactions across all providers.
-
-**Documentation**: [multiturn.md](multiturn.md)
 
 Features:
 - OpenAI-compatible message format with roles (`system`, `user`, `assistant`)
@@ -118,8 +106,6 @@ uv run examples/multiturn.py
 ### [client.py](client.py) - Stateful Client Conversation
 Demonstrates multi-turn conversations using the stateful `Client` class, showing automatic history tracking and flat XML serialization.
 
-**Documentation**: [client.md](client.md)
-
 Features:
 - Stateful `Client` initialization and callable syntax (`client(...)`)
 - Automatic conversation history management and system prompt prepending
@@ -132,8 +118,6 @@ uv run examples/client.py
 ### [openrouter.py](openrouter.py) - OpenRouter Reasoning Control
 Demonstrates how `include_thoughts` controls the reasoning behavior of thinking-capable models via OpenRouter, using a free tier model.
 
-**Documentation**: [openrouter.md](openrouter.md)
-
 ```bash
 uv run examples/openrouter.py
 ```
@@ -142,8 +126,6 @@ uv run examples/openrouter.py
 Demonstrates that the same model (`gemma-4-31b-it`) can be accessed uniformly through Google, OpenRouter, and Ollama, with consistent `include_thoughts` reasoning control across all providers.
 
 Note: With `include_thoughts=False`, the `google:` provider cannot suppress reasoning for Gemma - the model keeps generating thought parts server-side. llm7shi discards them so they no longer leak into the answer, but the reasoning still happens and cannot be worked around from the client. OpenRouter and Ollama suppress reasoning cleanly.
-
-**Documentation**: [gemma4.md](gemma4.md)
 
 ```bash
 uv run examples/gemma4.py
@@ -154,7 +136,6 @@ uv run examples/gemma4.py
 ### [essay.py](essay.py) - Automated Essay Evaluation
 Demonstrates multi-criteria essay evaluation with dynamic schema generation and cross-model comparison.
 
-**Documentation**: [essay.md](essay.md)  
 **Essay**: [essay.txt](essay.txt)
 
 Features:

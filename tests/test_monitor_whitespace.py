@@ -1,3 +1,17 @@
+"""
+Tests for _calculate_trailing_whitespace_weight.
+
+Weighted scheme (newline 8x, tab 4x, space 1x, with \\r\\n pair handling) is
+complex enough that untested weight combinations could silently mis-trigger
+or miss repetition detection. Kept in its own file, separate from
+test_monitor_repetition.py, since whitespace and repetition are distinct
+detection concerns with independently evolving test coverage.
+
+Also verifies the count()-based implementation (chosen for performance over
+char-by-char iteration) matches the weight spec exactly, since the
+optimization could otherwise have silently changed results.
+"""
+
 import pytest
 from llm7shi.monitor import _calculate_trailing_whitespace_weight
 

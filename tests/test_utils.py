@@ -1,3 +1,5 @@
+"""Tests for do_show_params and contents_to_openai_messages utility functions."""
+
 import pytest
 from unittest.mock import patch, MagicMock, mock_open
 from io import StringIO

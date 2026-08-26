@@ -1,3 +1,5 @@
+"""Tests for StatusLine progress display."""
+
 from io import StringIO
 from unittest.mock import patch
 

@@ -1,3 +1,11 @@
+"""
+Pydantic models face the same cross-provider schema incompatibilities as raw
+JSON Schema (OpenAI rejecting $defs refs, additionalProperties requirements,
+etc.); the compat layer converts them transparently so one model definition
+works across all three backends. The description-enhancement pattern from
+compat1.py applies unchanged to Pydantic models too. See also: compat1.py.
+"""
+
 from typing import List
 from pydantic import BaseModel, Field
 from llm7shi.compat import generate_with_schema

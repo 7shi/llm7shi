@@ -1,3 +1,14 @@
+"""
+Tests for vendor-prefix routing ("openai:model", "google:model", "ollama:model").
+
+Split out from test_compat.py to isolate pure routing-logic concerns from full
+API-integration mocking:
+- Prefix parsing (regex `([^:]+):(.*)`) across empty/unknown/malformed inputs.
+- Legacy model names (no prefix) still route correctly for backward compat.
+- Empty prefix ("openai:") delegates to the provider's own default-model logic
+  rather than being treated as an error.
+"""
+
 import pytest
 from unittest.mock import patch
 

@@ -1,3 +1,18 @@
+"""
+Tests for detect_repetition, guarding against LLMs looping on repetitive output.
+
+- Runs every 1KB during generation, so correctness bugs risk breaking ongoing
+  generation (false stops) or letting real loops through.
+- Threshold is a dynamic base (currently base=340) tuned against production
+  false positives; test values track that base rather than being independent
+  fixed numbers, and the algorithm must stay monotonic non-decreasing (early
+  termination optimization depends on it).
+- Quasi-repetition (e.g. "foo1foo2foo3...") uses gap-tolerant rfind()-based
+  matching since exact-match detection misses counter-style variation; tests
+  cover gap-length < pattern-length boundary, end-of-text-only triggering,
+  and mixed exact/gapped patterns.
+"""
+
 import pytest
 from llm7shi.monitor import detect_repetition
 
