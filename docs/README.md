@@ -100,6 +100,16 @@ Key topics:
 - How `generate_with_schema()` collapses them into one call with a vendor prefix
 - Caveat: disabling reasoning is not uniform (Gemma via Gemini API vs. `gemini-2.5-flash`)
 
+### [20260826-inline-rationale.md](20260826-inline-rationale.md) - Inlining Module Documentation into Code Comments
+Restructuring of the module `.md` documentation policy to inline single-anchor rationale into code comments and narrow where paired `.md` files apply.
+
+Key topics:
+- Single-anchor rationale (tied to one function/line/constant) moves into a code comment; only cross-cutting rationale stays in the `.md`
+- Paired `.md` files narrowed to `llm7shi/` only, since `tests/` and `examples/` are small standalone scripts
+- `tests/` and `examples/` rationale folded into top-of-file docstrings, with "See also" notes replacing shared cross-file docs
+- Two-round, parallelized migration verified with the full test suite after each pass
+- Follow-up fix for dead links left in `examples/README.md` and `tests/README.md` after removing the per-file docs
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`
