@@ -90,7 +90,17 @@ class OpenAIStreamGenerator(StreamGenerator):
     def handle_error(self, e: Exception) -> Optional[dict]:
         import openai
         if isinstance(e, openai.APIStatusError) and e.status_code in [429, 500, 502, 503, 504]:
-            return {"status_code": e.status_code}
+            result = {"status_code": e.status_code}
+            retry_after = e.response.headers.get("Retry-After")
+            if retry_after is None and isinstance(e.body, dict):
+                # some providers (e.g. OpenRouter) only surface it inside the JSON body
+                retry_after = e.body.get("error", {}).get("metadata", {}).get("headers", {}).get("Retry-After")
+            if retry_after is not None:
+                try:
+                    result["delay"] = int(float(retry_after))
+                except (TypeError, ValueError):
+                    pass
+            return result
         return None
 
 

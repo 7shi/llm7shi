@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Retry-After support for OpenAI-compatible errors** - Rate limit (429) and server error retries now honor the provider's requested wait time from the `Retry-After` response header, falling back to OpenRouter's `error.metadata.headers.Retry-After` field when the header itself isn't present
+
 ## [0.14.4] - 2026-08-27
 
 ### Fixed
