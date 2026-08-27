@@ -89,7 +89,7 @@ class OpenAIStreamGenerator(StreamGenerator):
 
     def handle_error(self, e: Exception) -> Optional[dict]:
         import openai
-        if isinstance(e, openai.APIError) and e.status_code in [429, 500, 502, 503, 504]:
+        if isinstance(e, openai.APIStatusError) and e.status_code in [429, 500, 502, 503, 504]:
             return {"status_code": e.status_code}
         return None
 

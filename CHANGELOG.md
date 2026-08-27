@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **OpenAI retryable error detection** - Retry-on-error check now uses `openai.APIStatusError` instead of `openai.APIError`; the base `APIError` class (e.g. connection/timeout errors) has no `status_code` attribute, causing an `AttributeError` when a non-HTTP error occurred
+
 ## [0.14.3] - 2026-08-25
 
 ### Fixed
