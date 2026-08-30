@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **statusline example** - `examples/statusline.py` demonstrates a progress bar over a batch of independent questions, streaming each answer to the terminal without subclassing
 
+### Changed
+- **essay example rewritten on `Client`** - `examples/essay.py` now pushes the essay onto `history` as a prior turn and asks the criteria as the prompt, matching `statusline.py`, and reads the parsed evaluation from `result.data` instead of re-parsing the text
+
 ## [0.15.0] - 2026-08-31
 
 ### Added

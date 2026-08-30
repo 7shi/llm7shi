@@ -1,14 +1,13 @@
 """
-Automated essay evaluation via structured output. Runs the same essay through
-generate_with_schema across providers to compare evaluation tendencies/biases
-between model architectures. The essay in essay.txt is deliberately flawed
+Automated essay evaluation via structured output. Runs the same essay through a
+Client across providers to compare evaluation tendencies/biases between model
+architectures. The essay in essay.txt is deliberately flawed
 (unsupported claims, ad hominem, informal language) so the evaluation can be
 checked for actually catching specific weaknesses, not just praising it.
 """
 
-import json
 from pathlib import Path
-from llm7shi.compat import generate_with_schema
+from llm7shi import Client
 
 # single source of truth: schema and prompt are both derived from this dict, so criteria stay in sync
 CRITERIA = {
@@ -40,20 +39,18 @@ def generate_schema(criteria):
         "required": list(properties.keys())
     }
 
-def generate_prompt(criteria, essay_text):
-    """Generate prompt from criteria dictionary and essay text."""
+def generate_prompt(criteria):
+    """Generate prompt from criteria dictionary."""
     # descriptions go in the prompt, not schema `description` fields, since some providers ignore the latter
     criteria_list = "\n".join([f"- {key}: {desc}"
                               for key, desc in criteria.items()])
     
-    return f"""Evaluate the following argumentative essay on each criterion using a 5-point scale:
+    # "above": the essay is a prior turn in the history, so it precedes this prompt
+    return f"""Evaluate the argumentative essay above on each criterion using a 5-point scale:
 
 {criteria_list}
 
-For each criterion, first provide reasoning that considers the evaluation process, then assign a score (1-5). Also provide an overall reasoning summary.
-
-Essay:
-{essay_text}"""
+For each criterion, first provide reasoning that considers the evaluation process, then assign a score (1-5). Also provide an overall reasoning summary."""
 
 # Load essay from text file
 with open(Path(__file__).with_suffix(".txt")) as f:
@@ -61,7 +58,7 @@ with open(Path(__file__).with_suffix(".txt")) as f:
 
 # Generate schema and prompt from criteria and essay
 schema = generate_schema(CRITERIA)
-prompt = generate_prompt(CRITERIA, essay)
+prompt = generate_prompt(CRITERIA)
 
 def evaluate_essay(model_name):
     """Evaluate an essay using the specified model and return the evaluation results."""
@@ -69,15 +66,18 @@ def evaluate_essay(model_name):
     print(f"Evaluating with {model_name}")
     print(f"{'='*60}")
     
-    result = generate_with_schema(
-        [prompt],
-        schema=schema,
-        model=model_name,
-        show_params=False,
-    )
+    # a fresh Client per model: each evaluation must start from the same blank
+    # history so the models are compared on equal footing
+    client = Client(model=model_name, show_params=False)
+    # the essay is material to evaluate, not an instruction about how to behave,
+    # so it goes into the history as a prior turn rather than the system prompt
+    client.history.append({"role": "user", "content": "Essay:\n" + essay})
+    result = client(prompt=prompt, schema=schema)
     
     # Calculate and display individual scores
-    evaluation = json.loads(result.text)
+    # Client parses the JSON while validating it for the retry loop, so
+    # result.data is already the decoded dict
+    evaluation = result.data
     scores = []
     print("\nDetailed Scores:")
     for key, desc in CRITERIA.items():

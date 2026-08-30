@@ -142,7 +142,8 @@ Features:
 - Dynamic schema generation from evaluation criteria
 - Reasoning-first evaluation approach for better quality
 - Schema description independence for multi-provider compatibility
-- Multi-model comparison using compat module
+- Multi-model comparison through `Client`, with the essay pushed onto `history` and the criteria asked as the prompt
+- Structured output read back from `result.data`, already parsed by `Client`'s schema validation
 - Automatic score calculation and aggregation
 
 ```bash
