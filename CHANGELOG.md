@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Customizable progress bar** - The bar's columns can be adapted by subclassing (`ProgressContext.columns()`, `StatusLine.progress_context_class`); `StatusLine(console=...)` takes a Rich `Console` and `StatusLine.progress(started_at=...)` shows elapsed time for a run spanning several processes
+
+### Fixed
+- **Progress display glitches** - Rich markup is no longer parsed in streamed model output (a `[...]` in the text used to vanish or raise `MarkupError`), retry countdowns now render as a bar of their own when none is active, and leaving a nested bar no longer deregisters the enclosing one
+
+### Changed
+- **Public column classes** - `_MofNColumn`, `_ProcessElapsedColumn` and `_ProgressContext` are renamed without the leading underscore, breaking code that imported the private names
+
 ## [0.14.5] - 2026-08-28
 
 ### Added

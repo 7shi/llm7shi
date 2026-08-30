@@ -110,6 +110,18 @@ Key topics:
 - Two-round, parallelized migration verified with the full test suite after each pass
 - Follow-up fix for dead links left in `examples/README.md` and `tests/README.md` after removing the per-file docs
 
+### [20260831-statusline-extensibility.md](20260831-statusline-extensibility.md) - Making StatusLine Extensible
+Rework of `statusline.py` so downstream projects can vary the progress bar by subclassing instead of reimplementing it.
+
+Key topics:
+- Subclassing (`ProgressContext.columns()`, `StatusLine.progress_context_class`) chosen over per-insertion-point keyword arguments
+- Insertion points located by column type via `index_of()`, which is why `LabelColumn` and `SeparatorColumn` exist
+- Where a customization hook stops being worth it: `MofNColumn`'s reverted `text_format` versus `ProcessElapsedColumn.elapsed()`
+- `ElapsedColumn` (unix time, crosses processes) and `ProcessElapsedColumn` (monotonic) deliberately keeping different clocks
+- `started_at` admitted as a keyword argument as a value the run has, not a knob on the layout
+- Markup parsing, countdowns without a bar, and nested bars: three defects found in the downstream workarounds
+- Why one shared `Progress` for all bars was deferred
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`
