@@ -148,3 +148,23 @@ Features:
 ```bash
 uv run examples/essay.py
 ```
+
+## Progress Display
+
+### [statusline.py](statusline.py) - Progress Bar Over a Batch
+Answers five questions about the same essay, tracking them with a single `StatusLine` progress bar while the model's plain-text answers stream above it.
+
+**Essay**: [essay.txt](essay.txt)
+
+Features:
+- Basic `StatusLine` usage without subclassing or custom columns
+- Streamed output routed through `status_line.stream` so it coexists with the live bar
+- `ui.log()` for messages that must survive the bar redrawing itself
+- A fresh `Client` per question with the essay pushed onto `history` - independent turns, the counterpart to client.py's continued session
+
+Requires the `statusline` extra (Rich):
+
+```bash
+uv sync --extra statusline
+uv run examples/statusline.py
+```
