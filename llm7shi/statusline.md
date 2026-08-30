@@ -13,3 +13,8 @@ Build-time and batch-processing scripts that call this library repeatedly (e.g. 
 **Problem**: Downstream projects need bar variants the default layout doesn't cover — an extra elapsed-time column beside the label, or a different elapsed clock. Because `ProgressContext.__init__` built the column list inline, any such change meant reimplementing `__init__` end to end, and reusing the standard column formatting meant importing underscore-prefixed private names.
 
 **Solution**: The extension surface is subclassing rather than configuration: column construction moved to `ProgressContext.columns()`, `StatusLine.progress_context_class` selects which context class `progress()` builds, and every column class the default layout uses is public. Keyword arguments on `progress()` naming *insertion points* ("a column here, a different elapsed column there") were considered and rejected: they would have fit the two known call sites and grown another option for every third one, whereas a single override point covers arbitrary layouts. `started_at` is a keyword argument nonetheless, because it is a value the run has rather than a knob on the layout — the caller knows when a run spanning several processes began and cannot express it any other way, while where its column lands stays the module's decision.
+
+For the alternatives weighed, where a customization hook stops being worth its
+mechanism, and the module's provenance traced by commit through the two
+downstream projects it passed through — which is why the trailing elapsed column
+measures from process start — see [Making StatusLine Extensible](../docs/20260831-statusline-extensibility.md).

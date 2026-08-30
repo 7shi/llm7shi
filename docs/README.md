@@ -114,6 +114,7 @@ Key topics:
 Rework of `statusline.py` so downstream projects can vary the progress bar by subclassing instead of reimplementing it.
 
 Key topics:
+- Provenance traced by commit through multilingual-reader and dante-corpus, showing the trailing clock's process-wide origin was inherited rather than chosen
 - Subclassing (`ProgressContext.columns()`, `StatusLine.progress_context_class`) chosen over per-insertion-point keyword arguments
 - Insertion points located by column type via `index_of()`, which is why `LabelColumn` and `SeparatorColumn` exist
 - Where a customization hook stops being worth it: `MofNColumn`'s reverted `text_format` versus `ProcessElapsedColumn.elapsed()`

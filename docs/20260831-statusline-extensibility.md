@@ -2,6 +2,38 @@
 
 Date: 2026-08-31
 
+## Where the Module Came From
+
+The code predates llm7shi by two months and passed through two applications
+before being promoted. That path matters here, because one of the defaults
+argued about below was set along the way rather than chosen.
+
+- **multilingual-reader `a4be964d`** (2026-05-09) wrote the original
+  `trtools/statusline.py`. Its bar ended in Rich's `TimeElapsedColumn` — elapsed
+  per task — and carried a separate `BatchTimeColumn` (`time.time() - start`)
+  beside the label for the batch as a whole. Two clocks measuring different
+  things, from the very first version.
+- **dante-corpus `733dc32`** (2026-06-24) copied that file to
+  `dante_corpus/statusline.py`, reformatting and repositioning the `(m/n)`
+  column, dropping the batch clock it had no caller for, and keeping the trailing
+  `TimeElapsedColumn`.
+- **dante-corpus `4578d3f`** (2026-06-27) added `_PROCESS_START` and
+  `_ProcessElapsedColumn` and put the latter in the trailing slot. The commit is
+  about the llm7shi integration (`Client`, `ConsoleStream`); the clock's origin
+  moved within it. dante-corpus opens one bar per process, where the two columns
+  differ only by the time between import and the first bar, so nothing visible
+  changed and the swap drew no attention.
+- **llm7shi `30a8034`** (2026-07-03) promoted the file as 0.14.0 with that
+  column as found; **dante-corpus `82a2c28`** deleted its local copy the same day.
+- **multilingual-reader `15042736`** (2026-08-25) rebased trtools' `StatusLine`
+  on the promoted one but reimplemented the context, recovering its own layout —
+  the trailing `TimeElapsedColumn` included.
+
+So the trailing clock reads process-wide because of `4578d3f`, not because this
+module ever weighed the alternative; and both requests that prompted the present
+rework are, in part, requests for pieces of the original design. The sections
+below reason from the code as it stood in 0.14.0, and say so where it matters.
+
 ## Background
 
 `llm7shi.statusline` was promoted from dante-corpus in 0.14.0. Two downstream
@@ -10,12 +42,13 @@ neither could express that against the module as it stood:
 
 - **dante-corpus** wanted an extra elapsed-time column right after the label,
   measuring from a start time exported by a Makefile that launches one process
-  per canto. It subclassed `_ProgressContext` and imported the private
-  `_MofNColumn` / `_ProcessElapsedColumn` to reuse their formatting, but still
-  had to copy `__init__` wholesale.
+  per canto — the batch clock its own port had dropped, now spanning processes.
+  It subclassed `_ProgressContext` and imported the private `_MofNColumn` /
+  `_ProcessElapsedColumn` to reuse their formatting, but still had to copy
+  `__init__` wholesale.
 - **multilingual-reader (trtools)** wanted a different `(m/n)` format and
-  placement plus a per-task elapsed clock. It gave up on reuse entirely and
-  reimplemented the context, closures and all.
+  placement, and its original per-task elapsed clock back. It gave up on reuse
+  entirely and reimplemented the context, closures and all.
 
 The root cause was structural: `_ProgressContext.__init__` built the column list
 inline and immediately constructed `Progress(*columns, ...)`, so "which columns"
@@ -76,15 +109,26 @@ suppression. The line is decomposition versus knob, not one rule for all columns
 `ElapsedColumn(started_at)` was factored out as the base, with
 `ProcessElapsedColumn` deriving from it. An intermediate version had the derived
 class simply pass its own construction time, dropping the module-level
-`_PROCESS_START` — but that silently changed the origin for a script opening
-several bars in sequence, and forced wall-clock time on a measurement that
-nothing outside the process needs to agree on.
+`_PROCESS_START`. That is close to the per-task reading `4578d3f` displaced, and
+restoring it has a real argument behind it — but not as a silent change of
+default, and not at the price of forcing wall-clock time on a measurement that
+nothing outside the process needs to agree on. Either origin is a behavior change
+for a script opening several bars in sequence, so the choice was left to the
+caller, which `columns()` now makes expressible; trtools takes it with Rich's
+`TimeElapsedColumn`.
 
 The two therefore keep different clocks: `started_at` is a `time.time()` value
 precisely because it crosses process boundaries, while `ProcessElapsedColumn`
 overrides `elapsed()` to read `time.monotonic()`, which cannot jump backwards
 under an NTP correction. They share `render()` and nothing else; the docstrings
 say the two are not interchangeable.
+
+What the default layout does not serve is the shape in between: several bars in
+one process, with `started_at` marking the run. There the two clocks read nearly
+the same value — the run began about when the process did — and no column reports
+the current bar. Nobody is in that position today (dante-corpus runs one bar per
+process, trtools replaces the trailing column), which is why the default stands
+as it is rather than being reopened here.
 
 ## A Keyword Argument After All
 
