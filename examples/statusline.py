@@ -44,8 +44,6 @@ with ui.progress(len(QUESTIONS), label="essay") as prog:
             show_params=False,
         )
         # the essay is material to ask about, not an instruction about how to
-        # behave, so it goes into the history as a prior turn rather than into
-        # the system prompt
-        client.history.append({"role": "user", "content": essay})
-        client(prompt=question)
+        # behave, so it's sent as its own user message rather than the system prompt
+        client(["Essay:\n" + essay, question])
         prog.update(i)

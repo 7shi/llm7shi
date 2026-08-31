@@ -142,7 +142,7 @@ Features:
 - Dynamic schema generation from evaluation criteria
 - Reasoning-first evaluation approach for better quality
 - Schema description independence for multi-provider compatibility
-- Multi-model comparison through `Client`, with the essay pushed onto `history` and the criteria asked as the prompt
+- Multi-model comparison through `Client`, with the essay and criteria sent as separate messages in one call
 - Structured output read back from `result.data`, already parsed by `Client`'s schema validation
 - Automatic score calculation and aggregation
 
@@ -161,7 +161,7 @@ Features:
 - Basic `StatusLine` usage without subclassing or custom columns
 - Streamed output routed through `status_line.stream` so it coexists with the live bar
 - `ui.log()` for messages that must survive the bar redrawing itself
-- A fresh `Client` per question with the essay pushed onto `history` - independent turns, the counterpart to client.py's continued session
+- A fresh `Client` per question with the essay and question sent as separate messages in one call - independent turns, the counterpart to client.py's continued session
 
 Requires the `statusline` extra (Rich):
 

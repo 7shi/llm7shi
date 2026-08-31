@@ -106,20 +106,27 @@ class Client:
     def __call__(
         self,
         # only turn-specific args here; session-wide config lives on self from __init__
-        prompt: str,
+        prompt: Union[str, List[str]],
         schema: Union[Dict[str, Any], Type[BaseModel], None] = None,
     ) -> Response:
         """Call LLM with quality retry and automatically add query/response to history.
 
         Args:
-            prompt: User prompt text
+            prompt: A single user prompt string (`client("question")`), or a list
+                of strings, each added as its own user-role message in the same
+                turn, in list order (`client(["Essay:\\n" + essay, question])`).
+                Splitting into multiple messages -- rather than one concatenated
+                string -- matters for providers/models that treat message
+                boundaries as structure (e.g. so a later message reads as "the
+                question about the text above" rather than part of the text).
             schema: JSON schema for structured output, Pydantic model, or None for plain text
 
         Returns:
             The final checkable Response object
         """
-        messages = self.history.copy()
-        messages.append({'role': 'user', 'content': prompt})
+        prompts = [prompt] if isinstance(prompt, str) else prompt
+        prompt_messages = [{'role': 'user', 'content': p} for p in prompts]
+        messages = self.history.copy() + prompt_messages
 
         # Quality retry loop
         for attempt in range(1, self.retries + 1):
@@ -147,7 +154,7 @@ class Client:
             )
 
         # Add to history
-        self.history.append({'role': 'user', 'content': prompt})
+        self.history += prompt_messages
         self.history.append({'role': 'assistant', 'content': resp.text.strip()})
 
         return resp

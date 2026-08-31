@@ -7,11 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`Client.__call__` accepts multiple prompt messages** - `prompt` can now be a single string or a list of strings, each sent as its own user-role message in the same turn (e.g. `client(["Essay:\n" + essay, question])`), instead of requiring the caller to push earlier turns onto `history` beforehand
+- **essay example rewritten on `Client`** - `examples/essay.py` now builds its evaluation schema dynamically as a Pydantic model and folds the criteria descriptions into the prompt via `create_json_descriptions_prompt()`, matching `statusline.py`'s use of `Client`, and reads the parsed evaluation from `result.data` instead of re-parsing the text
+
 ### Added
 - **statusline example** - `examples/statusline.py` demonstrates a progress bar over a batch of independent questions, streaming each answer to the terminal without subclassing
-
-### Changed
-- **essay example rewritten on `Client`** - `examples/essay.py` now pushes the essay onto `history` as a prior turn and asks the criteria as the prompt, matching `statusline.py`, and reads the parsed evaluation from `result.data` instead of re-parsing the text
 
 ## [0.15.0] - 2026-08-31
 

@@ -7,9 +7,10 @@ checked for actually catching specific weaknesses, not just praising it.
 """
 
 from pathlib import Path
-from llm7shi import Client
+from pydantic import Field, create_model
+from llm7shi import Client, create_json_descriptions_prompt
 
-# single source of truth: schema and prompt are both derived from this dict, so criteria stay in sync
+# single source of truth: the schema and its field descriptions are both derived from this dict, so criteria stay in sync
 CRITERIA = {
     "clarity_of_argument": "How clear and well-defined is the main argument?",
     "supporting_evidence": "How well is the argument supported with facts and examples?",
@@ -19,46 +20,39 @@ CRITERIA = {
 }
 
 def generate_schema(criteria):
-    """Generate JSON schema from criteria dictionary."""
-    properties = {}
+    """Dynamically build a Pydantic model from the criteria dictionary."""
+    fields = {}
     for key in criteria:
-        properties[key] = {
-            "type": "object",
-            "properties": {
-                "reasoning": {"type": "string"},  # ordered before score so the model reasons before judging, not after
-                "score": {"type": "integer", "minimum": 1, "maximum": 5}
-            },
-            "required": ["reasoning", "score"]
-        }
-    
-    properties["overall_reasoning"] = {"type": "string"}
-    
-    return {
-        "type": "object",
-        "properties": properties,
-        "required": list(properties.keys())
-    }
+        # a per-criterion model, named after the key, nesting reasoning before score
+        # so the model reasons before judging, not after
+        criterion_model = create_model(
+            "".join(word.capitalize() for word in key.split("_")) + "Criterion",
+            reasoning=(str, ...),  # (type, ...): required field, no default value
+            score=(int, Field(..., ge=1, le=5)),
+        )
+        # description carries the criterion's meaning on the field itself, so
+        # create_json_descriptions_prompt() can turn it into a prompt message
+        # for providers (e.g. Ollama) that ignore schema `description` fields
+        fields[key] = (criterion_model, Field(..., description=criteria[key]))
 
-def generate_prompt(criteria):
-    """Generate prompt from criteria dictionary."""
-    # descriptions go in the prompt, not schema `description` fields, since some providers ignore the latter
-    criteria_list = "\n".join([f"- {key}: {desc}"
-                              for key, desc in criteria.items()])
-    
-    # "above": the essay is a prior turn in the history, so it precedes this prompt
-    return f"""Evaluate the argumentative essay above on each criterion using a 5-point scale:
+    fields["overall_reasoning"] = (str, ...)  # required field, no default value
 
-{criteria_list}
+    return create_model("EssayEvaluation", **fields)
 
-For each criterion, first provide reasoning that considers the evaluation process, then assign a score (1-5). Also provide an overall reasoning summary."""
+# Generate the schema criteria descriptions are derived from
+schema = generate_schema(CRITERIA)
 
 # Load essay from text file
 with open(Path(__file__).with_suffix(".txt")) as f:
     essay = f.read()
 
-# Generate schema and prompt from criteria and essay
-schema = generate_schema(CRITERIA)
-prompt = generate_prompt(CRITERIA)
+# "above": the essay is sent as the message before this one, so it precedes this prompt
+PROMPT = """Evaluate the argumentative essay above on each criterion using a 5-point scale.
+
+For each criterion, first provide reasoning that considers the evaluation process, then assign a score (1-5). Also provide an overall reasoning summary."""
+
+# Ollama ignores schema `description` fields; send them as a separate message so they aren't dropped
+json_descriptions = create_json_descriptions_prompt(schema)
 
 def evaluate_essay(model_name):
     """Evaluate an essay using the specified model and return the evaluation results."""
@@ -69,19 +63,19 @@ def evaluate_essay(model_name):
     # a fresh Client per model: each evaluation must start from the same blank
     # history so the models are compared on equal footing
     client = Client(model=model_name, show_params=False)
+    
     # the essay is material to evaluate, not an instruction about how to behave,
-    # so it goes into the history as a prior turn rather than the system prompt
-    client.history.append({"role": "user", "content": "Essay:\n" + essay})
-    result = client(prompt=prompt, schema=schema)
+    # so it's sent as its own user message rather than the system prompt
+    result = client(["Essay:\n" + essay, PROMPT, json_descriptions], schema)
     
     # Calculate and display individual scores
     # Client parses the JSON while validating it for the retry loop, so
-    # result.data is already the decoded dict
+    # result.data is already a validated EssayEvaluation instance
     evaluation = result.data
     scores = []
     print("\nDetailed Scores:")
     for key, desc in CRITERIA.items():
-        score = evaluation[key]["score"]
+        score = getattr(evaluation, key).score
         scores.append(score)
         print(f"- {key.replace('_', ' ').title()}: {score}/5")
     
