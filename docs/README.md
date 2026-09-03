@@ -123,6 +123,16 @@ Key topics:
 - Markup parsing, countdowns without a bar, and nested bars: three defects found in the downstream workarounds
 - Why one shared `Progress` for all bars was deferred
 
+### [20260903-responses-api.md](20260903-responses-api.md) - Responses API for OpenAI Reasoning Summaries
+Why `openai.py` gained a second transport (the Responses API) for real OpenAI, and how the routing rule evolved from a reasoning-model whitelist to destination-only routing with a legacy-model blacklist.
+
+Key topics:
+- Chat Completions never exposes a reasoning summary for standard OpenAI models; the Responses API does, via `response.reasoning_summary_text.delta`
+- Why routing by destination (`base_url is None`) beat a reasoning-model whitelist, and why the remaining model check (`NON_REASONING_MODEL_RE`) is a blacklist, not a whitelist
+- `reasoning_effort` added as its own parameter rather than overloading `include_thoughts`, following the `thinking_budget` precedent
+- `USE_COMPLETION` escape hatch and the `--completion` example flag
+- Explicit scope cut: no multi-turn reasoning continuity, and why an empty `Response.thoughts` for a reasoning model isn't necessarily a bug
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`

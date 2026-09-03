@@ -177,7 +177,10 @@ class TestGeminiIntegration:
 class TestOpenAIIntegration:
     """Test integration with OpenAI API"""
     # Patch llm7shi.openai.OpenAI (not the openai package) since compat delegates to
-    # openai.py, which builds a client instance per request rather than reusing a module-level one
+    # openai.py, which builds a client instance per request rather than reusing a module-level one.
+    # base_url is None here (real OpenAI), so these calls go through the Responses API
+    # (see TestOpenAIResponsesIntegration); gpt-4.1-mini is a legacy model, so no `reasoning`
+    # param is sent, but the transport itself is still Responses, not Chat Completions.
 
     @patch('llm7shi.openai.OpenAI')
     @patch('llm7shi.compat.contents_to_openai_messages')
@@ -190,12 +193,10 @@ class TestOpenAIIntegration:
         mock_openai_class.return_value = mock_client
 
         # Mock streaming response
-        mock_chunk = MagicMock()
-        mock_chunk.choices = [MagicMock()]
-        mock_chunk.choices[0].delta = MagicMock()
-        mock_chunk.choices[0].delta.content = "OpenAI response"
-        mock_chunk.choices[0].delta.reasoning = None
-        mock_client.chat.completions.create.return_value = [mock_chunk]
+        mock_event = MagicMock()
+        mock_event.type = "response.output_text.delta"
+        mock_event.delta = "OpenAI response"
+        mock_client.responses.create.return_value = [mock_event]
 
         result = generate_with_schema(
             contents=["Hello World"],
@@ -203,8 +204,8 @@ class TestOpenAIIntegration:
         )
 
         assert result.text == "OpenAI response"
-        mock_client.chat.completions.create.assert_called_once()
-    
+        mock_client.responses.create.assert_called_once()
+
     @patch('llm7shi.openai.OpenAI')
     @patch('llm7shi.compat.contents_to_openai_messages')
     @patch('llm7shi.compat.add_additional_properties_false')
@@ -218,12 +219,7 @@ class TestOpenAIIntegration:
         # Mock OpenAI client instance
         mock_client = MagicMock()
         mock_openai_class.return_value = mock_client
-
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = '{"location": "Tokyo", "temperature": 25}'
-        mock_client.chat.completions.create.return_value = mock_response
+        mock_client.responses.create.return_value = []
 
         result = generate_with_schema(
             contents=["Temperature data"],
@@ -235,9 +231,9 @@ class TestOpenAIIntegration:
         mock_add_props.assert_called_once()
         mock_inline.assert_called_once()
 
-        # Verify OpenAI API call
-        call_args = mock_client.chat.completions.create.call_args
-        assert call_args[1]['response_format']['json_schema']['schema'] == {"processed": "schema"}
+        # Verify OpenAI API call: response_format is translated to text.format for Responses
+        call_args = mock_client.responses.create.call_args
+        assert call_args[1]['text']['format']['schema'] == {"processed": "schema"}
     
     @patch('llm7shi.openai.OpenAI')
     @patch('llm7shi.compat.contents_to_openai_messages')
@@ -278,12 +274,7 @@ class TestOpenAIIntegration:
         # Mock OpenAI client instance
         mock_client = MagicMock()
         mock_openai_class.return_value = mock_client
-
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "Creative response"
-        mock_client.chat.completions.create.return_value = mock_response
+        mock_client.responses.create.return_value = []
 
         result = generate_with_schema(
             contents=["Be creative"],
@@ -291,7 +282,7 @@ class TestOpenAIIntegration:
             model="openai:gpt-4.1-mini"
         )
 
-        call_args = mock_client.chat.completions.create.call_args
+        call_args = mock_client.responses.create.call_args
         assert call_args[1]['temperature'] == 0.8
 
     @patch('llm7shi.openai.OpenAI')
@@ -322,6 +313,156 @@ class TestOpenAIIntegration:
         mock_messages.assert_called_with(["Hello"], "You are helpful")
 
 
+class TestOpenAIResponsesIntegration:
+    """Test the Responses API transport, used for every `openai:` call with no
+    base_url (real OpenAI); OpenAI-compatible endpoints reached via base_url keep
+    using Chat Completions (see test_gpt_oss.py's TestFilterActivation/
+    TestReasoningExtraction, which pass base_url explicitly for that reason).
+    """
+
+    def _make_event(self, event_type, delta=None):
+        event = MagicMock()
+        event.type = event_type
+        event.delta = delta
+        return event
+
+    @patch('llm7shi.openai.OpenAI')
+    @patch('llm7shi.compat.contents_to_openai_messages')
+    def test_reasoning_summary_captured_as_thoughts(self, mock_messages, mock_openai_class):
+        """response.reasoning_summary_text.delta events become result.thoughts,
+        response.output_text.delta events become result.text."""
+        mock_messages.return_value = [{"role": "user", "content": "Hello"}]
+
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+        mock_client.responses.create.return_value = [
+            self._make_event("response.reasoning_summary_text.delta", "Let me "),
+            self._make_event("response.reasoning_summary_text.delta", "think."),
+            self._make_event("response.output_text.delta", "Hi"),
+            self._make_event("response.output_text.delta", "!"),
+        ]
+
+        result = generate_with_schema(
+            contents=["Hello World"],
+            model="openai:o3-mini"
+        )
+
+        assert result.thoughts == "Let me think."
+        assert result.text == "Hi!"
+
+        call_kwargs = mock_client.responses.create.call_args[1]
+        assert call_kwargs["model"] == "o3-mini"
+        assert call_kwargs["store"] is False
+        assert call_kwargs["reasoning"] == {"effort": "medium", "summary": "auto"}
+        assert call_kwargs["input"] == [{"role": "user", "content": [{"type": "input_text", "text": "Hello"}]}]
+
+    @patch('llm7shi.openai.OpenAI')
+    @patch('llm7shi.compat.contents_to_openai_messages')
+    def test_system_prompt_becomes_instructions(self, mock_messages, mock_openai_class):
+        """The system message is extracted into `instructions`, not left in `input`."""
+        mock_messages.return_value = [
+            {"role": "system", "content": "You are helpful"},
+            {"role": "user", "content": "Hello"},
+        ]
+
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+        mock_client.responses.create.return_value = []
+
+        generate_with_schema(
+            contents=["Hello"],
+            system_prompt="You are helpful",
+            model="openai:gpt-5.1"
+        )
+
+        call_kwargs = mock_client.responses.create.call_args[1]
+        assert call_kwargs["instructions"] == "You are helpful"
+        assert call_kwargs["input"] == [{"role": "user", "content": [{"type": "input_text", "text": "Hello"}]}]
+
+    @patch('llm7shi.openai.OpenAI')
+    @patch('llm7shi.compat.contents_to_openai_messages')
+    @patch('llm7shi.compat.add_additional_properties_false')
+    @patch('llm7shi.compat.inline_defs')
+    def test_schema_uses_text_format(self, mock_inline, mock_add_props, mock_messages, mock_openai_class):
+        """The Chat Completions `response_format` kwarg is translated to `text.format`."""
+        mock_messages.return_value = [{"role": "user", "content": "Test"}]
+        mock_add_props.return_value = {"processed": "schema"}
+        mock_inline.return_value = {"final": "schema"}
+
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+        mock_client.responses.create.return_value = []
+
+        generate_with_schema(
+            contents=["Temperature data"],
+            schema=LocationTemperature,
+            model="openai:o3-mini"
+        )
+
+        call_kwargs = mock_client.responses.create.call_args[1]
+        assert "response_format" not in call_kwargs
+        assert call_kwargs["text"]["format"]["type"] == "json_schema"
+        assert call_kwargs["text"]["format"]["schema"] == {"processed": "schema"}
+
+    @patch('llm7shi.openai.OpenAI')
+    @patch('llm7shi.compat.contents_to_openai_messages')
+    def test_legacy_model_omits_reasoning_param(self, mock_messages, mock_openai_class):
+        """gpt-3/gpt-4 models still use the Responses API (destination-based routing),
+        but never get a `reasoning` param, which they'd reject."""
+        mock_messages.return_value = [{"role": "user", "content": "Hello"}]
+
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+        mock_client.responses.create.return_value = []
+
+        generate_with_schema(
+            contents=["Hello World"],
+            model="openai:gpt-4.1-mini"
+        )
+
+        mock_client.chat.completions.create.assert_not_called()
+        call_kwargs = mock_client.responses.create.call_args[1]
+        assert "reasoning" not in call_kwargs
+
+    @patch('llm7shi.openai.OpenAI')
+    @patch('llm7shi.compat.contents_to_openai_messages')
+    def test_reasoning_effort_overrides_default(self, mock_messages, mock_openai_class):
+        """reasoning_effort is forwarded into reasoning.effort instead of the "medium" default."""
+        mock_messages.return_value = [{"role": "user", "content": "Hello"}]
+
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+        mock_client.responses.create.return_value = []
+
+        generate_with_schema(
+            contents=["Hello World"],
+            model="openai:o3-mini",
+            reasoning_effort="high",
+        )
+
+        call_kwargs = mock_client.responses.create.call_args[1]
+        assert call_kwargs["reasoning"] == {"effort": "high", "summary": "auto"}
+
+    @patch('llm7shi.openai.OpenAI')
+    @patch('llm7shi.compat.contents_to_openai_messages')
+    def test_include_thoughts_false_omits_reasoning_param(self, mock_messages, mock_openai_class):
+        """include_thoughts=False skips the `reasoning` param even for a reasoning model."""
+        mock_messages.return_value = [{"role": "user", "content": "Hello"}]
+
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+        mock_client.responses.create.return_value = []
+
+        generate_with_schema(
+            contents=["Hello World"],
+            model="openai:o3-mini",
+            include_thoughts=False,
+        )
+
+        call_kwargs = mock_client.responses.create.call_args[1]
+        assert "reasoning" not in call_kwargs
+
+
 class TestErrorHandling:
     """Test error handling scenarios"""
 
@@ -331,7 +472,7 @@ class TestErrorHandling:
         # Mock OpenAI client instance
         mock_client = MagicMock()
         mock_openai_class.return_value = mock_client
-        mock_client.chat.completions.create.side_effect = Exception("API Error")
+        mock_client.responses.create.side_effect = Exception("API Error")
 
         with pytest.raises(Exception, match="API Error"):
             generate_with_schema(
@@ -350,12 +491,10 @@ class TestErrorHandling:
         mock_client = MagicMock()
         mock_openai_class.return_value = mock_client
 
-        mock_chunk = MagicMock()
-        mock_chunk.choices = [MagicMock()]
-        mock_chunk.choices[0].delta = MagicMock()
-        mock_chunk.choices[0].delta.content = "fallback_response"
-        mock_chunk.choices[0].delta.reasoning = None
-        mock_client.chat.completions.create.return_value = [mock_chunk]
+        mock_event = MagicMock()
+        mock_event.type = "response.output_text.delta"
+        mock_event.delta = "fallback_response"
+        mock_client.responses.create.return_value = [mock_event]
 
         result = generate_with_schema(
             contents=["Test"],

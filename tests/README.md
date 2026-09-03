@@ -119,7 +119,7 @@ uv run pytest -k "schema"
 
 ### Mock Patterns
 - **Gemini API**: Mock `genai.Client` and `client.models.generate_content_stream()`
-- **OpenAI API**: Mock `openai.OpenAI` and `client.chat.completions.create()`
+- **OpenAI API**: Mock `openai.OpenAI` and `client.chat.completions.create()` (OpenAI-compatible endpoints via `base_url`) or `client.responses.create()` (real OpenAI, no `base_url`)
 - **Ollama API**: Mock `ollama.chat()` function for local model interactions
 - **File Operations**: Mock file upload/delete operations and processing state polling
 - **Environment Variables**: Use `monkeypatch.setenv()` for API key setup

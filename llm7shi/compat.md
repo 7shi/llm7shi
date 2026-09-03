@@ -44,6 +44,11 @@ As the library evolved, we realized that different LLM providers have significan
 
 ## Key Design Decisions
 
+### `include_thoughts` Reaches the OpenAI Path Too
+**Problem**: `include_thoughts` already controlled reasoning display for Gemini, Ollama, and (via `extra_body`) `openrouter:`, but the plain `openai:` vendor path dropped it — there was no way to opt out of requesting a reasoning summary for OpenAI's own reasoning models.
+
+**Solution**: `generate_with_schema()` now forwards `include_thoughts` through `_generate_with_openai()` into `openai.py`'s `generate_content()`, where it gates whether the `reasoning` param is sent on Responses API calls (see [openai.md](openai.md)). This keeps the same on/off knob meaningful across every provider, not just three of the four. `reasoning_effort` rides alongside it the same way, for tuning how much a reasoning model thinks rather than just whether its summary is shown.
+
 ### OpenRouter Reasoning Control (Historical)
 **Problem**: An earlier version sent `reasoning.enabled=False` only when opting out, leaving `include_thoughts=True` to rely on each model's default — which broke for models that do not reason unless asked (e.g. `google/gemma`), so their thinking process never appeared despite `include_thoughts=True`.
 

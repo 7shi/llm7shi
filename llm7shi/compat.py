@@ -50,6 +50,7 @@ def generate_with_schema(
     system_prompt: Optional[str] = None,
     include_thoughts: bool = True,
     thinking_budget: Optional[int] = None,
+    reasoning_effort: Optional[str] = None,
     file=sys.stdout,
     show_params: bool = True,
     max_length: Optional[int] = None,
@@ -63,8 +64,9 @@ def generate_with_schema(
         model: Model name with optional vendor prefix (e.g., "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b"). Defaults to Gemini.
         temperature: Temperature parameter for generation (None = use model default)
         system_prompt: System prompt as string
-        include_thoughts: Whether to include thinking process (Gemini and Ollama; for OpenRouter, False disables reasoning via reasoning.enabled=False)
+        include_thoughts: Whether to include thinking process (Gemini and Ollama; for OpenRouter, False disables reasoning via reasoning.enabled=False; for openai, False skips requesting a reasoning summary)
         thinking_budget: Optional thinking budget (Gemini only)
+        reasoning_effort: Optional reasoning effort - "none"/"minimal"/"low"/"medium"/"high"/"xhigh"/"max" (openai only, default: "medium")
         file: File to stream output to. Defaults to sys.stdout.
         show_params: Whether to display parameters before generation
         max_length: Maximum length of generated text (default: None, no limit)
@@ -119,7 +121,7 @@ def generate_with_schema(
     elif vendor_prefix == "google":
         return _generate_with_gemini(actual_model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params, max_length, check_repetition)
     elif vendor_prefix == "openai":
-        return _generate_with_openai(actual_model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition)
+        return _generate_with_openai(actual_model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition, include_thoughts=include_thoughts, reasoning_effort=reasoning_effort)
     elif vendor_prefix == "ollama":
         return _generate_with_ollama(actual_model, contents, schema, temperature, system_prompt, include_thoughts, file, show_params, max_length, check_repetition)
     else:
@@ -205,6 +207,8 @@ def _generate_with_openai(
     max_length=None,
     check_repetition: bool = True,
     extra_body=None,
+    include_thoughts: bool = True,
+    reasoning_effort: Optional[str] = None,
 ) -> Response:
     """Generate with OpenAI API with streaming."""
     from .openai import DEFAULT_MODEL, generate_content
@@ -266,6 +270,8 @@ def _generate_with_openai(
         check_repetition=check_repetition,
         base_url=base_url,
         api_key_env=api_key_env,
+        include_thoughts=include_thoughts,
+        reasoning_effort=reasoning_effort,
         **kwargs
     )
 

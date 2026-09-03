@@ -76,6 +76,7 @@ Direct OpenAI API wrapper with streaming support and monitoring capabilities.
 - Secure API key management via `api_key_env` parameter with safe defaults
 - gpt-oss template filter for reasoning-capable models (model name `"llama.cpp/gpt-oss"` serves as client-side template identifier)
 - Thoughts capture and real-time display
+- Real OpenAI (no `base_url`) streams via the Responses API, capturing a reasoning model's summary in `Response.thoughts`; tune with `include_thoughts` (default `True`) and `reasoning_effort` (`"none"`/`"minimal"`/`"low"`/`"medium"`/`"high"`/`"xhigh"`/`"max"`, default `"medium"`), or set `llm7shi.openai.USE_COMPLETION = True` to force Chat Completions everywhere
 
 **Note**: This module is optional and not exported in `__init__.py`. Import explicitly:
 ```python
@@ -117,6 +118,7 @@ Unified interface for OpenAI, Gemini, and Ollama APIs, enabling seamless switchi
 - Support for JSON schemas, Pydantic models, or plain text
 - Preserves provider-specific features
 - Delegates OpenAI and Ollama processing to respective modules
+- `include_thoughts`/`reasoning_effort` reach the `openai:` vendor too, controlling reasoning summary capture (see [openai.md](openai.md))
 
 **Note**: This module is optional and not exported in `__init__.py`. Import explicitly:
 ```python

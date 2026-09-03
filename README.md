@@ -24,7 +24,7 @@ llm7shi is intentionally a **thin wrapper** around LLM APIs - it doesn't attempt
 - **Secure Custom Endpoint Support**: Flexible API key management with `model@base_url|api_key_env` syntax prevents accidental key leakage to local servers
 - **Production-Ready Error Handling**: Built-in retry logic for API errors (429, 500, 502, 503) respecting API-suggested retry delays
 - **Streaming Output**: Both text and schema-based generation support real-time streaming
-- **Thinking Process Visualization**: Leverage thinking capabilities in Gemini 2.5, Ollama models, and reasoning-capable custom endpoints
+- **Thinking Process Visualization**: Leverage thinking capabilities in Gemini 2.5, Ollama models, OpenAI reasoning models (o1/o3/o4/gpt-5 family, via the Responses API), and reasoning-capable custom endpoints
 - **Schema-based Generation**: JSON schema and Pydantic model support for structured outputs
 - **Terminal Formatting**: Convert Markdown formatting to colored terminal output
 - **Progress Display** (optional `statusline` extra): Rich-based progress bars that coexist with streamed model output

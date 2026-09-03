@@ -313,7 +313,8 @@ class TestFilterActivation:
         result = generate_content(
             messages=[{"role": "user", "content": "Test"}],
             model="llama.cpp/gpt-oss",
-            file=None
+            file=None,
+            base_url="http://localhost:8080/v1",  # Chat Completions path: real usage always sets base_url for compatible servers
         )
 
         # Filter should activate: control tokens removed, thoughts separated
@@ -346,7 +347,8 @@ class TestFilterActivation:
         result = generate_content(
             messages=[{"role": "user", "content": "Test"}],
             model="gpt-oss:120b",
-            file=None
+            file=None,
+            base_url="http://localhost:8080/v1",  # Chat Completions path: real usage always sets base_url for compatible servers
         )
 
         # Filter should NOT activate: control tokens remain in text
@@ -374,7 +376,8 @@ class TestFilterActivation:
         result = generate_content(
             messages=[{"role": "user", "content": "Test"}],
             model="gpt-4",
-            file=None
+            file=None,
+            base_url="http://localhost:8080/v1",  # Chat Completions path: real usage always sets base_url for compatible servers
         )
 
         # No filter: normal text passthrough
@@ -413,6 +416,7 @@ class TestReasoningExtraction:
             messages=[{"role": "user", "content": "Test"}],
             model="anthropic/claude-3.5-sonnet",
             file=None,
+            base_url="http://localhost:8080/v1",  # Chat Completions path: real usage always sets base_url for compatible servers
         )
 
         assert result.thoughts == "Let me think."
@@ -434,6 +438,7 @@ class TestReasoningExtraction:
             messages=[{"role": "user", "content": "Test"}],
             model="gpt-4",
             file=None,
+            base_url="http://localhost:8080/v1",  # Chat Completions path: real usage always sets base_url for compatible servers
         )
 
         assert result.thoughts == ""

@@ -22,6 +22,13 @@
 
 **Solution**: Designed the module to accept pre-converted OpenAI messages format directly, establishing a policy where format conversion is the caller's responsibility, making this a pure OpenAI API wrapper.
 
+### Responses API for Reasoning Summaries
+**Problem**: Chat Completions never exposes a reasoning/thinking process for standard OpenAI reasoning models (o1/o3/o4/gpt-5 family) — unlike OpenAI-compatible providers that stream it via `delta.reasoning`, real OpenAI has no equivalent field on that endpoint. The Responses API does expose it (as `response.reasoning_summary_text.delta` events).
+
+**Solution**: Added `OpenAIResponsesStreamGenerator` as a second `StreamGenerator` alongside the existing Chat Completions one. Routing is decided by *destination*, not model: whenever `base_url` is unset (real OpenAI, not a compatible server), every call goes through the Responses API, regardless of which model it names — a `gpt-4.1-mini` call gets the same transport as an `o3-mini` one, just without a `reasoning` param. Calls with `base_url` set (llama.cpp, LocalAI, OpenRouter, Groq, ...) keep using Chat Completions unconditionally, since none of those servers implement the Responses API. `USE_COMPLETION` is a module-level escape hatch to force Chat Completions everywhere, for if the Responses API path misbehaves in practice.
+
+Because the Responses API rejects the `reasoning` param outright on legacy models, `NON_REASONING_MODEL_RE` (a `gpt-[34]` blacklist, not a reasoning-model whitelist) suppresses it for those regardless of `include_thoughts`/`reasoning_effort` — deliberately a blacklist so newer model families default to being treated as reasoning-capable without a code change.
+
 ### gpt-oss Template Filter Support
 **Problem**: Some OpenAI-compatible servers (particularly llama.cpp with gpt-oss template) emit special control tokens (`<|channel|>`, `<|message|>`, etc.) that separate reasoning process from final output, but these tokens would appear in raw output without filtering.
 

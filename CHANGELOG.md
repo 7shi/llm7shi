@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Reasoning summaries for OpenAI models** - Every `openai:` call against real OpenAI (no custom `base_url`) now streams via the Responses API instead of Chat Completions, so a reasoning model's summary is captured in `Response.thoughts`; legacy gpt-3/gpt-4 models use the same new transport but never get a `reasoning` param (they'd reject it), so their behavior is otherwise unchanged. New `reasoning_effort` parameter tunes how much a reasoning model thinks (`none`/`minimal`/`low`/`medium`/`high`/`xhigh`/`max`, default `medium`); `include_thoughts=False` skips requesting a summary. OpenAI-compatible endpoints reached via `base_url` (llama.cpp, LocalAI, OpenRouter, Groq, ...) keep using Chat Completions, unaffected. Set `llm7shi.openai.USE_COMPLETION = True` to force Chat Completions everywhere
+
 ## [0.15.1] - 2026-08-31
 
 ### Changed
