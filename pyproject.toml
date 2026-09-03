@@ -8,10 +8,9 @@ repository = "https://github.com/7shi/llm7shi"
 requires-python = ">=3.10"
 dependencies = [
     "colorama>=0.4.6",
-    "google-genai>=1.21.1",
-    "ollama>=0.5.1",
-    "openai>=1.91.0",
-    "pytest>=9.1.0",
+    "google-genai>=2.22.0",
+    "ollama>=0.6.2",
+    "openai>=3.7.0",
 ]
 
 [project.optional-dependencies]
@@ -21,7 +20,7 @@ statusline = [
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4.1",
+    "pytest>=9.1.1",
     "rich>=15.0.0",
 ]
 
