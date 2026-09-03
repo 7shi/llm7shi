@@ -4,6 +4,9 @@ Minimal proof of vendor neutrality: same call runs unmodified against cloud
 per-provider API differences. See also: compat1.py, compat2.py.
 """
 
+import argparse
 from llm7shi.compat import generate_with_schema
+from args import parse_model_args
 
-generate_with_schema(["Hello, World!"], model="ollama:")
+args = parse_model_args(argparse.ArgumentParser(description=__doc__))
+generate_with_schema(["Hello, World!"], model=args.model)

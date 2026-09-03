@@ -4,10 +4,14 @@ lists each turn is error-prone as conversations grow. Client manages history
 internally so turns are just function calls.
 """
 
+import argparse
 from llm7shi import Client
+from args import parse_model_args
+
+args = parse_model_args(argparse.ArgumentParser(description=__doc__))
 
 # Initialize client with a model (using Ollama as default, matching multiturn.py)
-client = Client(model="ollama:", include_thoughts=False)
+client = Client(model=args.model, include_thoughts=False)
 
 # set via dedicated method, not the constructor, so model config and system role stay independently settable
 system_prompt = "You are a helpful assistant that answers questions concisely."

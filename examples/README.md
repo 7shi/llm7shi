@@ -29,7 +29,7 @@ The compat examples demonstrate the vendor prefix format for provider selection:
 - **Production use (recommended)**: `"openai:gpt-4.1-mini"`, `"google:gemini-2.5-flash"` (explicit model specification)
 - **Legacy format (still supported)**: `"gpt-4.1-mini"`, `"gemini-2.5-flash"`
 
-Note: Examples in this directory use `"ollama:"` by default. For production use or to use other providers, explicitly specifying the model name is recommended.
+Note: Examples in this directory default to `"ollama:"`. For production use or to use other providers, pass `-m`/`--model` explicitly (see below).
 
 **Implementation example**:
 ```python
@@ -37,6 +37,18 @@ from llm7shi.compat import generate_with_schema
 
 generate_with_schema(["Your prompt"], model="ollama:")
 ```
+
+### Model Selection ([args.py](args.py))
+
+Most examples accept a `-m`/`--model` option to override the default `"ollama:"`, and a `--completion` flag to force OpenAI's Chat Completions API instead of the Responses API. Both come from `parse_model_args()` in `args.py`, a shared helper rather than a standalone example.
+
+```bash
+uv run examples/compat0.py -m openai:gpt-4.1-mini
+uv run examples/compat0.py -m google:gemini-2.5-flash
+uv run examples/compat0.py --completion  # force Chat Completions for real OpenAI
+```
+
+Exceptions: `hello.py`, `schema1.py`, and `schema2.py` use Gemini-specific functions with no vendor prefix support, so they take no `-m`. `gemma4.py` and `openrouter.py` each compare multiple hardcoded models in one run and likewise take no `-m`.
 
 ## Basic Usage
 
@@ -71,7 +83,7 @@ uv run examples/schema2.py
 Compatibility version of hello.py that works with both Gemini and OpenAI models.
 
 ```bash
-uv run examples/compat0.py
+uv run examples/compat0.py [-m MODEL]
 ```
 
 ### [compat1.py](compat1.py) - Multi-Provider JSON Schema
@@ -80,14 +92,14 @@ Compatibility version of schema1.py using the same JSON schema with both provide
 **Schema**: [schema1.json](schema1.json)
 
 ```bash
-uv run examples/compat1.py
+uv run examples/compat1.py [-m MODEL]
 ```
 
 ### [compat2.py](compat2.py) - Multi-Provider Pydantic Schema
 Compatibility version of schema2.py using Pydantic models with both providers. Demonstrates cross-provider schema description enhancement and automatic schema transformation.
 
 ```bash
-uv run examples/compat2.py
+uv run examples/compat2.py [-m MODEL]
 ```
 
 ### [multiturn.py](multiturn.py) - Multi-Turn Conversation
@@ -100,7 +112,7 @@ Features:
 - Automatic role mapping (assistant → model) for Gemini compatibility
 
 ```bash
-uv run examples/multiturn.py
+uv run examples/multiturn.py [-m MODEL]
 ```
 
 ### [client.py](client.py) - Stateful Client Conversation
@@ -112,7 +124,7 @@ Features:
 - Raw XML history persistence and restoration via `to_xml()` and `load_xml()`
 
 ```bash
-uv run examples/client.py
+uv run examples/client.py [-m MODEL]
 ```
 
 ### [openrouter.py](openrouter.py) - OpenRouter Reasoning Control
@@ -147,7 +159,7 @@ Features:
 - Automatic score calculation and aggregation
 
 ```bash
-uv run examples/essay.py
+uv run examples/essay.py [-m MODEL]
 ```
 
 ## Progress Display
@@ -167,5 +179,5 @@ Requires the `statusline` extra (Rich):
 
 ```bash
 uv sync --extra statusline
-uv run examples/statusline.py
+uv run examples/statusline.py [-m MODEL]
 ```

@@ -6,9 +6,11 @@ architectures. The essay in essay.txt is deliberately flawed
 checked for actually catching specific weaknesses, not just praising it.
 """
 
+import argparse
 from pathlib import Path
 from pydantic import Field, create_model
 from llm7shi import Client, create_json_descriptions_prompt
+from args import parse_model_args
 
 # single source of truth: the schema and its field descriptions are both derived from this dict, so criteria stay in sync
 CRITERIA = {
@@ -67,7 +69,7 @@ def evaluate_essay(model_name):
     # the essay is material to evaluate, not an instruction about how to behave,
     # so it's sent as its own user message rather than the system prompt
     result = client(["Essay:\n" + essay, PROMPT, json_descriptions], schema)
-    
+
     # Calculate and display individual scores
     # Client parses the JSON while validating it for the retry loop, so
     # result.data is already a validated EssayEvaluation instance
@@ -88,4 +90,5 @@ print("=" * 60)
 print(essay)
 print("=" * 60)
 
-evaluate_essay("ollama:")
+args = parse_model_args(argparse.ArgumentParser(description=__doc__))
+evaluate_essay(args.model)

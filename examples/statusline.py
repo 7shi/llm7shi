@@ -11,9 +11,13 @@ something to find. See also: essay.py, which scores the same essay with a schema
 Requires the statusline extra: uv sync --extra statusline
 """
 
+import argparse
 from pathlib import Path
 from llm7shi import Client
 from llm7shi.statusline import StatusLine
+from args import parse_model_args
+
+args = parse_model_args(argparse.ArgumentParser(description=__doc__))
 
 QUESTIONS = [
     "Summarize the main argument in two sentences.",
@@ -37,7 +41,7 @@ with ui.progress(len(QUESTIONS), label="essay") as prog:
         # questions are independent, and carrying history would let each answer
         # steer the next
         client = Client(
-            model="ollama:",
+            model=args.model,
             # routes the stream through the console that owns the bar; with the
             # default sys.stdout the two would interleave and corrupt each other
             file=ui.stream,

@@ -6,10 +6,14 @@ works across all three backends. The description-enhancement pattern from
 compat1.py applies unchanged to Pydantic models too. See also: compat1.py.
 """
 
+import argparse
 from typing import List
 from pydantic import BaseModel, Field
 from llm7shi.compat import generate_with_schema
 from llm7shi import create_json_descriptions_prompt
+from args import parse_model_args
+
+args = parse_model_args(argparse.ArgumentParser(description=__doc__))
 
 class LocationTemperature(BaseModel):
     reasoning: str
@@ -25,5 +29,5 @@ json_descriptions = create_json_descriptions_prompt(LocationsAndTemperatures)
 generate_with_schema(
     ["The temperature in Tokyo is 90 degrees Fahrenheit.", json_descriptions],
     schema=LocationsAndTemperatures,
-    model="ollama:",
+    model=args.model,
 )
