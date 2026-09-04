@@ -462,16 +462,25 @@ class StreamProcessor:
             self._write(self.converter.feed(body))
 
     def _close_section(self) -> None:
-        """Discard held trailing blank lines and close an open display line.
+        """Discard held trailing blank lines, reset markdown formatting, and close
+        an open display line.
 
         Drops the cached trailing newlines so no extra blank lines leak across the
-        thinking->answer boundary or before finalize, then emits a single newline if
-        the last displayed character did not already end the line. Combined with the
-        leading "\\n" of ANSWER_HEADER, this yields exactly one blank line at the
-        boundary regardless of how many newlines the model emitted.
+        thinking->answer boundary or before finalize. The converter's inline format
+        stack (bold/italic/code) and code-block background are shared across both
+        sections, so an unclosed marker at the end of one section (e.g. a stray
+        "**" the model never closed) would otherwise bleed into the next; flushing
+        here forces it closed. Finally emits a single newline if the last displayed
+        character did not already end the line. Combined with the leading "\\n" of
+        ANSWER_HEADER, this yields exactly one blank line at the boundary regardless
+        of how many newlines the model emitted.
         """
         self._held = ""
         self._leading = True  # Next section also drops its leading blank lines
+        # flush() closes any open formatting; empty when nothing was left open
+        remaining = self.converter.flush()
+        if remaining:
+            self._write(remaining)
         if self.file and self._last_char not in ("", "\n"):
             self._write(self.converter.feed("\n"))
 

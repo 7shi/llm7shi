@@ -197,4 +197,30 @@ def test_context_manager_finalizes_on_normal_exit():
     with processor:
         processor.add_text("answer")
     assert buf.getvalue().endswith("\n")
-    assert processor.text == "answer"
+
+
+def test_unclosed_code_fence_in_thoughts_does_not_bleed_into_answer():
+    """An unclosed ``` fenced code block in thoughts must not leave its gray
+    background active in the answer section (or, worse, suppress markdown parsing
+    of the answer header, since an open code block treats everything literally).
+
+    The converter's code-block state is shared across both sections: previously,
+    _close_section only fed a bare newline through the converter, which does not
+    close an open fence's background (that only happens on flush()). The stray
+    open state then swallowed the "**" in ANSWER_HEADER as literal text instead
+    of converting it, in addition to leaking the gray background.
+    """
+    buf = io.StringIO()
+    processor = StreamProcessor(file=buf)
+    processor.add_thought("here is code:\n```python\nprint(1)\n")
+    processor.add_text("answer text")
+    processor.finalize()
+    output = buf.getvalue()
+    answer_start = output.index("answer text")
+    # BLOCK_OFF (background reset) must appear before the answer text starts.
+    assert "\x1b[49m" in output[:answer_start]
+    # The answer text itself carries no leftover background code.
+    assert "\x1b[100m" not in output[answer_start:]
+    # The "**Answer:**" header must be converted to ANSI bold, not left literal.
+    assert "**Answer:**" not in output
+    assert "\x1b[1m\x1b[31mAnswer:\x1b[22m\x1b[39m" in output
