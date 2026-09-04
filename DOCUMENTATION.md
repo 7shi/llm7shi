@@ -139,7 +139,7 @@ Explain each challenge in 1-3 sentences, avoiding verbosity
 2. For rationale that spans multiple functions/files or is otherwise non-localizable, record it in the corresponding `.md` file (create it if needed).
 
 ### When Modifying Existing Features
-1. Add change rationale as a code comment if it anchors to one spot, otherwise to the `.md` file.
+1. Add change rationale as a code comment if it anchors to one spot, otherwise to the `.md` file — even for a small one-line follow-up fix to code you just touched (e.g. patching a bug the previous edit left in place); don't leave the reason implicit in the diff.
 2. Update or remove `.md` content if past design decisions have changed, and move it into a comment if it has become localizable.
 
 ### Review Checklist

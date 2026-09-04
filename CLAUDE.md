@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Documentation Guidelines
 - **Two-tier documentation structure**: Each Python module has a paired `.md` file (1:1 pairing)
 - Focus on "why" rather than "how" in module documentation
-- See [DOCUMENTATION.md](DOCUMENTATION.md) for detailed guidelines
+- When modifying code, follow [DOCUMENTATION.md](DOCUMENTATION.md) for where to record the rationale (code comment vs. paired `.md`)
 
 ## Quick Project Context
 
