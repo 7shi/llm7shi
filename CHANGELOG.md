@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-09-04
+
 ### Fixed
 - **Formatting leak from thinking into answer** - Bold/italic/inline-code and code-block background left open at the end of the thinking section (e.g. an unclosed `**`) no longer bleed into the answer section
 
