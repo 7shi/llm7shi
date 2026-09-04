@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-09-05
+
 ### Added
 - **`keep_history` option for `Client`** - `Client(..., keep_history=False)` stops calls from recording their turns, so one client can serve a batch of independent items without each request carrying every earlier one. Any history already set is still sent, so a system prompt applies to every call. Defaults to `True`, leaving multi-turn use unchanged
 
