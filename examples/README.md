@@ -173,7 +173,7 @@ Features:
 - Basic `StatusLine` usage without subclassing or custom columns
 - Streamed output routed through `status_line.stream` so it coexists with the live bar
 - `ui.log()` for messages that must survive the bar redrawing itself
-- A fresh `Client` per question with the essay and question sent as separate messages in one call - independent turns, the counterpart to client.py's continued session
+- One `Client` with `keep_history=False` for all questions, with the essay and question sent as separate messages in one call - independent turns, the counterpart to client.py's continued session
 
 Requires the `statusline` extra (Rich):
 

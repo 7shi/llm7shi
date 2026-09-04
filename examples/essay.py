@@ -62,9 +62,9 @@ def evaluate_essay(model_name):
     print(f"Evaluating with {model_name}")
     print(f"{'='*60}")
     
-    # a fresh Client per model: each evaluation must start from the same blank
-    # history so the models are compared on equal footing
-    client = Client(model=model_name, show_params=False)
+    # keep_history=False: a single evaluation, so nothing should be carried
+    # over -- each model is compared on the same blank history
+    client = Client(model=model_name, show_params=False, keep_history=False)
     
     # the essay is material to evaluate, not an instruction about how to behave,
     # so it's sent as its own user message rather than the system prompt

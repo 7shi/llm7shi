@@ -93,6 +93,24 @@ def test_client_call_success_and_history(mock_generate):
     assert client.history == expected_history
 
 @patch("llm7shi.client.generate_with_schema")
+def test_client_call_keep_history_false(mock_generate):
+    mock_generate.return_value = Response(text="Answer", repetition=False, max_length=None)
+
+    client = Client(model="dummy-model", keep_history=False)
+    client.set_system_prompt("System instructions")
+    client(prompt="First")
+    client(prompt="Second")
+
+    # Turns are not recorded, so the system prompt is all that remains
+    assert client.history == [{"role": "system", "content": "System instructions"}]
+    # ...and each call still carries it, without the earlier turn
+    assert mock_generate.call_args[0][0] == [
+        {"role": "system", "content": "System instructions"},
+        {"role": "user", "content": "Second"}
+    ]
+    assert client.copy().keep_history is False
+
+@patch("llm7shi.client.generate_with_schema")
 def test_client_call_parameter_propagation(mock_generate):
     mock_generate.return_value = Response(text="Success", repetition=False, max_length=None)
     

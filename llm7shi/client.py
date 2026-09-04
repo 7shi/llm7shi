@@ -24,6 +24,7 @@ class Client:
         check_repetition: bool = True,
         # Extended arguments
         retries: int = DEFAULT_LLM_RETRIES,
+        keep_history: bool = True,
     ):
         self.model = model
         self.include_thoughts = include_thoughts
@@ -34,6 +35,10 @@ class Client:
         self.max_length = max_length
         self.check_repetition = check_repetition
         self.retries = retries
+        # False turns off only the writing of turns: history is still sent, so a
+        # system prompt set once still applies to every call, while independent
+        # calls on one client no longer accumulate each other's turns
+        self.keep_history = keep_history
         self.history: List[Dict[str, str]] = []
 
     def copy(self) -> 'Client':
@@ -47,7 +52,8 @@ class Client:
             show_params=self.show_params,
             max_length=self.max_length,
             check_repetition=self.check_repetition,
-            retries=self.retries
+            retries=self.retries,
+            keep_history=self.keep_history
         )
         new_client.history = self.history.copy()
         return new_client
@@ -111,6 +117,9 @@ class Client:
     ) -> Response:
         """Call LLM with quality retry and automatically add query/response to history.
 
+        With `keep_history=False`, the existing history is still sent but the
+        turn is not appended, so every call starts from the same state.
+
         Args:
             prompt: A single user prompt string (`client("question")`), or a list
                 of strings, each added as its own user-role message in the same
@@ -154,8 +163,9 @@ class Client:
             )
 
         # Add to history
-        self.history += prompt_messages
-        self.history.append({'role': 'assistant', 'content': resp.text.strip()})
+        if self.keep_history:
+            self.history += prompt_messages
+            self.history.append({'role': 'assistant', 'content': resp.text.strip()})
 
         return resp
 

@@ -31,22 +31,23 @@ essay = Path(__file__).with_name("essay.txt").read_text()
 
 ui = StatusLine()
 
+client = Client(
+    model=args.model,
+    # routes the stream through the console that owns the bar; with the
+    # default sys.stdout the two would interleave and corrupt each other
+    file=ui.stream,
+    show_params=False,
+    # the questions are independent, so one client serves them all without
+    # letting each answer steer the next
+    keep_history=False,
+)
+
 # the bar counts questions, so it advances once per generation rather than per token
 with ui.progress(len(QUESTIONS), label="essay") as prog:
     for i, question in enumerate(QUESTIONS, 1):
         # ui.log() instead of print(): a bare print would be overwritten by the
         # live bar redrawing itself
         ui.log(f"\n[bold]Q{i}.[/bold] {question}\n")
-        # a fresh Client per question rather than one reused across the loop: the
-        # questions are independent, and carrying history would let each answer
-        # steer the next
-        client = Client(
-            model=args.model,
-            # routes the stream through the console that owns the bar; with the
-            # default sys.stdout the two would interleave and corrupt each other
-            file=ui.stream,
-            show_params=False,
-        )
         # the essay is material to ask about, not an instruction about how to
         # behave, so it's sent as its own user message rather than the system prompt
         client(["Essay:\n" + essay, question])
