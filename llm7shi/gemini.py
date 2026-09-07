@@ -162,9 +162,16 @@ class GeminiStreamGenerator(StreamGenerator):
         if isinstance(e, genai.errors.APIError) and hasattr(e, "code") and e.code in [429, 500, 502, 503]:
             delay = None
             if e.code == 429:
-                # 429 carries an explicit retryDelay; other codes fall back to DEFAULT_RETRY_DELAY
-                details = e.details["error"]["details"]
-                for d in details:
+                # 429 usually carries an explicit retryDelay, but quota-exhaustion
+                # responses may omit it (or carry no details at all); anything missing
+                # or unexpected here falls back to DEFAULT_RETRY_DELAY rather than
+                # turning a retryable error into a crash
+                details = e.details if isinstance(e.details, dict) else {}
+                error = details.get("error")
+                items = error.get("details") if isinstance(error, dict) else None
+                for d in items or []:
+                    if not isinstance(d, dict):
+                        continue
                     if (rd := d.get("retryDelay")) and (m := re.match(r"^(\d+)s$", rd)):
                         delay = int(m.group(1))
                         break

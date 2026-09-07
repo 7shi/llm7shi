@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Crash on quota-exhaustion 429 from Gemini** - A 429 whose body carries no `details` (as quota exhaustion returns) is retried with the default delay instead of raising `KeyError: 'details'` from the retry handler
+
 ## [0.16.2] - 2026-09-05
 
 ### Added

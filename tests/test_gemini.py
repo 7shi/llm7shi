@@ -14,6 +14,7 @@ from typing import Any, Dict
 import json
 
 from llm7shi.gemini import (
+    GeminiStreamGenerator,
     Response,
     generate_content_retry,
     build_schema_from_json,
@@ -266,6 +267,45 @@ class TestGenerateContentRetry:
 
             assert response.text == f"Success after {error_code}"
             assert mock_stream.call_count == 2
+
+
+class TestHandleError:
+    """429 bodies vary by cause, so the retryDelay lookup must never crash on one"""
+
+    @staticmethod
+    def make_error(details, code=429):
+        from google.genai.errors import APIError
+
+        e = APIError("boom", details)
+        e.code = code  # retry logic branches on this attribute
+        return e
+
+    def test_retry_delay_is_extracted(self):
+        gen = GeminiStreamGenerator()
+        e = self.make_error({"error": {"details": [{"retryDelay": "42s"}]}})
+        assert gen.handle_error(e) == {"status_code": 429, "delay": 42}
+
+    def test_missing_details_key(self):
+        # Quota exhaustion returns just code/message/status, with no details at all
+        gen = GeminiStreamGenerator()
+        e = self.make_error({"error": {"code": 429, "message": "Resource has been exhausted (e.g. check quota).", "status": "RESOURCE_EXHAUSTED"}})
+        assert gen.handle_error(e) == {"status_code": 429, "delay": None}
+
+    def test_unexpected_details_shapes(self):
+        gen = GeminiStreamGenerator()
+        for details in [{}, {"error": None}, {"error": {"details": None}}, {"error": {"details": ["oops"]}}, None]:
+            e = self.make_error(details)
+            assert gen.handle_error(e) == {"status_code": 429, "delay": None}
+
+    def test_server_errors_skip_the_lookup(self):
+        gen = GeminiStreamGenerator()
+        e = self.make_error(None, code=503)
+        assert gen.handle_error(e) == {"status_code": 503, "delay": None}
+
+    def test_non_retryable_status_code(self):
+        gen = GeminiStreamGenerator()
+        e = self.make_error({"error": {"details": []}}, code=400)
+        assert gen.handle_error(e) is None
 
 
 class TestFileOperations:
