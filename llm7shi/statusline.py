@@ -58,12 +58,14 @@ class ElapsedColumn(ProgressColumn):
     since it would duplicate the elapsed time already shown on the main progress line.
     """
 
-    def __init__(self, started_at: float):
+    def __init__(self, started_at: float, monotonic: bool = False):
         super().__init__()
         self.started_at = started_at
+        self.monotonic = monotonic
 
     def elapsed(self) -> float:
-        return time.time() - self.started_at
+        now = time.monotonic() if self.monotonic else time.time()
+        return now - self.started_at
 
     def render(self, task) -> Text:
         if not task.fields.get("show_elapsed", True):
@@ -80,15 +82,12 @@ class ProcessElapsedColumn(ElapsedColumn):
     Wall-clock time is the wrong measure when nothing outside this process needs
     to agree on the origin: `time.monotonic()` can't jump backwards under an NTP
     correction. `started_at` therefore holds a monotonic reading rather than the
-    unix timestamp the base class takes, which is why `elapsed()` is overridden
-    to read the same clock — the two are not interchangeable.
+    unix timestamp the base class takes, and the base class is told to read the
+    same clock — the two are not interchangeable.
     """
 
     def __init__(self):
-        super().__init__(_PROCESS_START)
-
-    def elapsed(self) -> float:
-        return time.monotonic() - self.started_at
+        super().__init__(_PROCESS_START, monotonic=True)
 
 
 class LabelColumn(TextColumn):
@@ -185,13 +184,13 @@ class StatusLine:
         self.console.print(text, highlight=False)
 
     def progress(self, total: int, start: int = 0, label: str | None = None,
-                 started_at: float | None = None) -> "ProgressContext":
-        return self.progress_context_class(self, total, start, label, started_at)
+                 started_at: float | None = None, dual: bool = False) -> "ProgressContext":
+        return self.progress_context_class(self, total, start, label, started_at, dual)
 
 
 class ProgressContext:
     def __init__(self, status_line: StatusLine, total: int, completed: int, label: str | None,
-                 started_at: float | None = None):
+                 started_at: float | None = None, dual: bool = False):
         self._status_line = status_line
         self._total = total
         self._completed = completed
@@ -199,6 +198,12 @@ class ProgressContext:
         # a run that outlives this process (e.g. a Makefile launching one process per
         # item) passes its own start time down; see ElapsedColumn
         self._started_at = started_at
+        # `dual` swaps the two elapsed columns and reads the monotonic clock, so a
+        # handed-down start time must be a monotonic reading; when none was handed
+        # down the run begins here, so a fresh reading fills in
+        self._dual = dual
+        if dual and self._started_at is None:
+            self._started_at = time.monotonic()
         self._task = None
         self._outer_progress = None
         self._progress = Progress(*self.columns(), console=status_line.console)
@@ -214,11 +219,20 @@ class ProgressContext:
         columns = [SpinnerColumn()]
         if self._label:
             columns.append(LabelColumn())
-        if self._started_at is not None:
-            columns.append(ElapsedColumn(self._started_at))
+        if self._dual:
+            # dual swaps the two clocks: the process one takes the spot beside the
+            # label, the run one trails the bar
+            columns.append(ProcessElapsedColumn())
+        elif self._started_at is not None:
+            columns.append(ElapsedColumn(self._started_at, monotonic=False))
         if len(columns) > 1:  # something to divide from the bar
             columns.append(SeparatorColumn())
-        return columns + [MofNColumn(), BarColumn(), TaskProgressColumn(), ProcessElapsedColumn()]
+        columns += [MofNColumn(), BarColumn(), TaskProgressColumn()]
+        if self._dual:
+            columns.append(ElapsedColumn(self._started_at, monotonic=True))
+        else:
+            columns.append(ProcessElapsedColumn())
+        return columns
 
     @staticmethod
     def index_of(columns: list[ProgressColumn], column_type: type[ProgressColumn]) -> int:

@@ -149,7 +149,7 @@ Rich-based progress bar display (`StatusLine`) that coexists with streamed LLM o
 - `StatusLine` - Owns a Rich `Console` (or takes one: `StatusLine(Console(stderr=True))`); `status_line.progress(total, label=...)` gives a live progress bar
 - `StatusLineConsoleStream` - `ConsoleStream` subclass that routes streamed output and retry countdowns through the same `Console` as the progress bar
 - Retry countdowns render as a progress row instead of a raw `\r` countdown, on the live bar when there is one and on a bar of their own otherwise
-- Process-wide elapsed time display, independent of individual task lifetimes; `progress(started_at=...)` adds a second clock for a run spanning several processes
+- Process-wide elapsed time display, independent of individual task lifetimes; `progress(started_at=...)` adds a second clock for a run spanning several processes, and `progress(dual=True)` swaps the two clocks and reads both on the monotonic clock, counting the run from context creation when no start time is given
 - Customizable columns: override `ProgressContext.columns()` and point `StatusLine.progress_context_class` at the subclass
 
 **Note**: This module requires the optional `statusline` extra (for `rich`) and is not exported in `__init__.py`. Install with:

@@ -16,5 +16,5 @@ Build-time and batch-processing scripts that call this library repeatedly (e.g. 
 
 For the alternatives weighed, where a customization hook stops being worth its
 mechanism, and the module's provenance traced by commit through the two
-downstream projects it passed through — which is why the trailing elapsed column
+downstream projects it passed through — which is why the process-elapsed column
 measures from process start — see [Making StatusLine Extensible](../docs/20260831-statusline-extensibility.md).

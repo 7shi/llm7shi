@@ -134,7 +134,8 @@ class TestSubclassCustomization:
         assert column.render(SimpleNamespace(fields={})).plain == "0:00"
 
     def test_started_at_adds_elapsed_column_after_the_label(self):
-        # dante-corpus' case, with no subclassing at all
+        # dante-corpus' case, with no subclassing at all: without dual the handed-down
+        # clock sits beside the label and the process one trails the bar
         status_line = make_status_line()
         with status_line.progress(total=5, label="canto", started_at=time.time() - 3725) as ctx:
             ctx.update(1)
@@ -147,6 +148,26 @@ class TestSubclassCustomization:
             ctx.update(1)
         line = [l for l in status_line.console.file.getvalue().splitlines() if l.strip()][-1]
         assert "1:05 |" in line
+
+    def test_dual_without_started_at_fills_monotonic_origin(self):
+        # dual swaps the clocks (process beside the label, run trailing the bar);
+        # the filled-in origin is monotonic and the column reads the same clock
+        status_line = make_status_line()
+        with status_line.progress(total=5, label="canto", dual=True) as ctx:
+            ctx.update(1)
+        line = [l for l in status_line.console.file.getvalue().splitlines() if l.strip()][-1]
+        assert "canto 0:00 |" in line
+        assert ctx._dual
+
+    def test_dual_with_started_at_keeps_the_supplied_origin(self):
+        # dual is unconditionally monotonic, so a handed-down start time must be
+        # a monotonic reading; it wins over the dual fallback
+        status_line = make_status_line()
+        with status_line.progress(total=5, started_at=time.monotonic() - 65, dual=True) as ctx:
+            ctx.update(1)
+        line = [l for l in status_line.console.file.getvalue().splitlines() if l.strip()][-1]
+        assert line.rstrip().endswith("1:05")
+        assert ctx._dual
 
     def test_nested_progress_restores_the_enclosing_bar(self):
         status_line = make_status_line()
