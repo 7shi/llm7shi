@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-09-12
+
 ### Added
 - **`dual` option for progress bars** - `StatusLine.progress(..., dual=True)` shows both elapsed clocks: the process clock takes the spot beside the label and the run clock trails the bar, both reading the monotonic clock. When no `started_at` is given, the run counts from context creation; a handed-down start time must then be a monotonic reading
 
