@@ -18,6 +18,7 @@ class LocationTemperature(BaseModel):
 class LocationsAndTemperatures(BaseModel):
     locations_and_temperatures: List[LocationTemperature]
 
+# No model specified: uses DEFAULT_MODEL from gemini.py
 generate_content_retry(
     ["The temperature in Tokyo is 90 degrees Fahrenheit."],
     config=config_from_schema(LocationsAndTemperatures),

@@ -21,6 +21,7 @@ with open(Path(__file__).with_suffix(".json")) as f:
     # You can also use json.load(f) directly, but schema validation is recommended
     #schema = json.load(f)
 
+# No model specified: uses DEFAULT_MODEL from gemini.py
 generate_content_retry(
     ["The temperature in Tokyo is 90 degrees Fahrenheit."],
     config=config_from_schema(schema),

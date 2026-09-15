@@ -103,7 +103,6 @@ Local Ollama API wrapper with streaming support and thinking process visualizati
 - Thinking process extraction via `chunk.message.thinking`
 - Automatic capability detection for thinking support
 - Consistent interface matching OpenAI and Gemini modules
-- Default model: qwen3:4b for balanced performance
 - Real-time thinking and answer display
 
 **Note**: This module is optional and not exported in `__init__.py`. Import explicitly:

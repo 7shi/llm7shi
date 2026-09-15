@@ -8,7 +8,8 @@ from .response import Response
 from .monitor import StreamProcessor, GptOssTemplateFilter
 from .stream import StreamGenerator
 
-DEFAULT_MODEL = "gpt-4.1-mini"  # optional model param, matching gemini.py's default-model pattern
+# optional model param, matching gemini.py's default-model pattern
+DEFAULT_MODEL = "gpt-5.6-luna"
 
 # Set to True to force Chat Completions even against real OpenAI (e.g. if the
 # Responses API misbehaves); flipped as a whole-module escape hatch, not per-call.

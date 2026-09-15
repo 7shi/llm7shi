@@ -13,10 +13,13 @@ from .response import Response
 from .monitor import StreamProcessor
 from .stream import StreamGenerator
 
-# Available Gemini models
+# Example Gemini models (not an exhaustive list)
 models = [
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
+    "gemma-4-26b-a4b-it",
+    "gemma-4-31b-it",
+    "gemini-3.5-flash-lite",
+    "gemini-3.8-flash",
+    "gemini-3.1-pro-preview",
 ]
 
 # Default model to use when none specified

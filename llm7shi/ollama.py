@@ -6,7 +6,8 @@ from .response import Response
 from .monitor import StreamProcessor
 from .stream import StreamGenerator
 
-DEFAULT_MODEL = "qwen3:4b"  # balances thinking capability and resource needs for local deployment
+# balances thinking capability and resource needs for local deployment
+DEFAULT_MODEL = "qwen3.5:4b"
 
 
 class OllamaStreamGenerator(StreamGenerator):

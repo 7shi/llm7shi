@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **`Response.usage`** - Token-usage info as a `Usage` object, or `None` if the provider returned none. `usage.raw` keeps the provider's own dict untouched (field names vary by provider); `input_tokens`/`output_tokens`/`reasoning_tokens`/`cached_tokens`/`total_tokens` normalize across providers (`None` where unreported), and two `Usage` objects can be summed with `+` to total a batch
 
+### Changed
+- **Default model updates** - Refreshed the stale example model names: `gemini.py`'s `models` list (used only to derive `DEFAULT_MODEL`), `ollama.py`'s `DEFAULT_MODEL` (now `qwen3.5:4b`), and `openai.py`'s `DEFAULT_MODEL` (now `gpt-5.6-luna`). Note: the `DEFAULT_MODEL` mechanism itself is deprecated and kept only for backward compatibility; callers should pass `model` explicitly instead of relying on it
+
 ## [0.17.0] - 2026-09-12
 
 ### Added
