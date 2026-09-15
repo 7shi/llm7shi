@@ -157,6 +157,13 @@ class GeminiStreamGenerator(StreamGenerator):
                     return False
         return True
 
+    def extract_usage(self, chunks) -> Optional[dict]:
+        # usage_metadata is a running total repeated on every chunk, so the last one has it all
+        for chunk in reversed(chunks):
+            if getattr(chunk, "usage_metadata", None):
+                return chunk.usage_metadata.model_dump()
+        return None
+
     def handle_error(self, e: Exception) -> Optional[dict]:
         # 429/500/502/503 are transient; other errors fail immediately (not retried)
         if isinstance(e, genai.errors.APIError) and hasattr(e, "code") and e.code in [429, 500, 502, 503]:

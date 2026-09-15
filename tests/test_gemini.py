@@ -308,6 +308,33 @@ class TestHandleError:
         assert gen.handle_error(e) is None
 
 
+class TestExtractUsage:
+    """usage_metadata is cumulative and repeated on every chunk, so the last chunk has it all"""
+
+    @staticmethod
+    def make_chunk(data):
+        chunk = MagicMock()
+        chunk.usage_metadata.model_dump.return_value = data
+        return chunk
+
+    def test_returns_last_chunk_usage_metadata(self):
+        gen = GeminiStreamGenerator()
+        chunks = [
+            self.make_chunk({"prompt_token_count": 2, "candidates_token_count": 3}),
+            self.make_chunk({"prompt_token_count": 2, "candidates_token_count": 9, "total_token_count": 11}),
+        ]
+        assert gen.extract_usage(chunks) == {"prompt_token_count": 2, "candidates_token_count": 9, "total_token_count": 11}
+
+    def test_returns_none_without_chunks(self):
+        gen = GeminiStreamGenerator()
+        assert gen.extract_usage([]) is None
+
+    def test_returns_none_when_usage_metadata_absent(self):
+        gen = GeminiStreamGenerator()
+        chunk = MagicMock(usage_metadata=None)
+        assert gen.extract_usage([chunk]) is None
+
+
 class TestFileOperations:
     """Test file upload and delete operations"""
     

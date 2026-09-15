@@ -9,8 +9,9 @@ instead of the default fixed delay.
 import httpx
 import openai
 import pytest
+from unittest.mock import MagicMock
 
-from llm7shi.openai import OpenAIStreamGenerator
+from llm7shi.openai import OpenAIStreamGenerator, OpenAIResponsesStreamGenerator
 
 
 def make_error(status_code=429, headers=None, body=None):
@@ -49,3 +50,50 @@ class TestHandleError:
         gen = OpenAIStreamGenerator()
         e = openai.APIConnectionError(request=httpx.Request("POST", "https://example.com"))
         assert gen.handle_error(e) is None
+
+
+class TestOpenAIStreamGeneratorExtractUsage:
+    """stream_options={"include_usage": True} (set in make_stream) delivers usage as
+    an extra chunk after the one with finish_reason, identifiable by choices=[]"""
+
+    @staticmethod
+    def make_usage_chunk(data):
+        chunk = MagicMock(choices=[])
+        chunk.usage.model_dump.return_value = data
+        return chunk
+
+    def test_finds_usage_on_the_extra_chunk(self):
+        gen = OpenAIStreamGenerator()
+        chunks = [
+            MagicMock(choices=[MagicMock()], usage=None),
+            self.make_usage_chunk({"prompt_tokens": 5, "completion_tokens": 7}),
+        ]
+        assert gen.extract_usage(chunks) == {"prompt_tokens": 5, "completion_tokens": 7}
+
+    def test_returns_none_without_a_usage_chunk(self):
+        gen = OpenAIStreamGenerator()
+        chunks = [MagicMock(choices=[MagicMock()], usage=None)]
+        assert gen.extract_usage(chunks) is None
+
+    def test_process_chunk_skips_the_empty_choices_usage_chunk(self):
+        gen = OpenAIStreamGenerator()
+        processor = MagicMock()
+        chunk = MagicMock(choices=[])
+        assert gen.process_chunk(chunk, processor) is True
+        processor.add_text.assert_not_called()
+
+
+class TestOpenAIResponsesStreamGeneratorExtractUsage:
+    """usage lives on the final response.completed event, inside response.usage"""
+
+    def test_finds_usage_on_the_completed_event(self):
+        gen = OpenAIResponsesStreamGenerator()
+        completed = MagicMock(type="response.completed")
+        completed.response.usage.model_dump.return_value = {"input_tokens": 3, "output_tokens": 4}
+        chunks = [MagicMock(type="response.output_text.delta"), completed]
+        assert gen.extract_usage(chunks) == {"input_tokens": 3, "output_tokens": 4}
+
+    def test_returns_none_without_a_completed_event(self):
+        gen = OpenAIResponsesStreamGenerator()
+        chunks = [MagicMock(type="response.output_text.delta")]
+        assert gen.extract_usage(chunks) is None

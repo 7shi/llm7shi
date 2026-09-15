@@ -18,16 +18,22 @@ system_prompt = "You are a helpful assistant that answers questions concisely."
 client.set_system_prompt(system_prompt)
 
 print("--- First turn: call with a system prompt ---")
-# no print(response1) here: the client already echoes generation to the console
+# no print(response1.text) here: the client already echoes generation to the console
 response1 = client(
     prompt="What is the capital of France?"
 )
+print("usage:", response1.usage)
 
 print("\n--- Second turn: history is managed automatically by the client ---")
 response2 = client(
     prompt="What is its population?"
 )
+print("usage:", response2.usage)
 
 # The history can also be serialized to a flat XML string
 print("\n--- XML History Log ---")
-print(client.to_xml())
+print(client.to_xml().rstrip())
+
+if response1.usage and response2.usage:
+    print("\n--- Total Usage ---")
+    print(response1.usage + response2.usage)

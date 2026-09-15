@@ -37,6 +37,16 @@ Provider-agnostic response object that encapsulates results from LLM API calls.
 - Provider-independent design
 - Text, thoughts, and metadata access
 - String conversion support
+- `usage: Optional[Usage]` field - see [usage.py](usage.py) below
+
+### [usage.py](usage.py) - Token-Usage Data Class
+Provider-agnostic token-usage object (`Response.usage`), split out from `response.py` once it grew its own set of normalization and aggregation logic.
+
+**Documentation**: [usage.md](usage.md)
+
+**Key Features**:
+- `Usage` dataclass - `raw` keeps the provider's own token-usage dict untouched; `input_tokens`/`output_tokens`/`reasoning_tokens`/`cached_tokens`/`total_tokens` are best-effort fields normalized across providers (`None` where a provider doesn't report that dimension); `to_dict()` returns just those normalized fields
+- `+` (`__add__`) - Sums the normalized fields across multiple `Usage` objects (e.g. for totaling a batch), ignoring `raw`
 
 ### [stream.py](stream.py) - Unified Stream Processing & Retry
 Unified base class and execution loop for streaming LLM generation, coordinating retry loops, exception handling, and real-time output monitoring.
@@ -317,6 +327,7 @@ llm7shi/
 ├── openai.py        # OpenAI-specific implementation
 ├── ollama.py        # Ollama-specific implementation
 ├── response.py      # Response data class
+├── usage.py         # Token-usage data class
 ├── utils.py         # Shared utility functions
 ├── compat.py        # Multi-provider compatibility
 ├── terminal.py      # Output formatting

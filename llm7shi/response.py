@@ -2,11 +2,13 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, Any
 
+from .usage import Usage  # re-exported: Response.usage's type, kept importable from here too
+
 
 @dataclass
 class Response:
     """Response object containing the results from LLM API calls.
-    
+
     Attributes:
         model: The model used for generation
         config: The configuration object used (provider-specific)
@@ -19,6 +21,8 @@ class Response:
         max_length: Set to the length limit if generation was truncated (None for normal completion)
         data: Parsed JSON content of text (dict/list, or a Pydantic instance when a
             Pydantic schema was used), set when a schema is passed to Client.__call__
+        usage: Token-usage info as a Usage object, or None if the provider
+            didn't return any. See Usage for details
     """
     model: Optional[str] = None
     config: Optional[Any] = None  # provider-specific objects stay Any; only common fields are standardized
@@ -30,11 +34,12 @@ class Response:
     repetition: bool = False  # distinguishes early termination (repetition loop) from normal completion
     max_length: Optional[int] = None  # set only when truncated by max_length; None means natural completion
     data: Optional[Any] = None
+    usage: Optional[Usage] = None
 
     def __str__(self) -> str:
         """Return the text content when converting to string."""
         return self.text  # print(response) shows text directly, no need for response.text
-    
+
     def __repr__(self) -> str:
         """Return a concise representation showing contents and text."""
         if self.contents is None:
@@ -43,9 +48,9 @@ class Response:
             contents_repr = str(self.contents[0])
             if len(contents_repr) > 10:
                 contents_repr = contents_repr[:10] + "..."
-        
+
         text_repr = self.text
         if len(text_repr) > 10:
             text_repr = text_repr[:10] + "..."
-        
+
         return f"Response(contents={contents_repr!r}, text={text_repr!r})"

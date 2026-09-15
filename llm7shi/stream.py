@@ -2,6 +2,7 @@ import sys
 from typing import Optional, List, Any
 
 from .response import Response
+from .usage import Usage
 
 DEFAULT_MAX_ATTEMPTS = 5
 DEFAULT_RETRY_DELAY = 15
@@ -45,6 +46,10 @@ class StreamGenerator:
         """Hook called after the stream is consumed successfully. Can be overridden by subclasses."""
         pass
 
+    def extract_usage(self, chunks: List[Any]) -> Optional[dict]:
+        """Return the provider's raw token-usage info as a dict, or None. Can be overridden by subclasses."""
+        return None
+
     def generate(self) -> Response:
         """Run the streaming generation with retry loop and monitoring."""
         import sys
@@ -72,6 +77,8 @@ class StreamGenerator:
                             break
                 self.finalize_stream(processor)
 
+                raw_usage = self.extract_usage(chunks)
+
                 return Response(
                     model=self.model,
                     config=self.config,
@@ -82,6 +89,7 @@ class StreamGenerator:
                     text=processor.text,
                     repetition=processor.repetition_detected,
                     max_length=processor.max_length_exceeded,
+                    usage=Usage(raw=raw_usage) if raw_usage is not None else None,
                 )
 
             except Exception as e:

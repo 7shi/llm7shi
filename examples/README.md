@@ -143,6 +143,13 @@ Note: With `include_thoughts=False`, the `google:` provider cannot suppress reas
 uv run examples/gemma4.py
 ```
 
+### [usage.py](usage.py) - Token Usage Info
+Shows `Response.usage`, a `Usage` object with cross-provider normalized fields (`input_tokens`, `output_tokens`, `reasoning_tokens`, `cached_tokens`, `total_tokens` - `None` where a provider doesn't report that dimension) plus the provider's untouched data in `.raw` (field names differ per vendor - see [docs/20260915-token-usage.md](../docs/20260915-token-usage.md)).
+
+```bash
+uv run examples/usage.py [-m MODEL]
+```
+
 ## Advanced Examples
 
 ### [essay.py](essay.py) - Automated Essay Evaluation

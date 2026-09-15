@@ -11,7 +11,17 @@ Tests are organized by module to provide comprehensive unit test coverage:
 #### [test_gemini.py](test_gemini.py) - Gemini API Module Tests
 Unit tests for the core Gemini API wrapper functionality in `llm7shi/gemini.py`.
 
-**Key Features**: Response dataclass, schema building, content generation with retry logic, file operations, thinking process extraction.
+**Key Features**: Response dataclass, schema building, content generation with retry logic, file operations, thinking process extraction, usage extraction from `usage_metadata`.
+
+#### [test_openai.py](test_openai.py) - OpenAI API Module Tests
+Unit tests for the OpenAI API wrapper in `llm7shi/openai.py`.
+
+**Key Features**: Retry-After extraction from 429 errors, usage extraction for both the Chat Completions (`choices=[]` extra chunk) and Responses (`response.completed` event) transports, skipping the empty-choices usage chunk in `process_chunk()`.
+
+#### [test_ollama.py](test_ollama.py) - Ollama API Module Tests
+Unit tests for usage extraction in `llm7shi/ollama.py`.
+
+**Key Features**: Excluding non-usage keys (`model`, `message`, etc.) from the final chunk's `model_dump()`, returning `None` before the stream reaches `done=True`.
 
 #### [test_utils.py](test_utils.py) - Utility Functions Tests
 Unit tests for helper functions in `llm7shi/utils.py`.
@@ -51,7 +61,17 @@ Unit tests for vendor prefix functionality in `llm7shi/compat.py`.
 #### [test_stream.py](test_stream.py) - Stream Generator Module Tests
 Unit tests for the core `StreamGenerator` base class and execution loop in `llm7shi/stream.py`.
 
-**Key Features**: Streaming generator success, early stopping via monitor, rate-limit countdown retry execution, exception propagation, and backoff sleeps.
+**Key Features**: Streaming generator success, early stopping via monitor, rate-limit countdown retry execution, exception propagation, backoff sleeps, and wrapping `extract_usage()`'s result into a `Usage` object.
+
+#### [test_response.py](test_response.py) - Response Module Tests
+Unit tests for the `Response` dataclass in `llm7shi/response.py`.
+
+**Key Features**: `usage` defaults to `None`.
+
+#### [test_usage.py](test_usage.py) - Usage Module Tests
+Unit tests for the `Usage` dataclass in `llm7shi/usage.py`.
+
+**Key Features**: Normalized field fallback across each provider's raw shape (Ollama, Gemini, OpenAI Responses, OpenAI Chat Completions), `to_dict()` omitting `None`s and `raw`, `__repr__` matching `to_dict()`, `+` aggregation across multiple calls (ignoring `raw`, chaining correctly).
 
 #### [test_terminal.py](test_terminal.py) - Terminal Formatting Tests
 Unit tests for terminal output formatting in `llm7shi/terminal.py`.

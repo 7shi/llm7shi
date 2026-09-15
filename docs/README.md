@@ -133,6 +133,17 @@ Key topics:
 - `USE_COMPLETION` escape hatch and the `--completion` example flag
 - Explicit scope cut: no multi-turn reasoning continuity, and why an empty `Response.thoughts` for a reasoning model isn't necessarily a bug
 
+### [20260915-token-usage.md](20260915-token-usage.md) - Token Usage Fields Across Providers
+Survey of where each provider puts token-usage information in its streaming response, which informed the design of `Response.usage` (the `Usage` class in `llm7shi/usage.py`).
+
+Key topics:
+- Ollama: flat fields (`prompt_eval_count`/`eval_count`) on the final chunk only, no separate reasoning-token count even with thinking enabled
+- Gemini: cumulative `usage_metadata` repeated on every chunk
+- OpenAI Responses API: `response.usage` on the final `ResponseCompletedEvent`
+- OpenAI Chat Completions / OpenRouter: extra `choices=[]` chunk, requires `stream_options={"include_usage": True}`
+- Comparison table of field names and delivery shapes across all four
+- How each `extract_usage()` builds `Usage.raw` (whole-object `model_dump()`, or an exclude-list for Ollama's flat chunk) so provider fields added later show up automatically
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`

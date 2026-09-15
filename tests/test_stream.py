@@ -19,11 +19,12 @@ class MockStreamGenerator(StreamGenerator):
     # error_map keyed by call attempt triggers exceptions deterministically, avoiding
     # patching internals of the real Gemini/OpenAI/Ollama SDK clients
 
-    def __init__(self, *args, stream_data=None, error_map=None, **kwargs):
+    def __init__(self, *args, stream_data=None, error_map=None, usage_to_return=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.stream_data = stream_data or []
         self.error_map = error_map or {}
         self.call_count = 0
+        self.usage_to_return = usage_to_return
 
     def make_stream(self):
         self.call_count += 1
@@ -44,6 +45,9 @@ class MockStreamGenerator(StreamGenerator):
             return {"status_code": 429, "delay": 2}
         return None
 
+    def extract_usage(self, chunks):
+        return self.usage_to_return
+
 
 def test_stream_generator_success():
     generator = MockStreamGenerator(
@@ -61,6 +65,27 @@ def test_stream_generator_success():
     assert response.config == {"temp": 0.7}
     assert response.contents == ["test input"]
     assert generator.call_count == 1
+
+
+def test_stream_generator_wraps_extract_usage_in_usage_object():
+    from llm7shi.usage import Usage
+
+    generator = MockStreamGenerator(
+        stream_data=["hello"],
+        usage_to_return={"prompt_tokens": 5, "completion_tokens": 7},
+        file=None,
+    )
+
+    response = generator.generate()
+
+    assert isinstance(response.usage, Usage)
+    assert response.usage.raw == {"prompt_tokens": 5, "completion_tokens": 7}
+
+
+def test_stream_generator_usage_none_when_extract_usage_returns_none():
+    generator = MockStreamGenerator(stream_data=["hello"], file=None)
+    response = generator.generate()
+    assert response.usage is None
 
 
 def test_stream_generator_early_stop():

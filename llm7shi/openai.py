@@ -98,10 +98,14 @@ class OpenAIStreamGenerator(StreamGenerator):
             model=self.model,
             messages=self.messages,
             stream=True,
+            stream_options={"include_usage": True},
             **self.config
         )
 
     def process_chunk(self, chunk, processor) -> bool:
+        # the include_usage chunk above arrives as a final extra chunk with no choices
+        if not chunk.choices:
+            return True
         delta = chunk.choices[0].delta
 
         # some providers put thinking in delta.reasoning instead of delta.content; independent of
@@ -149,6 +153,12 @@ class OpenAIStreamGenerator(StreamGenerator):
             if len(self.content_filter.text) > self.previous_text_len:
                 processor.add_text(self.content_filter.text[self.previous_text_len:])
 
+    def extract_usage(self, chunks) -> Optional[dict]:
+        for chunk in reversed(chunks):
+            if getattr(chunk, "usage", None):
+                return chunk.usage.model_dump()
+        return None
+
     def handle_error(self, e: Exception) -> Optional[dict]:
         return _handle_openai_error(e)
 
@@ -183,6 +193,14 @@ class OpenAIResponsesStreamGenerator(StreamGenerator):
             if not processor.add_text(event.delta):
                 return False
         return True
+
+    def extract_usage(self, chunks) -> Optional[dict]:
+        for chunk in reversed(chunks):
+            if getattr(chunk, "type", None) == "response.completed":
+                usage = getattr(chunk.response, "usage", None)
+                if usage:
+                    return usage.model_dump()
+        return None
 
     def handle_error(self, e: Exception) -> Optional[dict]:
         return _handle_openai_error(e)

@@ -41,6 +41,17 @@ class OllamaStreamGenerator(StreamGenerator):
                 return False
         return True
 
+    # Ollama has no separate usage sub-object: counts/durations sit on the final
+    # chunk (done=True) alongside message/model/timing fields that aren't usage.
+    # Dumping the whole chunk and excluding those keeps any usage field Ollama
+    # adds in the future without needing a code change here.
+    _NON_USAGE_KEYS = {"model", "created_at", "done", "done_reason", "message", "logprobs"}
+
+    def extract_usage(self, chunks) -> Optional[dict]:
+        if not chunks or not chunks[-1].done:
+            return None
+        return {k: v for k, v in chunks[-1].model_dump().items() if k not in self._NON_USAGE_KEYS}
+
     def handle_error(self, e: Exception) -> Optional[dict]:
         # Ollama is local, no retry logic by default (returns None)
         return None

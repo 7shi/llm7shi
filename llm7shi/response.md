@@ -13,3 +13,5 @@ The `Response` class was created to solve several data management challenges tha
 **Problem**: When debugging LLM interactions or analyzing API behavior, you need access to the original inputs, all streaming chunks, and the raw API responses.
 
 **Solution**: Preserved all data from the API interaction in the Response object, enabling post-processing, debugging, and analysis without needing to re-run expensive API calls.
+
+For `Response.usage`'s design (the provider-agnostic `Usage` class), see `usage.md`.
