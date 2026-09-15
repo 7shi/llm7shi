@@ -22,13 +22,13 @@ print("--- First turn: call with a system prompt ---")
 response1 = client(
     prompt="What is the capital of France?"
 )
-print("usage:", response1.usage)
+print(f"\n{response1.usage}")
 
 print("\n--- Second turn: history is managed automatically by the client ---")
 response2 = client(
     prompt="What is its population?"
 )
-print("usage:", response2.usage)
+print(f"\n{response2.usage}")
 
 # The history can also be serialized to a flat XML string
 print("\n--- XML History Log ---")

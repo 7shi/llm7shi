@@ -13,7 +13,7 @@ args = parse_model_args(argparse.ArgumentParser(description=__doc__))
 response = generate_with_schema(["What is the capital of France?"], model=args.model)
 
 # repr() shows the normalized fields only; .raw is the provider's untouched data
-print("\nusage:", response.usage)
+print(f"\n{response.usage}")
 
 if response.usage:
     # the one aggregate that generalizes cleanly across all providers
