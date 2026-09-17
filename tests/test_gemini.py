@@ -149,7 +149,7 @@ class TestGenerateContentRetry:
         response = generate_content_retry(["Test prompt"], file=None)
 
         assert response.text == "Hello World!"
-        assert response.model == "gemini-2.5-flash"
+        assert response.model == "gemma-4-26b-a4b-it"
         assert len(response.chunks) == 2
         mock_stream.assert_called_once()
 
