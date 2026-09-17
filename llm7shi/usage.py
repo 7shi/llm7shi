@@ -1,5 +1,5 @@
 # Usage dataclass for provider-agnostic token-usage info
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -19,7 +19,8 @@ class Usage:
             "prompt_eval_count"/"eval_count" for Ollama vs
             "input_tokens"/"output_tokens" for OpenAI's Responses API
     """
-    raw: dict
+    # defaults to {} so Usage() can serve as a zero value
+    raw: dict = field(default_factory=dict)
 
     def _first(self, *keys: str) -> Optional[int]:
         for key in keys:
@@ -108,3 +109,9 @@ class Usage:
             if a is not None or b is not None:
                 fields[key] = (a or 0) + (b or 0)
         return Usage(raw=fields)
+
+    def __radd__(self, other: int) -> "Usage":
+        """Support sum(usages) by absorbing the implicit int(0) start value."""
+        if other == 0:
+            return self
+        return NotImplemented

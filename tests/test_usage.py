@@ -138,3 +138,28 @@ class TestUsageAggregation:
         total = (a + b) + c
         assert total.input_tokens == 17
         assert total.reasoning_tokens == 4
+
+    def test_zero_value_default(self):
+        assert Usage().raw == {}
+        assert Usage().to_dict() == {}
+
+    def test_sum_with_builtin(self):
+        usages = [
+            Usage(raw={"prompt_eval_count": 10, "eval_count": 20}),
+            Usage(raw={"prompt_eval_count": 5, "eval_count": 7}),
+        ]
+        total = sum(usages)
+        assert total.to_dict() == {"input_tokens": 15, "output_tokens": 27, "total_tokens": 42}
+
+    def test_sum_of_empty_list_returns_int_zero(self):
+        # sum([]) never calls __radd__; nothing to add to the builtin start value of 0
+        assert sum([]) == 0
+
+    def test_radd_rejects_nonzero_int(self):
+        assert Usage(raw={"input_tokens": 1}).__radd__(1) is NotImplemented
+
+    def test_iadd_accumulates(self):
+        total = Usage()
+        total += Usage(raw={"input_tokens": 3, "output_tokens": 2})
+        total += Usage(raw={"input_tokens": 5, "output_tokens": 1})
+        assert total.to_dict() == {"input_tokens": 8, "output_tokens": 3, "total_tokens": 11}
