@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-09-17
+
 ### Changed
 - **`Usage` supports `sum()` and `+=`** - `Usage()` now defaults to an empty (zero) value, and `Usage` implements `__radd__` so `sum(usages)` works without an explicit start value
 
