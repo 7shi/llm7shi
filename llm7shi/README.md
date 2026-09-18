@@ -50,7 +50,7 @@ Provider-agnostic token-usage object (`Response.usage`), split out from `respons
 - `append_usage()`/`parse_usage_file()`/`merge_usage()` - Persist `Usage` records to a `usage.jsonl` file (one JSON object per call), re-derive per-date/per-model totals by summing with `+`, and consolidate same-day/model records into one line each; reads and writes are serialized via `utils.locked()`
 - `find_usage_file()` - Locate `usage.jsonl` by searching upward from the current directory; raises `FileNotFoundError` rather than guessing a path
 - `format_usage_line()` - Render a model name and its `Usage` as a compact `model|input:N|output:N|...` line
-- CLI: `uv run -m llm7shi usage show [-a]` / `usage merge` (see [__main__.py](__main__.py) below)
+- `main()` - Standalone `show [-a]`/`merge` CLI, runnable as `uv run -m llm7shi usage ...` (see [__main__.py](__main__.py) below) or pointed at directly as a downstream project's own console script, e.g. `usage = "llm7shi.usage:main"`
 
 ### [stream.py](stream.py) - Unified Stream Processing & Retry
 Unified base class and execution loop for streaming LLM generation, coordinating retry loops, exception handling, and real-time output monitoring.
@@ -225,7 +225,7 @@ Command-line entry point with subcommand dispatch, used mainly for manually chec
   uv run -m llm7shi md <markdown-file>
   ```
 - Streams the file through `MarkdownStreamConverter` to exercise the streaming path
-- `usage` subcommand - Summarize or consolidate `usage.jsonl` records (see [usage.py](usage.py)):
+- `usage` subcommand - forwards to `usage.py`'s own `main()` (see [usage.py](usage.py)) rather than redefining its parser here:
   ```bash
   uv run -m llm7shi usage show [-a]
   uv run -m llm7shi usage merge

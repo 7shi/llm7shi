@@ -17,15 +17,22 @@ The first command, `md`, renders a Markdown file:
 uv run -m llm7shi md <markdown-file>
 ```
 
-The `usage` command wraps `llm7shi.usage`'s persistence helpers, with its own
-`show`/`merge` subcommands (a second level of subparsers, since both need a
-shared `-f/--file` option that `md` has no use for):
+### Delegating "usage" Instead of Redefining It
+**Problem**: `usage.py`'s CLI (`show`/`merge` subcommands, its own `-f/--file`)
+needs to work two ways: as `uv run -m llm7shi usage ...` here, and as a
+standalone console-script target in a downstream project (e.g.
+`usage = "llm7shi.usage:main"`) with no `llm7shi` prefix. Defining its parser
+here (a second level of subparsers under `usage`) would mean keeping two
+copies in sync, and a downstream project pointing its own script at this
+module's `main()` would have to strip a leading `"usage"` off `argv` first.
+
+**Solution**: `usage.py` owns a complete `argparse` CLI itself (see `usage.md`)
+and this module just forwards `argv[1:]` to `usage.main()` when `argv[0] ==
+"usage"`, checked before the top-level parser runs rather than through a
+nested subparser - `usage`'s own `-f`/`-a` flags and `show`/`merge` choices
+never need to be declared twice this way:
 
 ```
 uv run -m llm7shi usage show [-a]
 uv run -m llm7shi usage merge
 ```
-
-`-f/--file` defaults to `find_usage_file()`'s upward search from the current
-directory rather than a fixed path, since `llm7shi` itself has no notion of
-"project root" (see `usage.md`).

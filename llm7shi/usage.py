@@ -2,6 +2,7 @@
 # persisting and aggregating it in a usage.jsonl file.
 from __future__ import annotations
 
+import argparse
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -238,3 +239,88 @@ def merge_usage(path: Path) -> tuple[int, int]:
         f.truncate()
 
     return len(lines), len(new_lines)
+
+
+# --- CLI ----------------------------------------------------------------
+#
+# A full argparse CLI (not just functions __main__.py could call directly) so
+# this module works as a console-script target on its own, e.g. a downstream
+# project's `usage = "llm7shi.usage:main"`, without needing a wrapper that
+# prepends "usage" to argv. `llm7shi/__main__.py`'s `usage` subcommand forwards
+# its remaining argv here instead of redefining the same parser.
+
+def _cmd_show(file: Path, show_all: bool) -> int:
+    totals = parse_usage_file(file)
+    if not totals:
+        print(f"{file}: no records")
+        return 1
+
+    if not show_all:
+        date = today()
+        if date not in totals:
+            print(f"No records for {date}")
+            return 1
+        print(f"# {date}")
+        for model, usage in totals[date].items():
+            print(format_usage_line(model, usage))
+        return 0
+
+    # also accumulate a grand total across all dates, per model
+    model_totals: dict[str, Usage] = {}
+    sections = []
+    for date, by_model in totals.items():
+        lines = [f"# {date}"]
+        for model, usage in by_model.items():
+            lines.append(format_usage_line(model, usage))
+            model_totals[model] = usage if model not in model_totals else model_totals[model] + usage
+        sections.append("\n".join(lines))
+
+    total_lines = ["===== Total ====="]
+    for model, usage in model_totals.items():
+        total_lines.append(format_usage_line(model, usage))
+    sections.append("\n".join(total_lines))
+
+    print("\n\n".join(sections))
+    return 0
+
+
+def _cmd_merge(file: Path) -> int:
+    if not file.exists():
+        print(f"{file}: no records")
+        return 1
+    before, after = merge_usage(file)
+    print(f"{file}: merged {before} -> {after} lines")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI for summarizing/consolidating usage.jsonl records.
+
+    Run with: uv run -m llm7shi usage <command> [args]
+    """
+    parser = argparse.ArgumentParser(prog="usage", description="Summarize or consolidate usage.jsonl records")
+    parser.add_argument("-f", "--file", type=Path, default=None,
+                        help="Path to usage.jsonl (default: search upward from the current directory)")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    show = sub.add_parser("show", help="Summarize recorded token usage")
+    show.add_argument("-a", "--all", action="store_true",
+                      help="Show every date's totals plus a grand total (default: today only)")
+
+    sub.add_parser("merge", help="Consolidate records to one line per UTC date and model")
+
+    args = parser.parse_args(argv)
+
+    try:
+        file = args.file or find_usage_file()
+    except FileNotFoundError as e:
+        print(e)
+        return 1
+
+    if args.command == "show":
+        return _cmd_show(file, args.all)
+    return _cmd_merge(file)  # only "merge" remains; the subparsers already validated the choice
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

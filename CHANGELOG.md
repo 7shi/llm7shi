@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`llm7shi.usage` CLI now standalone** - `usage.py` gained its own `main()` (the `show [-a]`/`merge` CLI, previously defined in `__main__.py`), so a downstream project can point a console script directly at it (e.g. `usage = "llm7shi.usage:main"`) without a wrapper to strip a leading `"usage"` token from `argv`. `uv run -m llm7shi usage ...` now just forwards to it
+
 ## [0.19.0] - 2026-09-18
 
 ### Added
