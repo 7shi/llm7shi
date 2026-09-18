@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-09-19
+
 ### Added
 - **`llama.cpp:` vendor prefix** - Defaults to `http://localhost:8080/v1`, llama.cpp's standard local port, unless `OPENAI_BASE_URL` is already set
 
