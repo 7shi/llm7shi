@@ -125,9 +125,10 @@ Unified interface for OpenAI, Gemini, and Ollama APIs, enabling seamless switchi
 - Vendor prefix support:
   - Core providers: "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b"
   - OpenAI-compatible: "openrouter:google/gemma-3-4b-it:free", "groq:llama-3.1-8b-instant", "grok:grok-4-1", "cerebras:llama3.1-8b"
+  - Local llama-server: "llama.cpp:my-model" - defaults to `http://localhost:8080/v1` unless `OPENAI_BASE_URL` is already set
 - Base URL embedding support (e.g., "openai:model@http://localhost:8080/v1") - model name acts as client-side template identifier for llama-server
 - API key environment variable specification (e.g., "openai:model@http://proxy.com/v1|MY_PROXY_KEY")
-- Secure defaults: Empty API key for custom endpoints to prevent key leakage
+- Secure defaults: Custom endpoints without an explicit `api_key_env` never send your real `OPENAI_API_KEY`
 - Backward compatible automatic API selection based on model name
 - Support for JSON schemas, Pydantic models, or plain text
 - Preserves provider-specific features
@@ -294,6 +295,12 @@ response = generate_with_schema(
     model="cerebras:llama3.1-8b"  # Cerebras
 )
 
+# Local llama.cpp server (defaults to http://localhost:8080/v1)
+response = generate_with_schema(
+    contents=["Your prompt"],
+    model="llama.cpp:my-model"
+)
+
 # Multi-turn conversation with message format
 messages = [
     {"role": "system", "content": "You are helpful."},
@@ -373,7 +380,18 @@ export MY_PROXY_KEY="your-proxy-api-key"
 
 Then use with: `model="openai:gpt-4@http://my-proxy.com/v1|MY_PROXY_KEY"`
 
-**Security Note**: When using `@base_url` without `|api_key_env`, the library automatically uses an empty API key to prevent accidentally leaking your `OPENAI_API_KEY` to untrusted servers.
+**Security Note**: When using `@base_url` without `|api_key_env`, the library sends a non-functional placeholder instead of your real `OPENAI_API_KEY`, to prevent accidentally leaking it to untrusted servers.
+
+### Local llama.cpp Server
+No API key needed. Point at a running `llama-server`:
+```bash
+# Defaults to http://localhost:8080/v1
+model="llama.cpp:my-model"
+
+# Or point elsewhere without the @ syntax
+export OPENAI_BASE_URL="http://192.168.0.8:8080/v1"
+model="llama.cpp:my-model"
+```
 
 ### OpenAI-Compatible Providers
 For pre-configured providers (OpenRouter, Groq, X.AI, Cerebras):

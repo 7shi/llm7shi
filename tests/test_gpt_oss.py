@@ -390,8 +390,10 @@ class TestFilterActivation:
         chunk.choices = [MagicMock()]
         chunk.choices[0].delta = MagicMock()
         chunk.choices[0].delta.content = content
-        chunk.choices[0].delta.reasoning = None  # absent in real standard-OpenAI chunks;
-        # explicit None avoids MagicMock's default truthy attribute triggering the reasoning path
+        # absent in real standard-OpenAI chunks; explicit None avoids MagicMock's
+        # default truthy attribute triggering the reasoning path
+        chunk.choices[0].delta.reasoning = None
+        chunk.choices[0].delta.reasoning_content = None
         return chunk
 
 
@@ -423,6 +425,30 @@ class TestReasoningExtraction:
         assert result.text == "Hello!"
 
     @patch('llm7shi.openai.OpenAI')
+    def test_reasoning_content_separated_from_content(self, mock_openai_class):
+        """delta.reasoning_content (llama.cpp/vLLM) is collected into thoughts, content into text."""
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+
+        mock_chunks = [
+            self._create_chunk(reasoning_content="Let me "),
+            self._create_chunk(reasoning_content="think."),
+            self._create_chunk(content="Hello"),
+            self._create_chunk(content="!"),
+        ]
+        mock_client.chat.completions.create.return_value = iter(mock_chunks)
+
+        result = generate_content(
+            messages=[{"role": "user", "content": "Test"}],
+            model="bonsai2-27b-pq2_0",
+            file=None,
+            base_url="http://localhost:8080/v1",  # Chat Completions path: real usage always sets base_url for compatible servers
+        )
+
+        assert result.thoughts == "Let me think."
+        assert result.text == "Hello!"
+
+    @patch('llm7shi.openai.OpenAI')
     def test_no_reasoning_leaves_thoughts_empty(self, mock_openai_class):
         """Without delta.reasoning, thoughts stays empty."""
         mock_client = MagicMock()
@@ -444,11 +470,44 @@ class TestReasoningExtraction:
         assert result.thoughts == ""
         assert result.text == "Hello, world!"
 
-    def _create_chunk(self, content=None, reasoning=None):
+    def _create_chunk(self, content=None, reasoning=None, reasoning_content=None):
         """Helper to create a mock chunk with optional content/reasoning."""
         chunk = MagicMock()
         chunk.choices = [MagicMock()]
         chunk.choices[0].delta = MagicMock()
         chunk.choices[0].delta.content = content
         chunk.choices[0].delta.reasoning = reasoning
+        chunk.choices[0].delta.reasoning_content = reasoning_content
         return chunk
+
+
+class TestBaseUrlEnvRouting:
+    """A third-party endpoint set only via OPENAI_BASE_URL (no `model@base_url` syntax,
+    no explicit base_url param) must still route to Chat Completions, not the Responses
+    API: the OpenAI() client resolves the env var on its own, so the transport decision
+    has to check the same effective value or it misdetects real OpenAI."""
+
+    @patch.dict('os.environ', {'OPENAI_BASE_URL': 'http://localhost:8080/v1'}, clear=False)
+    @patch('llm7shi.openai.OpenAI')
+    def test_env_var_only_uses_chat_completions(self, mock_openai_class):
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+
+        chunk = MagicMock()
+        chunk.choices = [MagicMock()]
+        chunk.choices[0].delta = MagicMock()
+        chunk.choices[0].delta.content = "Hi"
+        chunk.choices[0].delta.reasoning = None
+        chunk.choices[0].delta.reasoning_content = None
+        mock_client.chat.completions.create.return_value = iter([chunk])
+
+        result = generate_content(
+            messages=[{"role": "user", "content": "Test"}],
+            model="bonsai2-27b-pq2_0",
+            file=None,
+            # no base_url kwarg: only OPENAI_BASE_URL is set
+        )
+
+        mock_client.chat.completions.create.assert_called_once()
+        mock_client.responses.create.assert_not_called()
+        assert result.text == "Hi"

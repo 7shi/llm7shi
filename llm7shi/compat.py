@@ -1,6 +1,7 @@
 import json
 import sys
 import inspect
+import os
 import re
 from typing import Dict, Any, List, Union, Type, Optional
 from pydantic import BaseModel
@@ -61,7 +62,7 @@ def generate_with_schema(
     Args:
         contents: List of user content strings OR OpenAI message format
         schema: JSON schema for structured output, Pydantic model, or None for plain text
-        model: Model name with optional vendor prefix (e.g., "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b"). Defaults to Gemini.
+        model: Model name with optional vendor prefix (e.g., "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b", "llama.cpp:my-model" - defaults to http://localhost:8080/v1 unless OPENAI_BASE_URL is set). Defaults to Gemini.
         temperature: Temperature parameter for generation (None = use model default)
         system_prompt: System prompt as string
         include_thoughts: Whether to include thinking process (Gemini and Ollama; for OpenRouter, False disables reasoning via reasoning.enabled=False; for openai, False skips requesting a reasoning summary)
@@ -117,6 +118,20 @@ def generate_with_schema(
             extra_body = {"reasoning": {"enabled": include_thoughts}}
 
         return _generate_with_openai(actual_model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition, extra_body=extra_body)
+
+    elif vendor_prefix == "llama.cpp":
+        # llama-server needs no API key and ignores the model name (it serves one model
+        # at a time), so unlike OPENAI_COMPATIBLE_VENDORS there's no api_key_env and no
+        # meaningful default_model - "local" is just a display placeholder.
+        if not actual_model:
+            actual_model = "local"
+
+        # Respect OPENAI_BASE_URL if the user already set it; only fall back to the
+        # standard llama-server port when neither that nor an explicit "@" is given.
+        if "@" not in actual_model and "OPENAI_BASE_URL" not in os.environ:
+            actual_model = f"{actual_model}@http://localhost:8080/v1"
+
+        return _generate_with_openai(actual_model, contents, schema, temperature, system_prompt, file, show_params, max_length, check_repetition, include_thoughts=include_thoughts, reasoning_effort=reasoning_effort)
 
     elif vendor_prefix == "google":
         return _generate_with_gemini(actual_model, contents, schema, temperature, system_prompt, include_thoughts, thinking_budget, file, show_params, max_length, check_repetition)

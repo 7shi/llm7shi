@@ -49,6 +49,11 @@ As the library evolved, we realized that different LLM providers have significan
 
 **Solution**: `generate_with_schema()` now forwards `include_thoughts` through `_generate_with_openai()` into `openai.py`'s `generate_content()`, where it gates whether the `reasoning` param is sent on Responses API calls (see [openai.md](openai.md)). This keeps the same on/off knob meaningful across every provider, not just three of the four. `reasoning_effort` rides alongside it the same way, for tuning how much a reasoning model thinks rather than just whether its summary is shown.
 
+### `llama.cpp:` Prefix Kept Separate from `OPENAI_COMPATIBLE_VENDORS`
+**Problem**: `llama.cpp:` needed the same "fill in a default endpoint unless the user already gave one" behavior as `OPENAI_COMPATIBLE_VENDORS`, but two of that dict's assumptions don't hold for a local llama-server: it always requires an `api_key_env` (llama-server takes no key), and it always injects its `base_url` whenever `"@"` is absent from the model string, with no way to defer to an already-configured endpoint.
+
+**Solution**: Handled as its own `elif` branch instead of a dict entry. It defaults to `http://localhost:8080/v1` only when `OPENAI_BASE_URL` is *also* unset, so a user who already pointed that env var elsewhere (see [openai.md](openai.md)'s `effective_base_url`) isn't overridden by the vendor default. No `api_key_env` is set, so `openai.py`'s existing placeholder logic for keyless endpoints applies unchanged.
+
 ### OpenRouter Reasoning Control (Historical)
 **Problem**: An earlier version sent `reasoning.enabled=False` only when opting out, leaving `include_thoughts=True` to rely on each model's default — which broke for models that do not reason unless asked (e.g. `google/gemma`), so their thinking process never appeared despite `include_thoughts=True`.
 

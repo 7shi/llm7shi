@@ -417,6 +417,78 @@ class TestOpenAICompatibleVendors:
         assert call_kwargs["api_key_env"] == "GROQ_API_KEY"
 
 
+class TestLlamaCppPrefix:
+    """Test llama.cpp: vendor prefix"""
+    # Unlike OPENAI_COMPATIBLE_VENDORS, there's no api_key_env (llama-server needs no
+    # key) and the localhost:8080 default only applies when OPENAI_BASE_URL is unset,
+    # since that env var is honored by the underlying OpenAI() client itself.
+
+    @patch('llm7shi.openai.generate_content')
+    def test_default_url_when_env_unset(self, mock_generate, monkeypatch):
+        """No @base_url and no OPENAI_BASE_URL: defaults to localhost:8080"""
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="llama.cpp:my-model"
+        )
+
+        assert result == "response"
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["model"] == "my-model"
+        assert call_kwargs["base_url"] == "http://localhost:8080/v1"
+        assert call_kwargs["api_key_env"] is None
+
+    @patch('llm7shi.openai.generate_content')
+    def test_no_default_url_when_env_set(self, mock_generate, monkeypatch):
+        """OPENAI_BASE_URL set: no @base_url is added, letting the client use the env var"""
+        monkeypatch.setenv("OPENAI_BASE_URL", "http://192.168.0.8:8080/v1")
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="llama.cpp:my-model"
+        )
+
+        assert result == "response"
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["model"] == "my-model"
+        assert call_kwargs["base_url"] is None
+
+    @patch('llm7shi.openai.generate_content')
+    def test_explicit_url_not_overridden(self, mock_generate, monkeypatch):
+        """User-specified @base_url takes precedence over the localhost default"""
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="llama.cpp:my-model@http://192.168.0.8:8080/v1"
+        )
+
+        assert result == "response"
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["model"] == "my-model"
+        assert call_kwargs["base_url"] == "http://192.168.0.8:8080/v1"
+
+    @patch('llm7shi.openai.generate_content')
+    def test_empty_model_uses_placeholder(self, mock_generate, monkeypatch):
+        """Empty model name after the prefix gets a display-only placeholder"""
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+        mock_generate.return_value = "response"
+
+        result = generate_with_schema(
+            contents=["Test"],
+            model="llama.cpp:"
+        )
+
+        assert result == "response"
+        call_kwargs = mock_generate.call_args.kwargs
+        assert call_kwargs["model"] == "local"
+        assert call_kwargs["base_url"] == "http://localhost:8080/v1"
+
+
 class TestOpenRouterReasoningControl:
     """Test OpenRouter-only reasoning suppression via include_thoughts"""
     # enabled must be sent explicitly for both states: some models (e.g. google/gemma)

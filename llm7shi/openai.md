@@ -27,6 +27,8 @@
 
 **Solution**: Added `OpenAIResponsesStreamGenerator` as a second `StreamGenerator` alongside the existing Chat Completions one. Routing is decided by *destination*, not model: whenever `base_url` is unset (real OpenAI, not a compatible server), every call goes through the Responses API, regardless of which model it names — a `gpt-4.1-mini` call gets the same transport as an `o3-mini` one, just without a `reasoning` param. Calls with `base_url` set (llama.cpp, LocalAI, OpenRouter, Groq, ...) keep using Chat Completions unconditionally, since none of those servers implement the Responses API. `USE_COMPLETION` is a module-level escape hatch to force Chat Completions everywhere, for if the Responses API path misbehaves in practice.
 
+The `base_url` parameter alone isn't a reliable destination check, though: `OpenAI()` resolves an unset `base_url` from the `OPENAI_BASE_URL` env var on its own, so a compatible server set only via that env var (no `model@base_url` syntax) would leave the local `base_url` at `None` and get misrouted to the Responses API, which it doesn't implement. `effective_base_url` (`base_url or os.environ.get("OPENAI_BASE_URL")`) is computed once up front and used for both the client-construction branch and the routing check, so the two stay in sync with what the client actually talks to.
+
 Because the Responses API rejects the `reasoning` param outright on legacy models, `NON_REASONING_MODEL_RE` (a `gpt-[34]` blacklist, not a reasoning-model whitelist) suppresses it for those regardless of `include_thoughts`/`reasoning_effort` — deliberately a blacklist so newer model families default to being treated as reasoning-capable without a code change.
 
 ### gpt-oss Template Filter Support
@@ -35,4 +37,6 @@ Because the Responses API rejects the `reasoning` param outright on legacy model
 **Solution**: Integrated `GptOssTemplateFilter` from `monitor.py` that activates only for the exact model name `"llama.cpp/gpt-oss"`, parsing control tokens to separate thoughts (analysis channel) from final text (final channel) with real-time incremental display.
 
 **Structured Output Behavior**: The filter is automatically disabled when `response_format` is specified in kwargs (structured output mode). llama.cpp server does not emit control tokens in JSON mode, instead returning direct JSON output only. This optimization avoids unnecessary filter processing. Note that in JSON mode, the separation between reasoning and final answer via control tokens is not available; users who want to capture reasoning should include dedicated fields (e.g., `reasoning`) in their JSON schema.
+
+See [20260918-llama-cpp.md](../docs/20260918-llama-cpp.md) for the `api_key` placeholder, `delta.reasoning_content`, and `OPENAI_BASE_URL` routing fixes found while testing against a real llama.cpp server, and the decision to keep this filter despite llama.cpp now parsing gpt-oss's control tokens natively on recent builds.
 

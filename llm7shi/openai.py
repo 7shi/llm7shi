@@ -109,9 +109,11 @@ class OpenAIStreamGenerator(StreamGenerator):
             return True
         delta = chunk.choices[0].delta
 
-        # some providers put thinking in delta.reasoning instead of delta.content; independent of
-        # the gpt-oss filter below (control-token providers never populate this field)
-        reasoning = getattr(delta, "reasoning", None)
+        # some providers put thinking in delta.reasoning (e.g. OpenRouter) or
+        # delta.reasoning_content (e.g. llama.cpp/vLLM) instead of delta.content;
+        # independent of the gpt-oss filter below (control-token providers never
+        # populate these fields)
+        reasoning = getattr(delta, "reasoning", None) or getattr(delta, "reasoning_content", None)
         if reasoning:
             if not processor.add_thought(reasoning):
                 return False
@@ -232,25 +234,36 @@ def generate_content(
     has_response_format = 'response_format' in kwargs
     needs_gpt_oss_filter = (model == "llama.cpp/gpt-oss") and not has_response_format
 
+    # The OpenAI() client below resolves an unset base_url from OPENAI_BASE_URL on its
+    # own, so the transport routing further down must check the same effective value,
+    # not just the `model@base_url` syntax, or a third-party endpoint set only via the
+    # env var would be misdetected as real OpenAI and routed to the Responses API.
+    effective_base_url = base_url or os.environ.get("OPENAI_BASE_URL")
+
     # client is created per request (not a global singleton) so base_url can vary per call;
     # connection pooling at the HTTP level keeps this efficient
     if api_key_env is not None:
-        # Use specified environment variable
-        api_key = os.environ.get(api_key_env, "")
+        # Use specified environment variable, falling back to a placeholder when unset
+        # (see below: openai>=3.7 rejects an empty api_key as "missing credentials")
+        api_key = os.environ.get(api_key_env) or "not-needed"
         client = OpenAI(base_url=base_url, api_key=api_key)
-    elif base_url is not None:
-        # base_url specified but api_key_env is None: use empty string for security
-        # This prevents leaking OPENAI_API_KEY to untrusted local servers
-        client = OpenAI(base_url=base_url, api_key="")
+    elif effective_base_url is not None:
+        # base_url specified (directly or via OPENAI_BASE_URL) but api_key_env is None:
+        # use a dummy placeholder for security. This prevents leaking OPENAI_API_KEY to
+        # untrusted local servers. A non-empty value is required because openai>=3.7
+        # rejects an empty api_key as "missing credentials" even when the server doesn't
+        # check it.
+        client = OpenAI(base_url=base_url, api_key="not-needed")
     else:
         # No base_url, no api_key_env: use default OpenAI client
         # (will automatically use OPENAI_API_KEY environment variable)
         client = OpenAI()
 
-    # Destination decides the transport, not the model: real OpenAI (base_url is
-    # None) always goes through the Responses API; OpenAI-compatible endpoints via
-    # base_url keep using Chat Completions, since they don't implement Responses.
-    if not USE_COMPLETION and base_url is None:
+    # Destination decides the transport, not the model: real OpenAI (no base_url,
+    # from either the `model@base_url` syntax or OPENAI_BASE_URL) always goes through
+    # the Responses API; OpenAI-compatible endpoints keep using Chat Completions,
+    # since they don't implement Responses.
+    if not USE_COMPLETION and effective_base_url is None:
         instructions, input_items = _messages_to_responses_input(messages)
 
         responses_kwargs = dict(kwargs)

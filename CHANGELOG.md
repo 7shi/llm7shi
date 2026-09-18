@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`llama.cpp:` vendor prefix** - Defaults to `http://localhost:8080/v1`, llama.cpp's standard local port, unless `OPENAI_BASE_URL` is already set
+
+### Fixed
+- **Requests to custom OpenAI-compatible endpoints failing with "Missing credentials"** - Newer versions of the `openai` package reject an empty API key outright, even for servers that don't require one
+- **Thinking not shown for llama.cpp and vLLM** - These servers stream reasoning via a different field than OpenRouter's, which was going unread
+- **`OPENAI_BASE_URL` alone picking the wrong transport** - Setting only the environment variable (without the `model@base_url` syntax) now correctly talks to OpenAI-compatible endpoints instead of assuming real OpenAI
+
 ## [0.19.1] - 2026-09-18
 
 ### Changed
