@@ -23,3 +23,8 @@ All schema transformation functions create copies rather than modifying input ob
 ### Recursive Processing
 Schema transformations handle deeply nested structures automatically, ensuring that all objects (including those in arrays and nested properties) receive the necessary modifications.
 
+### File Locking as a Shared Primitive
+**Problem**: `usage.py`'s `usage.jsonl` persistence needs to serialize concurrent readers/writers (e.g. parallel batch jobs appending usage records), and that need isn't specific to usage tracking - any future feature reading/rewriting a shared file from multiple processes would need the same retry-with-timeout `flock` logic.
+
+**Solution**: `locked()` lives here rather than in `usage.py` so it's a general-purpose primitive, not something callers have to reach into `usage.py` to reuse. It locks the target file itself (no separate `.lock` file to leak if a process dies mid-write) and takes `retry_interval`/`timeout` as parameters rather than module-level constants, since a caller's acceptable wait varies by file and workload.
+

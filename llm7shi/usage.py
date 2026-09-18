@@ -1,6 +1,14 @@
-# Usage dataclass for provider-agnostic token-usage info
+# Usage dataclass for provider-agnostic token-usage info, plus helpers for
+# persisting and aggregating it in a usage.jsonl file.
+from __future__ import annotations
+
+import json
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
+
+from .utils import locked
 
 
 @dataclass
@@ -115,3 +123,118 @@ class Usage:
         if other == 0:
             return self
         return NotImplemented
+
+
+# --- usage.jsonl persistence -------------------------------------------------
+#
+# One JSON object per line: {"timestamp": ..., "model": ..., **usage.to_dict()}.
+# A caller accumulating usage across many short-lived processes (e.g. one process
+# per batch item) can't hold a running total in memory, so each call's Usage is
+# appended as its own record and totals are computed by re-reading the file.
+# Reads and writes go through utils.locked() so concurrent writers don't interleave.
+
+
+def format_usage_line(model: str, usage: Usage) -> str:
+    """Format a model name and its Usage as `model|input:N|output:N|...` (comma-grouped counts)."""
+    parts = [model]
+    for key, value in usage.to_dict().items():
+        parts.append(f"{key.removesuffix('_tokens')}:{value:,}")
+    return "|".join(parts)
+
+
+def today() -> str:
+    """Today's date in UTC, as `YYYY/MM/DD` (matching parse_usage_file's date keys)."""
+    return datetime.now(timezone.utc).strftime("%Y/%m/%d")
+
+
+def find_usage_file() -> Path:
+    """Search upward from the current directory for a usage.jsonl, and return its path.
+
+    This module makes no assumption about where a project's usage.jsonl lives (that's
+    a per-project choice), so the search starts from cwd rather than anywhere fixed,
+    and raises FileNotFoundError instead of falling back to a guessed location.
+    """
+    start = Path.cwd().resolve()
+    for d in (start, *start.parents):
+        candidate = d / "usage.jsonl"
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f"usage.jsonl not found searching upward from {start}")
+
+
+def parse_usage_file(path: Path) -> dict[str, dict[str, Usage]]:
+    """Parse a usage.jsonl file into {date: {model: total Usage}}.
+
+    Each record's date is its `timestamp` converted to UTC. Date and model keys
+    keep the order they first appear in the file. Returns {} if `path` doesn't
+    exist. Reading is serialized via the same lock writers use.
+    """
+    if not path.exists():
+        return {}
+
+    with locked(path, "r") as f:
+        text = f.read()
+
+    totals: dict[str, dict[str, Usage]] = {}
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        record = json.loads(line)
+        timestamp = datetime.fromisoformat(record["timestamp"]).astimezone(timezone.utc)
+        date = timestamp.strftime("%Y/%m/%d")
+        model = record["model"]
+        usage = Usage(raw={k: v for k, v in record.items() if k not in ("timestamp", "model")})
+        by_model = totals.setdefault(date, {})
+        by_model[model] = usage if model not in by_model else by_model[model] + usage
+    return totals
+
+
+def append_usage(usage: Usage, model: str, path: Path, timestamp: datetime | None = None) -> None:
+    """Append one record (Usage, model name, timezone-aware timestamp) to usage.jsonl.
+
+    `timestamp` defaults to the current local time. Appending is serialized via flock.
+    """
+    timestamp = timestamp or datetime.now().astimezone()
+    record = {"timestamp": timestamp.isoformat(), "model": model, **usage.to_dict()}
+    with locked(path, "a") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def merge_usage(path: Path) -> tuple[int, int]:
+    """Consolidate usage.jsonl to one record per (UTC date, model), rewriting the file.
+
+    Records sharing a UTC date and model are summed into one; the merged record's
+    timestamp is that day's UTC midnight, so re-merging is idempotent. Date/model
+    order follows first appearance. Reading and writing happen under one lock, so
+    no other process can observe a half-written file. Returns (line count before,
+    line count after).
+    """
+    with locked(path, "r+") as f:
+        lines = [line for line in f.read().splitlines() if line.strip()]
+
+        merged: dict[tuple, Usage] = {}
+        order: list[tuple] = []
+        for line in lines:
+            record = json.loads(line)
+            timestamp = datetime.fromisoformat(record["timestamp"]).astimezone(timezone.utc)
+            date = timestamp.date()
+            model = record["model"]
+            usage = Usage(raw={k: v for k, v in record.items() if k not in ("timestamp", "model")})
+            key = (date, model)
+            if key not in merged:
+                merged[key] = usage
+                order.append(key)
+            else:
+                merged[key] = merged[key] + usage
+
+        new_lines = []
+        for date, model in order:
+            timestamp = datetime(date.year, date.month, date.day, tzinfo=timezone.utc)
+            record = {"timestamp": timestamp.isoformat(), "model": model, **merged[(date, model)].to_dict()}
+            new_lines.append(json.dumps(record, ensure_ascii=False))
+
+        f.seek(0)
+        f.write("".join(line + "\n" for line in new_lines))
+        f.truncate()
+
+    return len(lines), len(new_lines)

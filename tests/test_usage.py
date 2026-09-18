@@ -1,5 +1,5 @@
 """
-Tests for the Usage class in usage.py.
+Tests for the Usage class and usage.jsonl persistence helpers in usage.py.
 
 Usage.raw keeps each provider's dict untouched; the properties below are
 best-effort normalizations that must correctly fall back across the
@@ -8,7 +8,18 @@ docs/20260915-token-usage.md), returning None rather than guessing when a
 provider doesn't report a dimension at all.
 """
 
-from llm7shi.usage import Usage
+from datetime import datetime, timedelta, timezone
+
+import pytest
+
+from llm7shi.usage import (
+    Usage,
+    append_usage,
+    find_usage_file,
+    format_usage_line,
+    merge_usage,
+    parse_usage_file,
+)
 
 
 class TestUsageNormalizedFields:
@@ -163,3 +174,97 @@ class TestUsageAggregation:
         total += Usage(raw={"input_tokens": 3, "output_tokens": 2})
         total += Usage(raw={"input_tokens": 5, "output_tokens": 1})
         assert total.to_dict() == {"input_tokens": 8, "output_tokens": 3, "total_tokens": 11}
+
+
+class TestFormatUsageLine:
+    def test_strips_tokens_suffix_and_groups_thousands(self):
+        usage = Usage(raw={"prompt_tokens": 746598, "completion_tokens": 1000})
+        line = format_usage_line("openai:gpt-5.6-terra", usage)
+        assert line == "openai:gpt-5.6-terra|input:746,598|output:1,000|total:747,598"
+
+    def test_omits_fields_the_provider_never_reported(self):
+        # Ollama shape: no reasoning/cached breakdown at all
+        usage = Usage(raw={"prompt_eval_count": 5, "eval_count": 7})
+        assert format_usage_line("ollama:m", usage) == "ollama:m|input:5|output:7|total:12"
+
+
+class TestAppendAndParseUsageFile:
+    def test_append_then_parse_round_trips(self, tmp_path):
+        path = tmp_path / "usage.jsonl"
+        ts = datetime(2026, 9, 17, 12, 0, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 10, "output_tokens": 20}), "model-a", path, timestamp=ts)
+
+        totals = parse_usage_file(path)
+        assert totals == {"2026/09/17": {"model-a": Usage(raw={"input_tokens": 10, "output_tokens": 20, "total_tokens": 30})}}
+
+    def test_multiple_records_same_date_and_model_are_summed(self, tmp_path):
+        path = tmp_path / "usage.jsonl"
+        ts = datetime(2026, 9, 17, 1, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 10, "output_tokens": 5}), "model-a", path, timestamp=ts)
+        append_usage(Usage(raw={"input_tokens": 3, "output_tokens": 2}), "model-a", path, timestamp=ts)
+
+        totals = parse_usage_file(path)
+        assert totals["2026/09/17"]["model-a"].to_dict() == {"input_tokens": 13, "output_tokens": 7, "total_tokens": 20}
+
+    def test_date_bucketing_uses_utc(self, tmp_path):
+        # 23:30 at UTC-5 is 04:30 the next day in UTC, so the bucket must follow UTC
+        path = tmp_path / "usage.jsonl"
+        local_ts = datetime(2026, 9, 17, 23, 30, tzinfo=timezone(timedelta(hours=-5)))
+        append_usage(Usage(raw={"input_tokens": 1, "output_tokens": 1}), "model-a", path, timestamp=local_ts)
+
+        totals = parse_usage_file(path)
+        assert list(totals.keys()) == ["2026/09/18"]
+
+    def test_missing_file_returns_empty_dict(self, tmp_path):
+        assert parse_usage_file(tmp_path / "no-such-file.jsonl") == {}
+
+
+class TestMergeUsage:
+    def test_merges_same_day_and_model_into_one_record(self, tmp_path):
+        path = tmp_path / "usage.jsonl"
+        ts = datetime(2026, 9, 17, 1, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 10, "output_tokens": 5}), "model-a", path, timestamp=ts)
+        append_usage(Usage(raw={"input_tokens": 3, "output_tokens": 2}), "model-a", path, timestamp=ts)
+
+        before, after = merge_usage(path)
+        assert (before, after) == (2, 1)
+        assert parse_usage_file(path)["2026/09/17"]["model-a"].to_dict() == {
+            "input_tokens": 13, "output_tokens": 7, "total_tokens": 20,
+        }
+
+    def test_merge_is_idempotent(self, tmp_path):
+        path = tmp_path / "usage.jsonl"
+        ts = datetime(2026, 9, 17, 1, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 10, "output_tokens": 5}), "model-a", path, timestamp=ts)
+        merge_usage(path)
+        before, after = merge_usage(path)
+        assert (before, after) == (1, 1)
+
+    def test_keeps_different_models_separate(self, tmp_path):
+        path = tmp_path / "usage.jsonl"
+        ts = datetime(2026, 9, 17, 1, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 1}), "model-a", path, timestamp=ts)
+        append_usage(Usage(raw={"input_tokens": 2}), "model-b", path, timestamp=ts)
+
+        before, after = merge_usage(path)
+        assert (before, after) == (2, 2)
+
+
+class TestFindUsageFile:
+    def test_finds_file_in_current_directory(self, tmp_path, monkeypatch):
+        (tmp_path / "usage.jsonl").write_text("")
+        monkeypatch.chdir(tmp_path)
+        assert find_usage_file() == tmp_path / "usage.jsonl"
+
+    def test_finds_file_in_ancestor_directory(self, tmp_path, monkeypatch):
+        (tmp_path / "usage.jsonl").write_text("")
+        subdir = tmp_path / "a" / "b"
+        subdir.mkdir(parents=True)
+        monkeypatch.chdir(subdir)
+        assert find_usage_file() == tmp_path / "usage.jsonl"
+
+    def test_raises_when_not_found(self, tmp_path, monkeypatch):
+        # an isolated tmp_path has no usage.jsonl anywhere above it
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(FileNotFoundError):
+            find_usage_file()

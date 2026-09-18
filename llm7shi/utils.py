@@ -1,9 +1,39 @@
+import fcntl
 import json
 import sys
+import time
 import inspect
-from typing import Dict, Any, List, Union, Type
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Dict, Any, IO, Iterator, List, Union, Type
 
 from pydantic import BaseModel
+
+
+@contextmanager
+def locked(path: Path, mode: str, retry_interval: float = 0.5, timeout: float = 5.0) -> Iterator[IO[str]]:
+    """Open `path` in `mode` while holding an exclusive flock on it.
+
+    Retries acquiring the lock non-blockingly every `retry_interval` seconds, up to
+    `timeout` seconds total, then raises TimeoutError. Locks `path` itself rather
+    than a separate lock file, so concurrent writers (e.g. parallel batch jobs
+    appending to the same file) don't interleave or clobber each other's writes,
+    with nothing extra to clean up if a process dies mid-write.
+    """
+    with open(path, mode, encoding="utf-8") as f:
+        deadline = time.monotonic() + timeout
+        while True:
+            try:
+                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except OSError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(f"{path}: could not acquire lock within {timeout}s")
+                time.sleep(retry_interval)
+        try:
+            yield f
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
 
 
 def do_show_params(contents, *, model=None, file=sys.stdout, **kwargs):

@@ -1,5 +1,6 @@
-"""Tests for do_show_params and contents_to_openai_messages utility functions."""
+"""Tests for do_show_params, contents_to_openai_messages, and locked utility functions."""
 
+import fcntl
 import pytest
 from unittest.mock import patch, MagicMock, mock_open
 from io import StringIO
@@ -8,7 +9,40 @@ import json
 from llm7shi.utils import (
     do_show_params,
     contents_to_openai_messages,
+    locked,
 )
+
+
+class TestLocked:
+    def test_writes_and_reads_through(self, tmp_path):
+        path = tmp_path / "f.txt"
+        with locked(path, "w") as f:
+            f.write("hello")
+        with locked(path, "r") as f:
+            assert f.read() == "hello"
+
+    def test_releases_lock_on_exit(self, tmp_path):
+        path = tmp_path / "f.txt"
+        path.write_text("")
+        with locked(path, "r"):
+            pass
+        # a second acquisition must succeed immediately once the first is released
+        with locked(path, "r", timeout=0.1):
+            pass
+
+    def test_raises_timeout_error_when_already_locked(self, tmp_path):
+        path = tmp_path / "f.txt"
+        path.write_text("")
+        # hold an exclusive lock on a separate file descriptor to simulate another process
+        holder = open(path, "r")
+        fcntl.flock(holder, fcntl.LOCK_EX)
+        try:
+            with pytest.raises(TimeoutError):
+                with locked(path, "r", retry_interval=0.05, timeout=0.15):
+                    pass
+        finally:
+            fcntl.flock(holder, fcntl.LOCK_UN)
+            holder.close()
 
 
 class TestDoShowParams:

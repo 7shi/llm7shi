@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`usage.jsonl` persistence for `Usage`** - `llm7shi.usage` gained `append_usage()`, `parse_usage_file()`, and `merge_usage()` to record, aggregate, and consolidate token usage across processes, plus `find_usage_file()` to locate `usage.jsonl` by searching upward from the current directory. A new `uv run -m llm7shi usage show [-a]` / `usage merge` CLI summarizes or consolidates the recorded usage
+
 ## [0.18.1] - 2026-09-17
 
 ### Changed

@@ -26,7 +26,7 @@ Unit tests for usage extraction in `llm7shi/ollama.py`.
 #### [test_utils.py](test_utils.py) - Utility Functions Tests
 Unit tests for helper functions in `llm7shi/utils.py`.
 
-**Key Features**: Parameter display, OpenAI message conversion.
+**Key Features**: Parameter display, OpenAI message conversion, `locked()`'s read/write round trip, lock release on exit, and `TimeoutError` when another file descriptor already holds the lock.
 
 #### [test_utils_schema.py](test_utils_schema.py) - Schema Processing Tests
 Unit tests for schema transformation functions in `llm7shi/utils.py`.
@@ -69,9 +69,9 @@ Unit tests for the `Response` dataclass in `llm7shi/response.py`.
 **Key Features**: `usage` defaults to `None`.
 
 #### [test_usage.py](test_usage.py) - Usage Module Tests
-Unit tests for the `Usage` dataclass in `llm7shi/usage.py`.
+Unit tests for the `Usage` dataclass and the usage.jsonl persistence helpers in `llm7shi/usage.py`.
 
-**Key Features**: Normalized field fallback across each provider's raw shape (Ollama, Gemini, OpenAI Responses, OpenAI Chat Completions), `to_dict()` omitting `None`s and `raw`, `__repr__` matching `to_dict()`, `+` aggregation across multiple calls (ignoring `raw`, chaining correctly).
+**Key Features**: Normalized field fallback across each provider's raw shape (Ollama, Gemini, OpenAI Responses, OpenAI Chat Completions), `to_dict()` omitting `None`s and `raw`, `__repr__` matching `to_dict()`, `+` aggregation across multiple calls (ignoring `raw`, chaining correctly); `format_usage_line()`'s compact rendering; `append_usage()`/`parse_usage_file()` round-tripping and summing records with UTC date bucketing; `merge_usage()` consolidating same-day/model records idempotently; `find_usage_file()`'s upward search and `FileNotFoundError` when nothing is found.
 
 #### [test_terminal.py](test_terminal.py) - Terminal Formatting Tests
 Unit tests for terminal output formatting in `llm7shi/terminal.py`.

@@ -47,6 +47,10 @@ Provider-agnostic token-usage object (`Response.usage`), split out from `respons
 **Key Features**:
 - `Usage` dataclass - `raw` keeps the provider's own token-usage dict untouched; `input_tokens`/`output_tokens`/`reasoning_tokens`/`cached_tokens`/`total_tokens` are best-effort fields normalized across providers (`None` where a provider doesn't report that dimension); `to_dict()` returns just those normalized fields
 - `+` (`__add__`) - Sums the normalized fields across multiple `Usage` objects (e.g. for totaling a batch), ignoring `raw`
+- `append_usage()`/`parse_usage_file()`/`merge_usage()` - Persist `Usage` records to a `usage.jsonl` file (one JSON object per call), re-derive per-date/per-model totals by summing with `+`, and consolidate same-day/model records into one line each; reads and writes are serialized via `utils.locked()`
+- `find_usage_file()` - Locate `usage.jsonl` by searching upward from the current directory; raises `FileNotFoundError` rather than guessing a path
+- `format_usage_line()` - Render a model name and its `Usage` as a compact `model|input:N|output:N|...` line
+- CLI: `uv run -m llm7shi usage show [-a]` / `usage merge` (see [__main__.py](__main__.py) below)
 
 ### [stream.py](stream.py) - Unified Stream Processing & Retry
 Unified base class and execution loop for streaming LLM generation, coordinating retry loops, exception handling, and real-time output monitoring.
@@ -71,6 +75,7 @@ Helper functions for parameter display, message formatting, and schema transform
 - `inline_defs()` - Inline $defs references in JSON schemas
 - `extract_descriptions()` - Extract property descriptions for prompt enhancement
 - `create_json_descriptions_prompt()` - Generate enhanced prompts with schema field descriptions
+- `locked()` - Context manager holding an exclusive `flock` on a file, with retry-with-timeout; used by [usage.py](usage.py) to serialize concurrent readers/writers of `usage.jsonl`
 
 ### [openai.py](openai.py) - OpenAI API Client
 Direct OpenAI API wrapper with streaming support and monitoring capabilities.
@@ -220,6 +225,12 @@ Command-line entry point with subcommand dispatch, used mainly for manually chec
   uv run -m llm7shi md <markdown-file>
   ```
 - Streams the file through `MarkdownStreamConverter` to exercise the streaming path
+- `usage` subcommand - Summarize or consolidate `usage.jsonl` records (see [usage.py](usage.py)):
+  ```bash
+  uv run -m llm7shi usage show [-a]
+  uv run -m llm7shi usage merge
+  ```
+  `-f/--file` overrides `find_usage_file()`'s upward search from the current directory
 - Lives in `__main__.py` (not a submodule) to avoid runpy's import warning
 
 ## Usage Examples

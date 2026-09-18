@@ -16,3 +16,16 @@ The first command, `md`, renders a Markdown file:
 ```
 uv run -m llm7shi md <markdown-file>
 ```
+
+The `usage` command wraps `llm7shi.usage`'s persistence helpers, with its own
+`show`/`merge` subcommands (a second level of subparsers, since both need a
+shared `-f/--file` option that `md` has no use for):
+
+```
+uv run -m llm7shi usage show [-a]
+uv run -m llm7shi usage merge
+```
+
+`-f/--file` defaults to `find_usage_file()`'s upward search from the current
+directory rather than a fixed path, since `llm7shi` itself has no notion of
+"project root" (see `usage.md`).
