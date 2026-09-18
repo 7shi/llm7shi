@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-09-19
+
 ### Fixed
 - **`reasoning_effort`/`include_thoughts` ignored for llama.cpp and other OpenAI-compatible servers** - These were already accepted for `llama.cpp:` and `openai:` models but only applied to real OpenAI's Responses API; the Chat Completions path (llama.cpp, vLLM, ...) now forwards `reasoning_effort` as-is and sends `chat_template_kwargs.enable_thinking=False` when `include_thoughts=False`
 
