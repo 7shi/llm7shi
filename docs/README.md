@@ -145,7 +145,7 @@ Key topics:
 - How each `extract_usage()` builds `Usage.raw` (whole-object `model_dump()`, or an exclude-list for Ollama's flat chunk) so provider fields added later show up automatically
 
 ### [20260918-llama-cpp.md](20260918-llama-cpp.md) - llama.cpp Endpoint Support: Four Fixes and a Prefix
-A cluster of issues found while exercising `openai.py` against a real llama.cpp server, and the `llama.cpp:` vendor prefix added once they were fixed.
+A cluster of issues found while exercising `openai.py` against a real llama.cpp server, the `llama.cpp:` vendor prefix added once they were fixed, and reasoning control for the Chat Completions path.
 
 Key topics:
 - `openai` SDK 3.7+ rejecting an empty `api_key`; non-empty placeholder instead of `""`
@@ -153,6 +153,7 @@ Key topics:
 - `OPENAI_BASE_URL` bypassing the destination-based Responses/Chat-Completions routing rule
 - New `llama.cpp:` vendor prefix, defaulting to `localhost:8080` only when `OPENAI_BASE_URL` is unset
 - Why the gpt-oss template filter was kept despite llama.cpp now parsing reasoning natively
+- `reasoning_effort`/`include_thoughts` forwarded to Chat Completions as a top-level param and `extra_body.chat_template_kwargs.enable_thinking`, merged safely against an existing `extra_body`
 
 ## Document Naming Convention
 

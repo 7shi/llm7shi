@@ -46,6 +46,8 @@ Most examples accept a `-m`/`--model` option to override the default `"ollama:"`
 uv run examples/compat0.py -m openai:gpt-4.1-mini
 uv run examples/compat0.py -m google:gemini-2.5-flash
 uv run examples/compat0.py --completion  # force Chat Completions for real OpenAI
+uv run examples/compat0.py -m llama.cpp:dummy  # local llama-server, defaults to http://localhost:8080/v1
+OPENAI_BASE_URL=http://192.168.x.y:8080/v1 uv run examples/compat0.py -m llama.cpp:dummy  # llama-server on another host
 ```
 
 Exceptions: `hello.py`, `schema1.py`, and `schema2.py` use Gemini-specific functions with no vendor prefix support, so they take no `-m`. `gemma4.py` and `openrouter.py` each compare multiple hardcoded models in one run and likewise take no `-m`.

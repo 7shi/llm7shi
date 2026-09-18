@@ -217,8 +217,8 @@ def generate_content(
     check_repetition: bool = True,
     base_url: str = None,  # points at OpenAI-compatible endpoints (llama.cpp, LocalAI, etc.)
     api_key_env: str = None,
-    include_thoughts: bool = True,  # Responses API only: whether to request a reasoning summary
-    reasoning_effort: str = None,  # Responses API only: "none"/"minimal"/"low"/"medium"/"high"/"xhigh"/"max" (default: "medium")
+    include_thoughts: bool = True,  # Responses API: whether to request a reasoning summary; Chat Completions: False disables thinking via extra_body.chat_template_kwargs.enable_thinking
+    reasoning_effort: str = None,  # Responses API: "none"/"minimal"/"low"/"medium"/"high"/"xhigh"/"max" (default: "medium"); Chat Completions: forwarded as-is via the top-level reasoning_effort param (server-dependent, e.g. llama.cpp/vLLM)
     **kwargs
 ) -> Response:
     """Generate with OpenAI API with streaming and monitoring."""
@@ -285,9 +285,27 @@ def generate_content(
         )
         return generator.generate()
 
+    # Chat Completions (llama.cpp, vLLM, OpenRouter, Groq, ...): `reasoning_effort` is
+    # an OpenAI-compatible top-level param some servers (llama.cpp, vLLM) honor directly;
+    # disabling thinking instead goes through the chat-template flag these Qwen3-style
+    # templates check (`enable_thinking`), injected via `extra_body.chat_template_kwargs`
+    # since it isn't a real API param. Only takes effect when the caller actually passes
+    # these through (openai:/llama.cpp: vendors); other compatible vendors never set
+    # reasoning_effort and leave include_thoughts at its True default, so this is a no-op
+    # for them.
+    completion_kwargs = dict(kwargs)
+    if reasoning_effort is not None:
+        completion_kwargs["reasoning_effort"] = reasoning_effort
+    if not include_thoughts:
+        extra_body = dict(completion_kwargs.get("extra_body") or {})
+        chat_template_kwargs = dict(extra_body.get("chat_template_kwargs") or {})
+        chat_template_kwargs["enable_thinking"] = False
+        extra_body["chat_template_kwargs"] = chat_template_kwargs
+        completion_kwargs["extra_body"] = extra_body
+
     generator = OpenAIStreamGenerator(
         model=model,
-        config=kwargs,
+        config=completion_kwargs,
         contents=messages,
         file=file,
         max_length=max_length,

@@ -9,9 +9,9 @@ instead of the default fixed delay.
 import httpx
 import openai
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from llm7shi.openai import OpenAIStreamGenerator, OpenAIResponsesStreamGenerator
+from llm7shi.openai import OpenAIStreamGenerator, OpenAIResponsesStreamGenerator, generate_content
 
 
 def make_error(status_code=429, headers=None, body=None):
@@ -97,3 +97,54 @@ class TestOpenAIResponsesStreamGeneratorExtractUsage:
         gen = OpenAIResponsesStreamGenerator()
         chunks = [MagicMock(type="response.output_text.delta")]
         assert gen.extract_usage(chunks) is None
+
+
+class TestChatCompletionsReasoningControl:
+    """Chat Completions path (llama.cpp, vLLM, ...): reasoning_effort/include_thoughts
+    must reach client.chat.completions.create() as the top-level reasoning_effort param
+    and extra_body.chat_template_kwargs.enable_thinking, respectively, without disturbing
+    an extra_body a caller already set (e.g. OpenRouter's reasoning.enabled)."""
+
+    @staticmethod
+    def _run(mock_openai_class, **kwargs):
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+        mock_client.chat.completions.create.return_value = iter([])
+        generate_content(
+            messages=[{"role": "user", "content": "Test"}],
+            model="qwen3.8",
+            file=None,
+            base_url="http://localhost:8080/v1",
+            **kwargs,
+        )
+        return mock_client.chat.completions.create.call_args.kwargs
+
+    @patch('llm7shi.openai.OpenAI')
+    def test_reasoning_effort_forwarded(self, mock_openai_class):
+        call_kwargs = self._run(mock_openai_class, reasoning_effort="low")
+        assert call_kwargs["reasoning_effort"] == "low"
+
+    @patch('llm7shi.openai.OpenAI')
+    def test_include_thoughts_false_disables_thinking(self, mock_openai_class):
+        call_kwargs = self._run(mock_openai_class, include_thoughts=False)
+        assert call_kwargs["extra_body"]["chat_template_kwargs"]["enable_thinking"] is False
+
+    @patch('llm7shi.openai.OpenAI')
+    def test_include_thoughts_true_omits_extra_body(self, mock_openai_class):
+        call_kwargs = self._run(mock_openai_class, include_thoughts=True)
+        assert "extra_body" not in call_kwargs
+
+    @patch('llm7shi.openai.OpenAI')
+    def test_reasoning_effort_none_omits_param(self, mock_openai_class):
+        call_kwargs = self._run(mock_openai_class)
+        assert "reasoning_effort" not in call_kwargs
+
+    @patch('llm7shi.openai.OpenAI')
+    def test_preserves_existing_extra_body(self, mock_openai_class):
+        call_kwargs = self._run(
+            mock_openai_class,
+            include_thoughts=False,
+            extra_body={"reasoning": {"enabled": False}},
+        )
+        assert call_kwargs["extra_body"]["reasoning"] == {"enabled": False}
+        assert call_kwargs["extra_body"]["chat_template_kwargs"]["enable_thinking"] is False

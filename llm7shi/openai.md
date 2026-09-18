@@ -40,3 +40,9 @@ Because the Responses API rejects the `reasoning` param outright on legacy model
 
 See [20260918-llama-cpp.md](../docs/20260918-llama-cpp.md) for the `api_key` placeholder, `delta.reasoning_content`, and `OPENAI_BASE_URL` routing fixes found while testing against a real llama.cpp server, and the decision to keep this filter despite llama.cpp now parsing gpt-oss's control tokens natively on recent builds.
 
+### Reasoning Control on the Chat Completions Path
+
+**Problem**: `include_thoughts`/`reasoning_effort` were already threaded down to `generate_content()` for the `llama.cpp:`/`openai:` vendors, but only the Responses API branch (real OpenAI) read them; the Chat Completions branch (llama.cpp, vLLM, and other `base_url`-routed servers) silently dropped both, so a caller had no way to turn off or tune reasoning on those servers from this library.
+
+**Solution**: The Chat Completions branch now forwards `reasoning_effort` as the top-level `reasoning_effort` kwarg (the shape llama.cpp/vLLM accept directly), and translates `include_thoughts=False` into `extra_body.chat_template_kwargs.enable_thinking = False` — the chat-template variable Qwen3-style templates check to render an empty `<think></think>` block instead of running the model's reasoning turn. It merges into any `extra_body`/`chat_template_kwargs` the caller already set rather than replacing it, so this doesn't clobber OpenRouter's separate `reasoning.enabled` mechanism if a future call site combines the two. See [20260918-llama-cpp.md](../docs/20260918-llama-cpp.md) for the full comparison against the Responses API's `reasoning` object.
+
