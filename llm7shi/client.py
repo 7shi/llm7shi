@@ -8,6 +8,7 @@ from .response import Response
 from .compat import generate_with_schema
 from .xml import messages_to_xml, xml_to_str, xml_to_messages
 from .terminal import error
+from .utils import create_json_descriptions_prompt
 
 DEFAULT_LLM_RETRIES = 3
 
@@ -25,6 +26,7 @@ class Client:
         # Extended arguments
         retries: int = DEFAULT_LLM_RETRIES,
         keep_history: bool = True,
+        add_json_descriptions: bool = False,
     ):
         self.model = model
         self.include_thoughts = include_thoughts
@@ -39,6 +41,10 @@ class Client:
         # system prompt set once still applies to every call, while independent
         # calls on one client no longer accumulate each other's turns
         self.keep_history = keep_history
+        # off by default: it changes the prompt actually sent, which can change output even
+        # where schema descriptions already work (Gemini/OpenAI); on for providers that
+        # ignore them (Ollama), decided once here instead of at every call site
+        self.add_json_descriptions = add_json_descriptions
         self.history: List[Dict[str, str]] = []
 
     def copy(self) -> 'Client':
@@ -53,7 +59,8 @@ class Client:
             max_length=self.max_length,
             check_repetition=self.check_repetition,
             retries=self.retries,
-            keep_history=self.keep_history
+            keep_history=self.keep_history,
+            add_json_descriptions=self.add_json_descriptions
         )
         new_client.history = self.history.copy()
         return new_client
@@ -130,10 +137,18 @@ class Client:
                 question about the text above" rather than part of the text).
             schema: JSON schema for structured output, Pydantic model, or None for plain text
 
+        With `add_json_descriptions=True`, a schema call also appends the schema's
+        field descriptions as a final user message, so providers that ignore
+        `description` in the schema itself still see them.
+
         Returns:
             The final checkable Response object
         """
         prompts = [prompt] if isinstance(prompt, str) else prompt
+        if schema is not None and self.add_json_descriptions:
+            description_prompt = create_json_descriptions_prompt(schema)
+            if description_prompt:  # empty when the schema carries no descriptions at all
+                prompts = list(prompts) + [description_prompt]
         prompt_messages = [{'role': 'user', 'content': p} for p in prompts]
         messages = self.history.copy() + prompt_messages
 

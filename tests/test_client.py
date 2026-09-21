@@ -8,6 +8,7 @@ history so mutating the copy never leaks into the original).
 
 import pytest
 from unittest.mock import MagicMock, patch, ANY
+from pydantic import BaseModel, Field
 from llm7shi.client import Client
 from llm7shi.response import Response
 
@@ -109,6 +110,53 @@ def test_client_call_keep_history_false(mock_generate):
         {"role": "user", "content": "Second"}
     ]
     assert client.copy().keep_history is False
+
+class _Answer(BaseModel):
+    reasoning: str = Field(description="Why this answer was chosen")
+    answer: str = Field(description="The final answer")
+
+@patch("llm7shi.client.generate_with_schema")
+def test_client_call_add_json_descriptions(mock_generate):
+    mock_generate.return_value = Response(
+        text='{"reasoning": "because", "answer": "42"}', repetition=False, max_length=None
+    )
+
+    client = Client(model="dummy-model", add_json_descriptions=True)
+    client(prompt="Question", schema=_Answer)
+
+    # Descriptions are appended as their own trailing user message, for providers
+    # (e.g. Ollama) that use the schema only to constrain decoding and never show
+    # its `description` fields to the model
+    sent = mock_generate.call_args[0][0]
+    assert sent[0] == {"role": "user", "content": "Question"}
+    assert len(sent) == 2
+    assert sent[1]["role"] == "user"
+    assert "Why this answer was chosen" in sent[1]["content"]
+    assert "The final answer" in sent[1]["content"]
+    # ...and history records what was actually sent
+    assert client.history[:2] == sent
+
+    assert client.copy().add_json_descriptions is True
+
+@patch("llm7shi.client.generate_with_schema")
+def test_client_call_add_json_descriptions_default_off(mock_generate):
+    mock_generate.return_value = Response(
+        text='{"reasoning": "because", "answer": "42"}', repetition=False, max_length=None
+    )
+
+    # Default must not alter the prompt actually sent (backward compatibility)
+    client = Client(model="dummy-model")
+    client(prompt="Question", schema=_Answer)
+    assert mock_generate.call_args[0][0] == [{"role": "user", "content": "Question"}]
+
+@patch("llm7shi.client.generate_with_schema")
+def test_client_call_add_json_descriptions_without_schema(mock_generate):
+    mock_generate.return_value = Response(text="Answer", repetition=False, max_length=None)
+
+    # Nothing to describe without a schema
+    client = Client(model="dummy-model", add_json_descriptions=True)
+    client(prompt="Question")
+    assert mock_generate.call_args[0][0] == [{"role": "user", "content": "Question"}]
 
 @patch("llm7shi.client.generate_with_schema")
 def test_client_call_parameter_propagation(mock_generate):

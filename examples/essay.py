@@ -9,7 +9,7 @@ checked for actually catching specific weaknesses, not just praising it.
 import argparse
 from pathlib import Path
 from pydantic import Field, create_model
-from llm7shi import Client, create_json_descriptions_prompt
+from llm7shi import Client
 from args import parse_model_args
 
 # single source of truth: the schema and its field descriptions are both derived from this dict, so criteria stay in sync
@@ -32,9 +32,9 @@ def generate_schema(criteria):
             reasoning=(str, ...),  # (type, ...): required field, no default value
             score=(int, Field(..., ge=1, le=5)),
         )
-        # description carries the criterion's meaning on the field itself, so
-        # create_json_descriptions_prompt() can turn it into a prompt message
-        # for providers (e.g. Ollama) that ignore schema `description` fields
+        # description carries the criterion's meaning on the field itself, which
+        # Client's add_json_descriptions turns into a prompt message for
+        # providers (e.g. Ollama) that ignore schema `description` fields
         fields[key] = (criterion_model, Field(..., description=criteria[key]))
 
     fields["overall_reasoning"] = (str, ...)  # required field, no default value
@@ -53,9 +53,6 @@ PROMPT = """Evaluate the argumentative essay above on each criterion using a 5-p
 
 For each criterion, first provide reasoning that considers the evaluation process, then assign a score (1-5). Also provide an overall reasoning summary."""
 
-# Ollama ignores schema `description` fields; send them as a separate message so they aren't dropped
-json_descriptions = create_json_descriptions_prompt(schema)
-
 def evaluate_essay(model_name):
     """Evaluate an essay using the specified model and return the evaluation results."""
     print(f"\n{'='*60}")
@@ -64,11 +61,18 @@ def evaluate_essay(model_name):
     
     # keep_history=False: a single evaluation, so nothing should be carried
     # over -- each model is compared on the same blank history
-    client = Client(model=model_name, show_params=False, keep_history=False)
-    
+    # add_json_descriptions=True: Ollama ignores schema `description` fields, so
+    # let Client append them as a message instead of dropping the criteria
+    client = Client(
+        model=model_name,
+        show_params=False,
+        keep_history=False,
+        add_json_descriptions=True,
+    )
+
     # the essay is material to evaluate, not an instruction about how to behave,
     # so it's sent as its own user message rather than the system prompt
-    result = client(["Essay:\n" + essay, PROMPT, json_descriptions], schema)
+    result = client(["Essay:\n" + essay, PROMPT], schema)
 
     # Calculate and display individual scores
     # Client parses the JSON while validating it for the retry loop, so

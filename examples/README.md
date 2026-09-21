@@ -162,8 +162,8 @@ Demonstrates multi-criteria essay evaluation with dynamic schema generation and 
 Features:
 - Dynamic schema generation from evaluation criteria
 - Reasoning-first evaluation approach for better quality
-- Schema description independence for multi-provider compatibility
-- Multi-model comparison through `Client`, with the essay and criteria sent as separate messages in one call
+- Schema description independence for multi-provider compatibility via `Client(add_json_descriptions=True)`
+- Multi-model comparison through `Client`, with the essay and prompt sent as separate messages in one call
 - Structured output read back from `result.data`, already parsed by `Client`'s schema validation
 - Automatic score calculation and aggregation
 
