@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-09-21
+
 ### Added
 - **`Client(add_json_descriptions=True)`** - Automatically appends the schema's field descriptions to the prompt on every call that passes `schema`, so providers that ignore schema `description` fields (notably Ollama) still see them. Off by default; replaces calling `create_json_descriptions_prompt()` by hand at each call site
 - **`llm7shi.usage.print_today_totals(path=None, date=None)`** - Reads and prints a date's per-model usage totals (the same lookup-and-display logic behind `usage show`'s default output), so downstream CLIs that append usage after each call can show today's running total with one call instead of reimplementing it; both arguments default to `find_usage_file()`/`today()`
