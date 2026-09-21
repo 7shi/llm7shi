@@ -9,6 +9,7 @@ provider doesn't report a dimension at all.
 """
 
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 
@@ -19,6 +20,8 @@ from llm7shi.usage import (
     format_usage_line,
     merge_usage,
     parse_usage_file,
+    print_today_totals,
+    today,
 )
 
 
@@ -250,21 +253,62 @@ class TestMergeUsage:
         assert (before, after) == (2, 2)
 
 
+class TestPrintTodayTotals:
+    def test_prints_header_and_lines_for_given_date(self, tmp_path, capsys):
+        path = tmp_path / "usage.jsonl"
+        ts = datetime(2026, 9, 17, 1, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 10, "output_tokens": 5}), "model-a", path, timestamp=ts)
+
+        print_today_totals(path, "2026/09/17")
+        assert capsys.readouterr().out == "# 2026/09/17\nmodel-a|input:10|output:5|total:15\n"
+
+    def test_does_nothing_when_date_missing(self, tmp_path, capsys):
+        path = tmp_path / "usage.jsonl"
+        ts = datetime(2026, 9, 17, 1, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 1}), "model-a", path, timestamp=ts)
+
+        print_today_totals(path, "2026/09/18")
+        assert capsys.readouterr().out == ""
+
+    def test_defaults_to_find_usage_file_and_today(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
+        path = find_usage_file()
+        append_usage(Usage(raw={"input_tokens": 2, "output_tokens": 3}), "model-a", path)
+
+        print_today_totals()
+        assert capsys.readouterr().out == f"# {today()}\nmodel-a|input:2|output:3|total:5\n"
+
+
 class TestFindUsageFile:
-    def test_finds_file_in_current_directory(self, tmp_path, monkeypatch):
+    def test_uses_xdg_state_home_when_set(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
+        assert find_usage_file() == tmp_path / "llm7shi" / "usage.jsonl"
+
+    def test_falls_back_to_dot_local_state(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("XDG_STATE_HOME", raising=False)
+        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        assert find_usage_file() == tmp_path / ".local" / "state" / "llm7shi" / "usage.jsonl"
+
+    def test_creates_parent_directory_but_not_the_file(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
+        path = find_usage_file()
+        assert path.parent.is_dir()
+        assert not path.exists()
+
+    def test_search_upward_finds_file_in_current_directory(self, tmp_path, monkeypatch):
         (tmp_path / "usage.jsonl").write_text("")
         monkeypatch.chdir(tmp_path)
-        assert find_usage_file() == tmp_path / "usage.jsonl"
+        assert find_usage_file(search_upward=True) == tmp_path / "usage.jsonl"
 
-    def test_finds_file_in_ancestor_directory(self, tmp_path, monkeypatch):
+    def test_search_upward_finds_file_in_ancestor_directory(self, tmp_path, monkeypatch):
         (tmp_path / "usage.jsonl").write_text("")
         subdir = tmp_path / "a" / "b"
         subdir.mkdir(parents=True)
         monkeypatch.chdir(subdir)
-        assert find_usage_file() == tmp_path / "usage.jsonl"
+        assert find_usage_file(search_upward=True) == tmp_path / "usage.jsonl"
 
-    def test_raises_when_not_found(self, tmp_path, monkeypatch):
+    def test_search_upward_raises_when_not_found(self, tmp_path, monkeypatch):
         # an isolated tmp_path has no usage.jsonl anywhere above it
         monkeypatch.chdir(tmp_path)
         with pytest.raises(FileNotFoundError):
-            find_usage_file()
+            find_usage_file(search_upward=True)

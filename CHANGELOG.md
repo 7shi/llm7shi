@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`llm7shi.usage.print_today_totals(path=None, date=None)`** - Reads and prints a date's per-model usage totals (the same lookup-and-display logic behind `usage show`'s default output), so downstream CLIs that append usage after each call can show today's running total with one call instead of reimplementing it; both arguments default to `find_usage_file()`/`today()`
+
+### Changed
+- **`llm7shi.usage.find_usage_file()` now returns one account-level path by default** - `$XDG_STATE_HOME/llm7shi/usage.jsonl` (falling back to `~/.local/state/llm7shi/usage.jsonl`), creating the directory if needed, instead of searching upward from the current directory for a project-local `usage.jsonl`. Token quota is tracked per account, not per project, so a single shared file now reflects actual usage. The default no longer raises `FileNotFoundError`; pass `search_upward=True` to restore the previous per-project search-and-raise behavior
+
 ## [0.20.1] - 2026-09-19
 
 ### Fixed

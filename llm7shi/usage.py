@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -143,24 +144,58 @@ def format_usage_line(model: str, usage: Usage) -> str:
     return "|".join(parts)
 
 
+def print_today_totals(path: Path | None = None, date: str | None = None) -> None:
+    """Print `# {date}` followed by one `format_usage_line()` line per model.
+
+    `path` defaults to `find_usage_file()`'s account-level file, `date` to
+    `today()`. Does nothing if `date` has no records in `path` yet. Shared by
+    this module's own `show` subcommand and by downstream CLIs that append a
+    call's usage and then want to show the running daily total, so that
+    lookup-and-display logic isn't duplicated per caller.
+    """
+    path = path or find_usage_file()
+    date = date or today()
+    totals = parse_usage_file(path)
+    if date not in totals:
+        return
+    print(f"# {date}")
+    for model, usage in totals[date].items():
+        print(format_usage_line(model, usage))
+
+
 def today() -> str:
     """Today's date in UTC, as `YYYY/MM/DD` (matching parse_usage_file's date keys)."""
     return datetime.now(timezone.utc).strftime("%Y/%m/%d")
 
 
-def find_usage_file() -> Path:
-    """Search upward from the current directory for a usage.jsonl, and return its path.
+def find_usage_file(search_upward: bool = False) -> Path:
+    """The default usage.jsonl path used when none is given explicitly.
 
-    This module makes no assumption about where a project's usage.jsonl lives (that's
-    a per-project choice), so the search starts from cwd rather than anywhere fixed,
-    and raises FileNotFoundError instead of falling back to a guessed location.
+    Token quota is tracked per account/API key, not per project, so the default
+    is one file shared by every caller on the machine rather than something
+    resolved per-project: `$XDG_STATE_HOME/llm7shi/usage.jsonl`, falling back to
+    `~/.local/state/llm7shi/usage.jsonl` if `XDG_STATE_HOME` isn't set (this is
+    accumulating log data, not user configuration, so the XDG *state* directory
+    applies rather than the config one). The directory is created if missing,
+    so a first-time caller can `append_usage()` to the returned path right away.
+
+    If `search_upward` is True, instead searches upward from the current directory
+    for a project-local `usage.jsonl` (the pre-0.21 default) and raises
+    FileNotFoundError if none is found, for callers that deliberately want a
+    per-project log instead of the shared account-level one.
     """
-    start = Path.cwd().resolve()
-    for d in (start, *start.parents):
-        candidate = d / "usage.jsonl"
-        if candidate.exists():
-            return candidate
-    raise FileNotFoundError(f"usage.jsonl not found searching upward from {start}")
+    if search_upward:
+        start = Path.cwd().resolve()
+        for d in (start, *start.parents):
+            candidate = d / "usage.jsonl"
+            if candidate.exists():
+                return candidate
+        raise FileNotFoundError(f"usage.jsonl not found searching upward from {start}")
+
+    base = Path(os.environ["XDG_STATE_HOME"]) if os.environ.get("XDG_STATE_HOME") else Path.home() / ".local" / "state"
+    path = base / "llm7shi" / "usage.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def parse_usage_file(path: Path) -> dict[str, dict[str, Usage]]:
@@ -260,9 +295,7 @@ def _cmd_show(file: Path, show_all: bool) -> int:
         if date not in totals:
             print(f"No records for {date}")
             return 1
-        print(f"# {date}")
-        for model, usage in totals[date].items():
-            print(format_usage_line(model, usage))
+        print_today_totals(file, date)
         return 0
 
     # also accumulate a grand total across all dates, per model
@@ -300,7 +333,8 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = argparse.ArgumentParser(prog="usage", description="Summarize or consolidate usage.jsonl records")
     parser.add_argument("-f", "--file", type=Path, default=None,
-                        help="Path to usage.jsonl (default: search upward from the current directory)")
+                        help="Path to usage.jsonl (default: the account-level file under "
+                             "$XDG_STATE_HOME or ~/.local/state)")
     sub = parser.add_subparsers(dest="command", required=True)
 
     show = sub.add_parser("show", help="Summarize recorded token usage")
@@ -310,12 +344,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("merge", help="Consolidate records to one line per UTC date and model")
 
     args = parser.parse_args(argv)
-
-    try:
-        file = args.file or find_usage_file()
-    except FileNotFoundError as e:
-        print(e)
-        return 1
+    file = args.file or find_usage_file()
 
     if args.command == "show":
         return _cmd_show(file, args.all)

@@ -48,8 +48,9 @@ Provider-agnostic token-usage object (`Response.usage`), split out from `respons
 - `Usage` dataclass - `raw` keeps the provider's own token-usage dict untouched; `input_tokens`/`output_tokens`/`reasoning_tokens`/`cached_tokens`/`total_tokens` are best-effort fields normalized across providers (`None` where a provider doesn't report that dimension); `to_dict()` returns just those normalized fields
 - `+` (`__add__`) - Sums the normalized fields across multiple `Usage` objects (e.g. for totaling a batch), ignoring `raw`
 - `append_usage()`/`parse_usage_file()`/`merge_usage()` - Persist `Usage` records to a `usage.jsonl` file (one JSON object per call), re-derive per-date/per-model totals by summing with `+`, and consolidate same-day/model records into one line each; reads and writes are serialized via `utils.locked()`
-- `find_usage_file()` - Locate `usage.jsonl` by searching upward from the current directory; raises `FileNotFoundError` rather than guessing a path
+- `find_usage_file()` - The account-level `usage.jsonl` path (`$XDG_STATE_HOME/llm7shi/usage.jsonl`, falling back to `~/.local/state/llm7shi/usage.jsonl`), creating the directory if missing; pass `search_upward=True` to instead search upward from the current directory for a project-local file, raising `FileNotFoundError` if none is found
 - `format_usage_line()` - Render a model name and its `Usage` as a compact `model|input:N|output:N|...` line
+- `print_today_totals()` - Print a date's `# {date}` header and per-model `format_usage_line()` lines, reading and parsing `usage.jsonl` itself (`path`/`date` both default to `find_usage_file()`/`today()`), for downstream CLIs that show today's running total after appending usage
 - `main()` - Standalone `show [-a]`/`merge` CLI, runnable as `uv run -m llm7shi usage ...` (see [__main__.py](__main__.py) below) or pointed at directly as a downstream project's own console script, e.g. `usage = "llm7shi.usage:main"`
 
 ### [stream.py](stream.py) - Unified Stream Processing & Retry
@@ -231,7 +232,7 @@ Command-line entry point with subcommand dispatch, used mainly for manually chec
   uv run -m llm7shi usage show [-a]
   uv run -m llm7shi usage merge
   ```
-  `-f/--file` overrides `find_usage_file()`'s upward search from the current directory
+  `-f/--file` overrides `find_usage_file()`'s account-level default path
 - Lives in `__main__.py` (not a submodule) to avoid runpy's import warning
 
 ## Usage Examples
