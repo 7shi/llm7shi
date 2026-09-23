@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`print_today_totals(models=[...])`** - Optional list of model names to restrict the printed totals to, so a CLI can show only the models it actually uses instead of every model recorded in the shared account-level `usage.jsonl`
+- **`usage show -m/--model MODEL`** - Restricts `show` (with or without `-a`) to the given model; repeat it (`-m foo -m bar`) for several
+
 ## [0.21.0] - 2026-09-21
 
 ### Added

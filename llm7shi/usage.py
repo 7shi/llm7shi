@@ -144,22 +144,35 @@ def format_usage_line(model: str, usage: Usage) -> str:
     return "|".join(parts)
 
 
-def print_today_totals(path: Path | None = None, date: str | None = None) -> None:
+def print_today_totals(
+    path: Path | None = None,
+    date: str | None = None,
+    models: list[str] | None = None,
+) -> None:
     """Print `# {date}` followed by one `format_usage_line()` line per model.
 
     `path` defaults to `find_usage_file()`'s account-level file, `date` to
-    `today()`. Does nothing if `date` has no records in `path` yet. Shared by
-    this module's own `show` subcommand and by downstream CLIs that append a
-    call's usage and then want to show the running daily total, so that
-    lookup-and-display logic isn't duplicated per caller.
+    `today()`. `models`, if given, restricts output to those model names
+    (exact match), e.g. so a CLI shows only the models it actually called
+    rather than everything else sharing the account-level file. Does nothing
+    if no (matching) records exist for `date` yet. Shared by this module's own
+    `show` subcommand and by downstream CLIs that append a call's usage and
+    then want to show the running daily total, so that lookup-and-display
+    logic isn't duplicated per caller.
     """
     path = path or find_usage_file()
     date = date or today()
+    # a bare string would otherwise be iterated as characters and silently match nothing
+    if isinstance(models, str):
+        models = [models]
     totals = parse_usage_file(path)
-    if date not in totals:
+    by_model = totals.get(date, {})
+    if models is not None:
+        by_model = {m: u for m, u in by_model.items() if m in models}
+    if not by_model:
         return
     print(f"# {date}")
-    for model, usage in totals[date].items():
+    for model, usage in by_model.items():
         print(format_usage_line(model, usage))
 
 
@@ -284,18 +297,30 @@ def merge_usage(path: Path) -> tuple[int, int]:
 # prepends "usage" to argv. `llm7shi/__main__.py`'s `usage` subcommand forwards
 # its remaining argv here instead of redefining the same parser.
 
-def _cmd_show(file: Path, show_all: bool) -> int:
+def _cmd_show(file: Path, show_all: bool, models: list[str] | None = None) -> int:
     totals = parse_usage_file(file)
     if not totals:
         print(f"{file}: no records")
         return 1
+
+    if models is not None:
+        # drop dates left with no matching model so --all doesn't print empty sections
+        filtered = {}
+        for date, by_model in totals.items():
+            kept = {m: u for m, u in by_model.items() if m in models}
+            if kept:
+                filtered[date] = kept
+        if not filtered:
+            print(f"No records for {', '.join(models)}")
+            return 1
+        totals = filtered
 
     if not show_all:
         date = today()
         if date not in totals:
             print(f"No records for {date}")
             return 1
-        print_today_totals(file, date)
+        print_today_totals(file, date, models)
         return 0
 
     # also accumulate a grand total across all dates, per model
@@ -340,6 +365,8 @@ def main(argv: list[str] | None = None) -> int:
     show = sub.add_parser("show", help="Summarize recorded token usage")
     show.add_argument("-a", "--all", action="store_true",
                       help="Show every date's totals plus a grand total (default: today only)")
+    show.add_argument("-m", "--model", action="append", dest="models", metavar="MODEL",
+                      help="Only show this model (exact name); repeat for several")
 
     sub.add_parser("merge", help="Consolidate records to one line per UTC date and model")
 
@@ -347,7 +374,7 @@ def main(argv: list[str] | None = None) -> int:
     file = args.file or find_usage_file()
 
     if args.command == "show":
-        return _cmd_show(file, args.all)
+        return _cmd_show(file, args.all, args.models)
     return _cmd_merge(file)  # only "merge" remains; the subparsers already validated the choice
 
 

@@ -50,8 +50,8 @@ Provider-agnostic token-usage object (`Response.usage`), split out from `respons
 - `append_usage()`/`parse_usage_file()`/`merge_usage()` - Persist `Usage` records to a `usage.jsonl` file (one JSON object per call), re-derive per-date/per-model totals by summing with `+`, and consolidate same-day/model records into one line each; reads and writes are serialized via `utils.locked()`
 - `find_usage_file()` - The account-level `usage.jsonl` path (`$XDG_STATE_HOME/llm7shi/usage.jsonl`, falling back to `~/.local/state/llm7shi/usage.jsonl`), creating the directory if missing; pass `search_upward=True` to instead search upward from the current directory for a project-local file, raising `FileNotFoundError` if none is found
 - `format_usage_line()` - Render a model name and its `Usage` as a compact `model|input:N|output:N|...` line
-- `print_today_totals()` - Print a date's `# {date}` header and per-model `format_usage_line()` lines, reading and parsing `usage.jsonl` itself (`path`/`date` both default to `find_usage_file()`/`today()`), for downstream CLIs that show today's running total after appending usage
-- `main()` - Standalone `show [-a]`/`merge` CLI, runnable as `uv run -m llm7shi usage ...` (see [__main__.py](__main__.py) below) or pointed at directly as a downstream project's own console script, e.g. `usage = "llm7shi.usage:main"`
+- `print_today_totals()` - Print a date's `# {date}` header and per-model `format_usage_line()` lines, reading and parsing `usage.jsonl` itself (`path`/`date` both default to `find_usage_file()`/`today()`; `models` optionally restricts output to the given model names), for downstream CLIs that show today's running total after appending usage
+- `main()` - Standalone `show [-a] [-m MODEL ...]`/`merge` CLI, runnable as `uv run -m llm7shi usage ...` (see [__main__.py](__main__.py) below) or pointed at directly as a downstream project's own console script, e.g. `usage = "llm7shi.usage:main"`
 
 ### [stream.py](stream.py) - Unified Stream Processing & Retry
 Unified base class and execution loop for streaming LLM generation, coordinating retry loops, exception handling, and real-time output monitoring.
@@ -229,10 +229,10 @@ Command-line entry point with subcommand dispatch, used mainly for manually chec
 - Streams the file through `MarkdownStreamConverter` to exercise the streaming path
 - `usage` subcommand - forwards to `usage.py`'s own `main()` (see [usage.py](usage.py)) rather than redefining its parser here:
   ```bash
-  uv run -m llm7shi usage show [-a]
+  uv run -m llm7shi usage show [-a] [-m MODEL ...]
   uv run -m llm7shi usage merge
   ```
-  `-f/--file` overrides `find_usage_file()`'s account-level default path
+  `-f/--file` overrides `find_usage_file()`'s account-level default path; `show -m/--model` (repeatable) limits output to the given models
 - Lives in `__main__.py` (not a submodule) to avoid runpy's import warning
 
 ## Usage Examples

@@ -18,6 +18,7 @@ from llm7shi.usage import (
     append_usage,
     find_usage_file,
     format_usage_line,
+    main,
     merge_usage,
     parse_usage_file,
     print_today_totals,
@@ -270,6 +271,33 @@ class TestPrintTodayTotals:
         print_today_totals(path, "2026/09/18")
         assert capsys.readouterr().out == ""
 
+    def test_filters_by_models(self, tmp_path, capsys):
+        path = tmp_path / "usage.jsonl"
+        ts = datetime(2026, 9, 17, 1, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 1}), "model-a", path, timestamp=ts)
+        append_usage(Usage(raw={"input_tokens": 2}), "model-b", path, timestamp=ts)
+        append_usage(Usage(raw={"input_tokens": 3}), "model-c", path, timestamp=ts)
+
+        print_today_totals(path, "2026/09/17", models=["model-c", "model-a"])
+        assert capsys.readouterr().out == "# 2026/09/17\nmodel-a|input:1\nmodel-c|input:3\n"
+
+    def test_accepts_single_model_string(self, tmp_path, capsys):
+        path = tmp_path / "usage.jsonl"
+        ts = datetime(2026, 9, 17, 1, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 1}), "model-a", path, timestamp=ts)
+        append_usage(Usage(raw={"input_tokens": 2}), "model-b", path, timestamp=ts)
+
+        print_today_totals(path, "2026/09/17", models="model-b")
+        assert capsys.readouterr().out == "# 2026/09/17\nmodel-b|input:2\n"
+
+    def test_does_nothing_when_no_model_matches(self, tmp_path, capsys):
+        path = tmp_path / "usage.jsonl"
+        ts = datetime(2026, 9, 17, 1, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 1}), "model-a", path, timestamp=ts)
+
+        print_today_totals(path, "2026/09/17", models=["model-x"])
+        assert capsys.readouterr().out == ""
+
     def test_defaults_to_find_usage_file_and_today(self, tmp_path, monkeypatch, capsys):
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
         path = find_usage_file()
@@ -277,6 +305,39 @@ class TestPrintTodayTotals:
 
         print_today_totals()
         assert capsys.readouterr().out == f"# {today()}\nmodel-a|input:2|output:3|total:5\n"
+
+
+class TestShowCommand:
+    def _write(self, path):
+        today_ts = datetime.now(timezone.utc)
+        old_ts = datetime(2026, 1, 1, 1, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 1}), "model-a", path, timestamp=today_ts)
+        append_usage(Usage(raw={"input_tokens": 2}), "model-b", path, timestamp=today_ts)
+        append_usage(Usage(raw={"input_tokens": 3}), "model-c", path, timestamp=today_ts)
+        append_usage(Usage(raw={"input_tokens": 4}), "model-b", path, timestamp=old_ts)
+
+    def test_model_option_repeats(self, tmp_path, capsys):
+        path = tmp_path / "usage.jsonl"
+        self._write(path)
+
+        assert main(["-f", str(path), "show", "-m", "model-a", "--model", "model-c"]) == 0
+        assert capsys.readouterr().out == f"# {today()}\nmodel-a|input:1\nmodel-c|input:3\n"
+
+    def test_model_option_with_all_skips_unmatched_dates(self, tmp_path, capsys):
+        path = tmp_path / "usage.jsonl"
+        self._write(path)
+
+        assert main(["-f", str(path), "show", "-a", "-m", "model-c"]) == 0
+        assert capsys.readouterr().out == (
+            f"# {today()}\nmodel-c|input:3\n\n===== Total =====\nmodel-c|input:3\n"
+        )
+
+    def test_model_option_no_match(self, tmp_path, capsys):
+        path = tmp_path / "usage.jsonl"
+        self._write(path)
+
+        assert main(["-f", str(path), "show", "-m", "model-x"]) == 1
+        assert capsys.readouterr().out == "No records for model-x\n"
 
 
 class TestFindUsageFile:
