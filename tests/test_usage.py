@@ -222,6 +222,11 @@ class TestAppendAndParseUsageFile:
     def test_missing_file_returns_empty_dict(self, tmp_path):
         assert parse_usage_file(tmp_path / "no-such-file.jsonl") == {}
 
+    def test_append_creates_missing_parent_directories(self, tmp_path):
+        path = tmp_path / "a" / "b" / "usage.jsonl"
+        append_usage(Usage(raw={"input_tokens": 1}), "model-a", path)
+        assert parse_usage_file(path) != {}
+
 
 class TestMergeUsage:
     def test_merges_same_day_and_model_into_one_record(self, tmp_path):
@@ -261,7 +266,7 @@ class TestPrintTodayTotals:
         append_usage(Usage(raw={"input_tokens": 10, "output_tokens": 5}), "model-a", path, timestamp=ts)
 
         print_today_totals(path, "2026/09/17")
-        assert capsys.readouterr().out == "# 2026/09/17\nmodel-a|input:10|output:5|total:15\n"
+        assert capsys.readouterr().out == f"# 2026/09/17 | {path}\nmodel-a|input:10|output:5|total:15\n"
 
     def test_does_nothing_when_date_missing(self, tmp_path, capsys):
         path = tmp_path / "usage.jsonl"
@@ -279,7 +284,7 @@ class TestPrintTodayTotals:
         append_usage(Usage(raw={"input_tokens": 3}), "model-c", path, timestamp=ts)
 
         print_today_totals(path, "2026/09/17", models=["model-c", "model-a"])
-        assert capsys.readouterr().out == "# 2026/09/17\nmodel-a|input:1\nmodel-c|input:3\n"
+        assert capsys.readouterr().out == f"# 2026/09/17 | {path}\nmodel-a|input:1\nmodel-c|input:3\n"
 
     def test_accepts_single_model_string(self, tmp_path, capsys):
         path = tmp_path / "usage.jsonl"
@@ -288,7 +293,7 @@ class TestPrintTodayTotals:
         append_usage(Usage(raw={"input_tokens": 2}), "model-b", path, timestamp=ts)
 
         print_today_totals(path, "2026/09/17", models="model-b")
-        assert capsys.readouterr().out == "# 2026/09/17\nmodel-b|input:2\n"
+        assert capsys.readouterr().out == f"# 2026/09/17 | {path}\nmodel-b|input:2\n"
 
     def test_does_nothing_when_no_model_matches(self, tmp_path, capsys):
         path = tmp_path / "usage.jsonl"
@@ -298,13 +303,22 @@ class TestPrintTodayTotals:
         print_today_totals(path, "2026/09/17", models=["model-x"])
         assert capsys.readouterr().out == ""
 
+    def test_abbreviates_home_as_tilde(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.setenv("HOME", str(tmp_path))
+        path = tmp_path / "state" / "usage.jsonl"
+        ts = datetime(2026, 9, 17, 1, tzinfo=timezone.utc)
+        append_usage(Usage(raw={"input_tokens": 1}), "model-a", path, timestamp=ts)
+
+        print_today_totals(path, "2026/09/17")
+        assert capsys.readouterr().out == "# 2026/09/17 | ~/state/usage.jsonl\nmodel-a|input:1\n"
+
     def test_defaults_to_find_usage_file_and_today(self, tmp_path, monkeypatch, capsys):
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
         path = find_usage_file()
         append_usage(Usage(raw={"input_tokens": 2, "output_tokens": 3}), "model-a", path)
 
         print_today_totals()
-        assert capsys.readouterr().out == f"# {today()}\nmodel-a|input:2|output:3|total:5\n"
+        assert capsys.readouterr().out == f"# {today()} | {path}\nmodel-a|input:2|output:3|total:5\n"
 
 
 class TestShowCommand:
@@ -321,7 +335,7 @@ class TestShowCommand:
         self._write(path)
 
         assert main(["-f", str(path), "show", "-m", "model-a", "--model", "model-c"]) == 0
-        assert capsys.readouterr().out == f"# {today()}\nmodel-a|input:1\nmodel-c|input:3\n"
+        assert capsys.readouterr().out == f"# {today()} | {path}\nmodel-a|input:1\nmodel-c|input:3\n"
 
     def test_model_option_with_all_skips_unmatched_dates(self, tmp_path, capsys):
         path = tmp_path / "usage.jsonl"
@@ -329,7 +343,7 @@ class TestShowCommand:
 
         assert main(["-f", str(path), "show", "-a", "-m", "model-c"]) == 0
         assert capsys.readouterr().out == (
-            f"# {today()}\nmodel-c|input:3\n\n===== Total =====\nmodel-c|input:3\n"
+            f"# {path}\n\n# {today()}\nmodel-c|input:3\n\n===== Total =====\nmodel-c|input:3\n"
         )
 
     def test_model_option_no_match(self, tmp_path, capsys):
@@ -350,11 +364,10 @@ class TestFindUsageFile:
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         assert find_usage_file() == tmp_path / ".local" / "state" / "llm7shi" / "usage.jsonl"
 
-    def test_creates_parent_directory_but_not_the_file(self, tmp_path, monkeypatch):
+    def test_does_not_create_directory(self, tmp_path, monkeypatch):
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
         path = find_usage_file()
-        assert path.parent.is_dir()
-        assert not path.exists()
+        assert not path.parent.exists()
 
     def test_search_upward_finds_file_in_current_directory(self, tmp_path, monkeypatch):
         (tmp_path / "usage.jsonl").write_text("")

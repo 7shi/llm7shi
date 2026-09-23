@@ -149,7 +149,7 @@ def print_today_totals(
     date: str | None = None,
     models: list[str] | None = None,
 ) -> None:
-    """Print `# {date}` followed by one `format_usage_line()` line per model.
+    """Print `# {date} | {path}` (home shown as `~`) followed by one `format_usage_line()` line per model.
 
     `path` defaults to `find_usage_file()`'s account-level file, `date` to
     `today()`. `models`, if given, restricts output to those model names
@@ -171,9 +171,17 @@ def print_today_totals(
         by_model = {m: u for m, u in by_model.items() if m in models}
     if not by_model:
         return
-    print(f"# {date}")
+    print(f"# {date} | {_display_path(path)}")
     for model, usage in by_model.items():
         print(format_usage_line(model, usage))
+
+
+def _display_path(path: Path) -> str:
+    """`path` with the home directory abbreviated to `~`, for compact headers."""
+    try:
+        return f"~/{Path(path).relative_to(Path.home()).as_posix()}"
+    except ValueError:
+        return str(path)
 
 
 def today() -> str:
@@ -189,8 +197,9 @@ def find_usage_file(search_upward: bool = False) -> Path:
     resolved per-project: `$XDG_STATE_HOME/llm7shi/usage.jsonl`, falling back to
     `~/.local/state/llm7shi/usage.jsonl` if `XDG_STATE_HOME` isn't set (this is
     accumulating log data, not user configuration, so the XDG *state* directory
-    applies rather than the config one). The directory is created if missing,
-    so a first-time caller can `append_usage()` to the returned path right away.
+    applies rather than the config one). Nothing is created here, so merely
+    resolving or reading the path leaves no trace; `append_usage()` creates the
+    directory on first write.
 
     If `search_upward` is True, instead searches upward from the current directory
     for a project-local `usage.jsonl` (the pre-0.21 default) and raises
@@ -206,9 +215,7 @@ def find_usage_file(search_upward: bool = False) -> Path:
         raise FileNotFoundError(f"usage.jsonl not found searching upward from {start}")
 
     base = Path(os.environ["XDG_STATE_HOME"]) if os.environ.get("XDG_STATE_HOME") else Path.home() / ".local" / "state"
-    path = base / "llm7shi" / "usage.jsonl"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return path
+    return base / "llm7shi" / "usage.jsonl"
 
 
 def parse_usage_file(path: Path) -> dict[str, dict[str, Usage]]:
@@ -241,10 +248,12 @@ def parse_usage_file(path: Path) -> dict[str, dict[str, Usage]]:
 def append_usage(usage: Usage, model: str, path: Path, timestamp: datetime | None = None) -> None:
     """Append one record (Usage, model name, timezone-aware timestamp) to usage.jsonl.
 
-    `timestamp` defaults to the current local time. Appending is serialized via flock.
+    `timestamp` defaults to the current local time. The parent directory is
+    created if missing. Appending is serialized via flock.
     """
     timestamp = timestamp or datetime.now().astimezone()
     record = {"timestamp": timestamp.isoformat(), "model": model, **usage.to_dict()}
+    path.parent.mkdir(parents=True, exist_ok=True)
     with locked(path, "a") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
@@ -325,7 +334,7 @@ def _cmd_show(file: Path, show_all: bool, models: list[str] | None = None) -> in
 
     # also accumulate a grand total across all dates, per model
     model_totals: dict[str, Usage] = {}
-    sections = []
+    sections = [f"# {_display_path(file)}"]
     for date, by_model in totals.items():
         lines = [f"# {date}"]
         for model, usage in by_model.items():
