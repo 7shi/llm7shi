@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.2] - 2026-09-24
+
 ### Changed
 - **`parse_model_args()` moved to `llm7shi.utils`** - The shared `-m`/`--model` and `--completion` CLI helper is now part of the library instead of `examples/args.py`, so your own scripts can use it too
 - **`usage show` / `print_today_totals()` header shows the file path** - The header is now `# {date} | {path}` (home shown as `~`), and `usage show -a` prints `# {path}` once at the top, so you can see which `usage.jsonl` the totals came from
