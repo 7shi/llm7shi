@@ -5,11 +5,10 @@ provider doesn't report that dimension) plus the provider's untouched data in
 .raw. Field names and shape vary per vendor - see docs/20260915-token-usage.md.
 """
 
-import argparse
 from llm7shi.compat import generate_with_schema
-from args import parse_model_args
+from llm7shi.utils import parse_model_args
 
-args = parse_model_args(argparse.ArgumentParser(description=__doc__))
+args = parse_model_args(__doc__)
 response = generate_with_schema(["What is the capital of France?"], model=args.model)
 
 # repr() shows the normalized fields only; .raw is the provider's untouched data

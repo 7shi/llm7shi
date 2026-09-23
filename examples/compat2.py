@@ -6,14 +6,13 @@ works across all three backends. The description-enhancement pattern from
 compat1.py applies unchanged to Pydantic models too. See also: compat1.py.
 """
 
-import argparse
 from typing import List
 from pydantic import BaseModel, Field
 from llm7shi.compat import generate_with_schema
 from llm7shi import create_json_descriptions_prompt
-from args import parse_model_args
+from llm7shi.utils import parse_model_args
 
-args = parse_model_args(argparse.ArgumentParser(description=__doc__))
+args = parse_model_args(__doc__)
 
 class LocationTemperature(BaseModel):
     reasoning: str

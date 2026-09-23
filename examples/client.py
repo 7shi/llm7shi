@@ -4,11 +4,10 @@ lists each turn is error-prone as conversations grow. Client manages history
 internally so turns are just function calls.
 """
 
-import argparse
 from llm7shi import Client
-from args import parse_model_args
+from llm7shi.utils import parse_model_args
 
-args = parse_model_args(argparse.ArgumentParser(description=__doc__))
+args = parse_model_args(__doc__)
 
 # Initialize client with a model (using Ollama as default, matching multiturn.py)
 client = Client(model=args.model, include_thoughts=False)

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`parse_model_args()` moved to `llm7shi.utils`** - The shared `-m`/`--model` and `--completion` CLI helper is now part of the library instead of `examples/args.py`, so your own scripts can use it too
+
 ## [0.21.1] - 2026-09-23
 
 ### Added

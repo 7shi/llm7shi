@@ -11,13 +11,12 @@ something to find. See also: essay.py, which scores the same essay with a schema
 Requires the statusline extra: uv sync --extra statusline
 """
 
-import argparse
 from pathlib import Path
 from llm7shi import Client
 from llm7shi.statusline import StatusLine
-from args import parse_model_args
+from llm7shi.utils import parse_model_args
 
-args = parse_model_args(argparse.ArgumentParser(description=__doc__))
+args = parse_model_args(__doc__)
 
 QUESTIONS = [
     "Summarize the main argument in two sentences.",

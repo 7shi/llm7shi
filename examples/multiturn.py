@@ -5,11 +5,10 @@ uniformly onto each provider's native format (e.g. assistant -> Gemini's
 "model" role), so conversational apps don't need provider-specific code.
 """
 
-import argparse
 from llm7shi.compat import generate_with_schema
-from args import parse_model_args
+from llm7shi.utils import parse_model_args
 
-args = parse_model_args(argparse.ArgumentParser(description=__doc__))
+args = parse_model_args(__doc__)
 
 # Multi-turn conversation using OpenAI-compatible message format
 messages = [

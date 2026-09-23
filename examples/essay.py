@@ -6,11 +6,10 @@ architectures. The essay in essay.txt is deliberately flawed
 checked for actually catching specific weaknesses, not just praising it.
 """
 
-import argparse
 from pathlib import Path
 from pydantic import Field, create_model
 from llm7shi import Client
-from args import parse_model_args
+from llm7shi.utils import parse_model_args
 
 # single source of truth: the schema and its field descriptions are both derived from this dict, so criteria stay in sync
 CRITERIA = {
@@ -94,5 +93,5 @@ print("=" * 60)
 print(essay)
 print("=" * 60)
 
-args = parse_model_args(argparse.ArgumentParser(description=__doc__))
+args = parse_model_args(__doc__)
 evaluate_essay(args.model)

@@ -38,9 +38,9 @@ from llm7shi.compat import generate_with_schema
 generate_with_schema(["Your prompt"], model="ollama:")
 ```
 
-### Model Selection ([args.py](args.py))
+### Model Selection
 
-Most examples accept a `-m`/`--model` option to override the default `"ollama:"`, and a `--completion` flag to force OpenAI's Chat Completions API instead of the Responses API. Both come from `parse_model_args()` in `args.py`, a shared helper rather than a standalone example.
+Most examples accept a `-m`/`--model` option to override the default `"ollama:"`, and a `--completion` flag to force OpenAI's Chat Completions API instead of the Responses API. Both come from `parse_model_args()` in [`llm7shi/utils.py`](../llm7shi/utils.py), so your own scripts can reuse the same options.
 
 ```bash
 uv run examples/compat0.py -m openai:gpt-4.1-mini

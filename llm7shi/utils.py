@@ -1,3 +1,4 @@
+import argparse
 import fcntl
 import json
 import sys
@@ -349,3 +350,37 @@ def openai_messages_to_contents(messages: List[Dict[str, str]]) -> tuple[List, U
             raise ValueError(f"Unsupported role: {role}")
 
     return contents, system_prompt
+
+
+def parse_model_args(description: Union[str, None] = None, default_model="ollama:", parser=None):
+    """Add -m/--model and --completion to a parser and return the parsed args.
+
+    Lives in the library rather than examples/ so any script can reuse the same
+    options. Builds the parser from `description` (typically `__doc__`) so the
+    common case is a one-liner; pass `parser` instead when a script needs its
+    own arguments added before parsing.
+
+    --completion forces llm7shi.openai.USE_COMPLETION, so real OpenAI (no custom
+    base_url) falls back to Chat Completions instead of the Responses API
+    (see llm7shi/openai.py).
+    """
+    if parser is None:
+        parser = argparse.ArgumentParser(description=description)
+    elif description is not None:
+        raise ValueError("Pass description or parser, not both")
+    parser.add_argument(
+        "-m", "--model",
+        default=default_model,
+        help="Model name with optional vendor prefix (e.g. openai:gpt-4.1-mini)",
+    )
+    parser.add_argument(
+        "--completion", action="store_true",
+        help="Force Chat Completions instead of the Responses API for real OpenAI",
+    )
+    args = parser.parse_args()
+
+    if args.completion:
+        import llm7shi.openai
+        llm7shi.openai.USE_COMPLETION = True
+
+    return args
