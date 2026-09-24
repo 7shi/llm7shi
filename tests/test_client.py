@@ -6,11 +6,13 @@ persistence — checked for reliability and symmetry (e.g. copy() must deep-copy
 history so mutating the copy never leaks into the original).
 """
 
+import io
 import pytest
 from unittest.mock import MagicMock, patch, ANY
 from pydantic import BaseModel, Field
 from llm7shi.client import Client
 from llm7shi.response import Response
+from llm7shi.usage import Usage
 
 def test_client_init_and_copy():
     # Pass various parameters to test init & copy
@@ -207,6 +209,39 @@ def test_client_call_quality_retry(mock_generate):
         assert mock_generate.call_count == 3
         # Should have called error warning 2 times
         assert mock_error.call_count == 2
+
+@patch("llm7shi.client.generate_with_schema")
+def test_client_usages_include_retries(mock_generate):
+    # Retried attempts consumed tokens too, so they must count toward the total
+    # even though the caller only ever sees the final Response
+    mock_generate.side_effect = [
+        Response(text="   ", repetition=False, max_length=None, usage=Usage(raw={"input_tokens": 10, "output_tokens": 1})),
+        Response(text="OK", repetition=False, max_length=None, usage=Usage(raw={"input_tokens": 10, "output_tokens": 5})),
+        Response(text="No usage", repetition=False, max_length=None),
+    ]
+    client = Client(model="dummy-model", retries=3)
+    with patch("llm7shi.client.error"):
+        client(prompt="First")
+    client(prompt="Second")  # a response without usage adds nothing
+
+    assert len(client.usages) == 2
+    assert sum(client.usages).to_dict() == {"input_tokens": 20, "output_tokens": 6, "total_tokens": 26}
+
+@patch("llm7shi.client.generate_with_schema")
+def test_client_show_usage(mock_generate):
+    usage = Usage(raw={"input_tokens": 3, "output_tokens": 2})
+    mock_generate.return_value = Response(text="OK", repetition=False, max_length=None, usage=usage)
+    out = io.StringIO()
+    Client(model="dummy-model", file=out)(prompt="Hi")
+    assert out.getvalue() == ""  # off by default
+    Client(model="dummy-model", file=out, show_usage=True)(prompt="Hi")
+    assert out.getvalue() == f"\n{usage}\n"
+    assert Client(show_usage=True).copy().show_usage is True
+
+def test_client_copy_starts_with_empty_usages():
+    client = Client(model="dummy-model")
+    client.usages.append(Usage(raw={"input_tokens": 1}))
+    assert client.copy().usages == []
 
 def test_client_xml_serialization_roundtrip():
     client = Client(model="dummy", include_thoughts=False)

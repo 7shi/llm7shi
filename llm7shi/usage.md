@@ -1,5 +1,7 @@
 # Usage Class
 
+For how a caller typically accumulates, records, and displays usage with this module, see [docs/20260924-usage-log.md](../docs/20260924-usage-log.md).
+
 ## Why This Design
 
 ### Provider-Agnostic Token Usage
@@ -28,3 +30,5 @@ On top of `raw`, `Usage` exposes best-effort normalized properties (`input_token
 **Problem**: This module is the one piece of `llm7shi` a downstream project is likely to want as its *own* command (e.g. a `usage = "llm7shi.usage:main"` entry in its `pyproject.toml [project.scripts]`), not just as a library import. `llm7shi`'s other commands only make sense namespaced under `llm7shi` itself (`llm7shi md ...`), so `__main__.py` is normally where all `argparse` code lives (see `__main__.md`) - but a subcommand nested there (`llm7shi usage show`) can't be pointed at directly by a console-script entry without a wrapper script to strip the leading `"usage"` token off `argv`.
 
 **Solution**: `usage.py` defines its own complete `main()` (with `show`/`merge` subcommands and `-f/--file`), so `argv` handed to it starts directly at `show`/`merge` - no `"usage"` prefix to strip. `llm7shi/__main__.py`'s `usage` subcommand forwards its remaining `argv` here instead of re-declaring the same options, so there is exactly one parser definition either way.
+
+`llm7shi` itself also installs a `llm7shi` console script (`pyproject.toml [project.scripts]`) whose `usage` subcommand reaches this CLI. Registering the command in each downstream project stops scaling once several projects share the same account-level `usage.jsonl`; installing llm7shi once as a tool provides one command for all of them instead. `main()` takes a `prog` argument so that `llm7shi usage -h` shows the name it was invoked by, while a downstream console script keeps argparse's default (its own script name).

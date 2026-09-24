@@ -5,6 +5,7 @@ from xml.dom.minidom import parseString
 from pydantic import BaseModel
 
 from .response import Response
+from .usage import Usage
 from .compat import generate_with_schema
 from .xml import messages_to_xml, xml_to_str, xml_to_messages
 from .terminal import error
@@ -27,6 +28,7 @@ class Client:
         retries: int = DEFAULT_LLM_RETRIES,
         keep_history: bool = True,
         add_json_descriptions: bool = False,
+        show_usage: bool = False,
     ):
         self.model = model
         self.include_thoughts = include_thoughts
@@ -45,7 +47,13 @@ class Client:
         # where schema descriptions already work (Gemini/OpenAI); on for providers that
         # ignore them (Ollama), decided once here instead of at every call site
         self.add_json_descriptions = add_json_descriptions
+        # off by default: existing output stays unchanged; printed per attempt (not
+        # per returned Response) so the printed lines add up to sum(self.usages)
+        self.show_usage = show_usage
         self.history: List[Dict[str, str]] = []
+        # every attempt's usage, including quality retries the caller never sees
+        # as a Response, so sum(client.usages) is what the run actually consumed
+        self.usages: List[Usage] = []
 
     def copy(self) -> 'Client':
         """Create a copy of the Client with the same config and history."""
@@ -60,9 +68,12 @@ class Client:
             check_repetition=self.check_repetition,
             retries=self.retries,
             keep_history=self.keep_history,
-            add_json_descriptions=self.add_json_descriptions
+            add_json_descriptions=self.add_json_descriptions,
+            show_usage=self.show_usage,
         )
         new_client.history = self.history.copy()
+        # usages not copied: each client counts only its own calls, so summing
+        # both never double-counts the calls made before the copy
         return new_client
 
     def set_system_prompt(self, system_prompt: str) -> None:
@@ -166,6 +177,10 @@ class Client:
                 check_repetition=self.check_repetition,
                 file=self.file
             )
+            if resp.usage:
+                self.usages.append(resp.usage)
+                if self.show_usage:
+                    print(f"\n{resp.usage}", file=self.file)
 
             reason = self.should_retry(resp, schema)
             if reason is None:

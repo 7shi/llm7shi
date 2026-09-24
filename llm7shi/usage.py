@@ -360,12 +360,17 @@ def _cmd_merge(file: Path) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, prog: str | None = None) -> int:
     """CLI for summarizing/consolidating usage.jsonl records.
 
-    Run with: uv run -m llm7shi usage <command> [args]
+    Run with: uv run llm7shi usage <command> [args]
+
+    `prog` defaults to argparse's own choice (the invoked script's name), which is
+    right when a downstream project points a console script straight at this
+    function; `llm7shi/__main__.py` passes "llm7shi usage" so help text matches
+    how it was actually invoked.
     """
-    parser = argparse.ArgumentParser(prog="usage", description="Summarize or consolidate usage.jsonl records")
+    parser = argparse.ArgumentParser(prog=prog, description="Summarize or consolidate usage.jsonl records")
     parser.add_argument("-f", "--file", type=Path, default=None,
                         help="Path to usage.jsonl (default: the account-level file under "
                              "$XDG_STATE_HOME or ~/.local/state)")

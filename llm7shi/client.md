@@ -19,6 +19,13 @@ To handle multi-turn conversational agents with built-in execution safety, we en
 
 **Solution**: Added the `add_json_descriptions` constructor flag. When set, a call that passes `schema` appends the rendered descriptions as a final user message, so it is recorded in history and resent on retries exactly like any other prompt segment. Off by default: it changes the text actually sent, which can shift output even where schema descriptions already work (Gemini/OpenAI). Deliberately kept out of the low-level `generate_with_schema()` path, which stays explicit (see [compat.md](compat.md)) — `Client` is the convenience layer, so conveniences belong here.
 
+### Usage Hidden Behind Quality Retries
+**Problem**: A caller totaling token usage can only see `response.usage` of the `Response` it gets back, but the quality retry loop may have generated and discarded several responses before that one, each consuming tokens. Totals built at the call site under-count exactly the runs that went wrong, and every batch caller had to keep its own running total anyway.
+
+**Solution**: `Client` appends each attempt's `Usage` to `self.usages` inside the retry loop, so `sum(client.usages)` is what the client actually consumed. It lives in `Client` rather than `generate_with_schema()` because the retries that hide usage are `Client`'s own, and because conveniences belong in this layer (see above). `copy()` starts the new client with an empty list, unlike `history`: usage is a record of calls made, and copying it would double-count the calls made before the copy when both clients are summed.
+
+The `show_usage` flag (off by default, so existing output is unchanged) prints each `Usage` as it is appended. Printing at the same point as the append, rather than leaving it to the caller's `response.usage`, keeps the printed lines consistent with `sum(client.usages)` when a retry happened.
+
 ### Scattered Conversation State and Execution Logic
 **Problem**: In conversational systems, maintaining the message history list and coordinating the safety wrappers (like runaway-guarding repetition checks) requires boilerplate code that is often duplicated across different callers.
 

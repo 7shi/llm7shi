@@ -30,3 +30,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["llm7shi"]
+
+[project.scripts]
+llm7shi = "llm7shi.__main__:main"

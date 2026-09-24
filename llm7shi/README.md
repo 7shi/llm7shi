@@ -51,7 +51,7 @@ Provider-agnostic token-usage object (`Response.usage`), split out from `respons
 - `find_usage_file()` - The account-level `usage.jsonl` path (`$XDG_STATE_HOME/llm7shi/usage.jsonl`, falling back to `~/.local/state/llm7shi/usage.jsonl`), without creating anything (`append_usage()` creates the directory on first write); pass `search_upward=True` to instead search upward from the current directory for a project-local file, raising `FileNotFoundError` if none is found
 - `format_usage_line()` - Render a model name and its `Usage` as a compact `model|input:N|output:N|...` line
 - `print_today_totals()` - Print a date's `# {date} | {path}` header (home shown as `~`) and per-model `format_usage_line()` lines, reading and parsing `usage.jsonl` itself (`path`/`date` both default to `find_usage_file()`/`today()`; `models` optionally restricts output to the given model names), for downstream CLIs that show today's running total after appending usage
-- `main()` - Standalone `show [-a] [-m MODEL ...]`/`merge` CLI, runnable as `uv run -m llm7shi usage ...` (see [__main__.py](__main__.py) below) or pointed at directly as a downstream project's own console script, e.g. `usage = "llm7shi.usage:main"`
+- `main()` - Standalone `show [-a] [-m MODEL ...]`/`merge` CLI, reachable as the `llm7shi usage` command (see [__main__.py](__main__.py) below) or pointed at directly as a downstream project's own console script, e.g. `usage = "llm7shi.usage:main"`
 
 ### [stream.py](stream.py) - Unified Stream Processing & Retry
 Unified base class and execution loop for streaming LLM generation, coordinating retry loops, exception handling, and real-time output monitoring.
@@ -199,6 +199,7 @@ Stateful LLM client encapsulating chat history tracking, XML serialization integ
 - Configuration via instance properties (model, temperature, etc.) for a clean call signature
 - Integrated quality retry logic (detecting repetition, empty output, or length cap limits)
 - Auto-appending conversation query/responses to history
+- `usages` list collecting every call's `Usage`, including quality retries, for `sum(client.usages)`; `show_usage=True` also prints each one as it arrives
 - `to_xml()` and `load_xml()` helper methods for seamless history persistence
 
 
@@ -217,22 +218,23 @@ Stream monitoring for output quality control, including repetition detection and
 - Channel-based content routing (analysis/final separation)
 
 ### [__main__.py](__main__.py) - Command-Line Entry Point
-Command-line entry point with subcommand dispatch, used mainly for manually checking terminal formatting.
+Command-line entry point with subcommand dispatch, installed as the `llm7shi` command.
 
 **Documentation**: [__main__.md](__main__.md)
 
 **Key Features**:
 - `md` subcommand - Render a Markdown file to the terminal:
   ```bash
-  uv run -m llm7shi md <markdown-file>
+  uv run llm7shi md <markdown-file>
   ```
 - Streams the file through `MarkdownStreamConverter` to exercise the streaming path
 - `usage` subcommand - forwards to `usage.py`'s own `main()` (see [usage.py](usage.py)) rather than redefining its parser here:
   ```bash
-  uv run -m llm7shi usage show [-a] [-m MODEL ...]
-  uv run -m llm7shi usage merge
+  uv run llm7shi usage show [-a] [-m MODEL ...]
+  uv run llm7shi usage merge
   ```
   `-f/--file` overrides `find_usage_file()`'s account-level default path; `show -m/--model` (repeatable) limits output to the given models
+- `--version` prints `__version__`
 - Lives in `__main__.py` (not a submodule) to avoid runpy's import warning
 
 ## Usage Examples

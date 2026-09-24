@@ -96,7 +96,12 @@ Unit tests for the XML serialization/deserialization helper functions in `llm7sh
 #### [test_client.py](test_client.py) - LLM Client Tests
 Unit tests for the stateful Client implementation in `llm7shi/client.py`.
 
-**Key Features**: Initialization, deep copying of history state, callable syntax (`client(...)`), parameter propagation validation, quality retry execution (repetition, empty, max length), XML state loading and saving.
+**Key Features**: Initialization, deep copying of history state, callable syntax (`client(...)`), parameter propagation validation, quality retry execution (repetition, empty, max length), `usages` collecting every attempt including quality retries (and starting empty on `copy()`), `show_usage` printing each attempt's usage (off by default), XML state loading and saving.
+
+#### [test_main.py](test_main.py) - Command-Line Entry Point Tests
+Unit tests for the `llm7shi` command in `llm7shi/__main__.py`.
+
+**Key Features**: `--version` printing the package version, and `usage -h` naming the command as `llm7shi usage`.
 
 ## Running Tests
 

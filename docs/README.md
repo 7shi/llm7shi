@@ -155,6 +155,18 @@ Key topics:
 - Why the gpt-oss template filter was kept despite llama.cpp now parsing reasoning natively
 - `reasoning_effort`/`include_thoughts` forwarded to Chat Completions as a top-level param and `extra_body.chat_template_kwargs.enable_thinking`, merged safely against an existing `extra_body`
 
+### [20260924-usage-log.md](20260924-usage-log.md) - Recording Token Usage in usage.jsonl
+How a downstream CLI accumulates `Response.usage` over a run, records it in the shared `usage.jsonl`, and reads the totals back.
+
+Key topics:
+- Log format and the account-level default path from `find_usage_file()`
+- Typical pattern: `Client.usages` collects every call (including quality retries), `sum()` once at the end, one `append_usage()`, then `print_today_totals()`
+- Three levels of output: each call's `Usage` via `Client(show_usage=True)`, `--- Total Usage ---` for the run, and today's totals from the log
+- Appending once per run versus once per call, and what is lost if a run is killed
+- `USAGE_PATH = None` set via `find_usage_file()` only for metered models (or `--save-usage`), as the program's single switch for recording
+- `models=[...]` to show only the models this run used from a shared file
+- Checking and consolidating the log with the `llm7shi usage show`/`merge` command
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`

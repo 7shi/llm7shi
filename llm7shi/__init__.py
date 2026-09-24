@@ -20,8 +20,6 @@ Example usage:
     response = generate_content_retry(["Question"], config=config)
 """
 
-__name__ = "llm7shi"
-
 from importlib.metadata import version
 __version__ = version("llm7shi")  # single source of truth, avoids hard-coding version here
 
