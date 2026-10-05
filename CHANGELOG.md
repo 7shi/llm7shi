@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`Usage.output_tokens` for Gemini** - Now includes thinking tokens, matching OpenAI and Ollama, so `output_tokens` means the same across providers
+
 ## [0.22.0] - 2026-09-24
 
 ### Added

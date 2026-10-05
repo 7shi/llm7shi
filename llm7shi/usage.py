@@ -51,7 +51,17 @@ class Usage:
 
     @property
     def output_tokens(self) -> Optional[int]:
-        return self._first("output_tokens", "completion_tokens", "candidates_token_count", "eval_count")
+        direct = self._first("output_tokens", "completion_tokens", "eval_count")
+        if direct is not None:
+            return direct
+        # Gemini's candidates count excludes thinking tokens (reported separately), unlike
+        # the other providers whose output count includes reasoning; add them back so
+        # output_tokens means the same everywhere and total = input + output holds
+        candidates = self._first("candidates_token_count")
+        thoughts = self._first("thoughts_token_count")
+        if candidates is None and thoughts is None:
+            return None
+        return (candidates or 0) + (thoughts or 0)
 
     @property
     def reasoning_tokens(self) -> Optional[int]:

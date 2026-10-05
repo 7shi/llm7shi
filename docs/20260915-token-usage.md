@@ -45,7 +45,7 @@ usage_metadata=GenerateContentResponseUsageMetadata(
 ```
 
 - Input: `usage_metadata.prompt_token_count`
-- Output: `usage_metadata.candidates_token_count`
+- Output: `usage_metadata.candidates_token_count` (excludes thinking tokens - see [Does Output Include Reasoning?](#does-output-include-reasoning))
 - Also present: `thoughts_token_count` (reasoning), `total_token_count`, and a per-modality breakdown in `prompt_tokens_details`
 
 ## OpenAI — Responses API (the real-OpenAI default; see [20260903-responses-api.md](20260903-responses-api.md))
@@ -104,6 +104,20 @@ This shape is identical for real OpenAI (Chat Completions) and OpenAI-compatible
 | OpenAI/OpenRouter Chat Completions | yes — `stream_options={"include_usage": True}` | extra chunk with `choices=[]`, `usage` | `prompt_tokens` | `completion_tokens` |
 
 Three different field-naming schemes (`prompt_eval_count`/`eval_count`, `prompt_token_count`/`candidates_token_count`, `input_tokens`/`output_tokens`, `prompt_tokens`/`completion_tokens`) and three different delivery shapes (flat on the final chunk, repeated on every chunk, or as a distinguishable extra chunk). Each `StreamGenerator` subclass's `extract_usage()` (in `llm7shi/stream.py` and the per-provider modules) implements the adapter for its own delivery shape — Ollama and the Responses API both keep whatever came in the last chunk/event, Gemini reads `usage_metadata` off any chunk since it is already cumulative, and the Chat Completions shape scans for the chunk with `choices == []`.
+
+## Does Output Include Reasoning?
+
+The providers disagree on whether the output count already contains reasoning tokens:
+
+| Provider / API | Output field includes reasoning? | Relation |
+|---|---|---|
+| OpenAI (Responses / Chat Completions) | yes - `reasoning_tokens` is a breakdown of it | `total = input + output` (e.g. 13 + 17 = 30, of which reasoning 9) |
+| Ollama | yes - thinking and answer are bundled, no split available | `total = input + output` |
+| Gemini / Gemma | **no** - `thoughts_token_count` is a separate term | `total = input + output + thoughts` (e.g. 8 + 8 + 56 = 72; 8 + 7 + 26 = 41) |
+
+This holds for both `gemini-*` and `gemma-*` models on the Gemini API. Whether thinking *text* comes back is a separate matter: Gemma streams its raw thoughts, whereas Gemini never exposes its thinking and returns at most a summary when the reasoning is long. A short prompt like the one above therefore shows `gemini-3.8-flash` consuming 56 thinking tokens with no thought text at all - expected behavior, not a dropped part.
+
+`Usage.output_tokens` normalizes this to "includes reasoning": for Gemini it is `candidates_token_count + thoughts_token_count` (either may be absent, e.g. thinking cut off before any answer), so `reasoning_tokens` is always a subset of it and `total = input + output` everywhere. `Usage.raw` keeps the untouched provider values.
 
 ## What llm7shi Implements
 

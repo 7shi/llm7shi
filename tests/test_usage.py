@@ -48,10 +48,15 @@ class TestUsageNormalizedFields:
             "total_token_count": 41,
         })
         assert usage.input_tokens == 8
-        assert usage.output_tokens == 7
+        assert usage.output_tokens == 33  # candidates 7 + thoughts 26, like OpenAI's reasoning-inclusive count
         assert usage.reasoning_tokens == 26
         assert usage.cached_tokens is None
         assert usage.total_tokens == 41  # direct field wins over summing
+
+    def test_gemini_output_with_only_one_half(self):
+        assert Usage(raw={"candidates_token_count": 7}).output_tokens == 7
+        assert Usage(raw={"thoughts_token_count": 26}).output_tokens == 26
+        assert Usage(raw={"prompt_token_count": 8}).output_tokens is None
 
     def test_openai_responses_shape(self):
         usage = Usage(raw={
