@@ -445,8 +445,9 @@ class TestOpenAIResponsesIntegration:
 
     @patch('llm7shi.openai.OpenAI')
     @patch('llm7shi.compat.contents_to_openai_messages')
-    def test_include_thoughts_false_omits_reasoning_param(self, mock_messages, mock_openai_class):
-        """include_thoughts=False skips the `reasoning` param even for a reasoning model."""
+    def test_include_thoughts_false_disables_reasoning(self, mock_messages, mock_openai_class):
+        """include_thoughts=False sends effort "none" without a summary, so the
+        model does not think at its own default effort."""
         mock_messages.return_value = [{"role": "user", "content": "Hello"}]
 
         mock_client = MagicMock()
@@ -455,12 +456,33 @@ class TestOpenAIResponsesIntegration:
 
         generate_with_schema(
             contents=["Hello World"],
-            model="openai:o3-mini",
+            model="openai:gpt-5.6-luna",
             include_thoughts=False,
         )
 
         call_kwargs = mock_client.responses.create.call_args[1]
-        assert "reasoning" not in call_kwargs
+        assert call_kwargs["reasoning"] == {"effort": "none"}
+
+    @patch('llm7shi.openai.OpenAI')
+    @patch('llm7shi.compat.contents_to_openai_messages')
+    def test_include_thoughts_false_keeps_explicit_effort(self, mock_messages, mock_openai_class):
+        """An explicit reasoning_effort (e.g. "minimal" for models without "none")
+        replaces the "none" default of include_thoughts=False."""
+        mock_messages.return_value = [{"role": "user", "content": "Hello"}]
+
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+        mock_client.responses.create.return_value = []
+
+        generate_with_schema(
+            contents=["Hello World"],
+            model="openai:gpt-5",
+            include_thoughts=False,
+            reasoning_effort="minimal",
+        )
+
+        call_kwargs = mock_client.responses.create.call_args[1]
+        assert call_kwargs["reasoning"] == {"effort": "minimal"}
 
 
 class TestErrorHandling:

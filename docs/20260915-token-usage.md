@@ -115,7 +115,7 @@ The providers disagree on whether the output count already contains reasoning to
 | Ollama | yes - thinking and answer are bundled, no split available | `total = input + output` |
 | Gemini / Gemma | **no** - `thoughts_token_count` is a separate term | `total = input + output + thoughts` (e.g. 8 + 8 + 56 = 72; 8 + 7 + 26 = 41) |
 
-This holds for both `gemini-*` and `gemma-*` models on the Gemini API. Whether thinking *text* comes back is a separate matter: Gemma streams its raw thoughts, whereas Gemini never exposes its thinking and returns at most a summary when the reasoning is long. A short prompt like the one above therefore shows `gemini-3.8-flash` consuming 56 thinking tokens with no thought text at all - expected behavior, not a dropped part.
+This holds for both `gemini-*` and `gemma-*` models on the Gemini API. Whether thinking *text* comes back is a separate matter: Gemma streams its raw thoughts, whereas Gemini never exposes its thinking and returns at most a summary when the reasoning is long. A short prompt like the one above therefore shows `gemini-3.8-flash` consuming 56 thinking tokens with no thought text at all - expected behavior, not a dropped part. The same counts later showed that `include_thoughts=False` alone does not stop Gemini's thinking; see [20261007-disable-thinking.md](20261007-disable-thinking.md).
 
 `Usage.output_tokens` normalizes this to "includes reasoning": for Gemini it is `candidates_token_count + thoughts_token_count` (either may be absent, e.g. thinking cut off before any answer), so `reasoning_tokens` is always a subset of it and `total = input + output` everywhere. `Usage.raw` keeps the untouched provider values.
 

@@ -167,6 +167,18 @@ Key topics:
 - `models=[...]` to show only the models this run used from a shared file
 - Checking and consolidating the log with the `llm7shi usage show`/`merge` command
 
+### [20261007-disable-thinking.md](20261007-disable-thinking.md) - Making `include_thoughts=False` Stop the Thinking
+Reasoning-token measurements showing that `include_thoughts=False` only hid reasoning on OpenAI and Gemini, and the fixes that make it stop the thinking itself.
+
+Key topics:
+- Why earlier checks missed it: judging by absent thought text instead of reasoning-token counts
+- How `Response.usage`, with reasoning tokens reported across providers, made it measurable
+- OpenAI: omitting `reasoning` leaves the default effort; `effort: "none"` stops it every time
+- Gemini: `ThinkingConfig.include_thoughts` only controls whether thoughts are returned; `thinking_budget=0` stops 2.5 and only reduces 3.x
+- `NO_ZERO_BUDGET_MODEL_RE` skipping Gemma and Pro models, which reject a zero budget
+- OpenRouter: `enabled: false` confirmed to stop reasoning; `exclude: true` measured as hiding it
+- Why local servers (Ollama, llama.cpp) cannot hide reasoning server-side
+
 ## Document Naming Convention
 
 Documents follow the format: `YYYYMMDD-topic-name.md`

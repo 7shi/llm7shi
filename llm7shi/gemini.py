@@ -25,6 +25,11 @@ models = [
 # Default model to use when none specified
 DEFAULT_MODEL = models[0]
 
+# Models that reject thinking_budget=0 (Gemma: "Thinking budget is not supported
+# for this model"; Pro: thinking cannot be turned off), so include_thoughts=False
+# sends no budget for them and they think at their own default.
+NO_ZERO_BUDGET_MODEL_RE = re.compile(r"^gemma|-pro\b", re.IGNORECASE)
+
 # Lazy singleton for Gemini API client — initialized on first use to avoid
 # requiring GEMINI_API_KEY at import time when only other providers are used.
 _client = None
@@ -211,6 +216,13 @@ def generate_content_retry(
         # Call the show_params function (defined later in this module)
         do_show_params(contents, model=model, file=file)
     
+    # ThinkingConfig.include_thoughts only decides whether thought summaries are
+    # returned; the model still thinks at its default budget. include_thoughts=False
+    # must stop the thinking itself, as on the other providers, so it also sends
+    # thinking_budget=0 unless a budget was given (on Gemini 3 this only reduces it).
+    if not include_thoughts and thinking_budget is None and not NO_ZERO_BUDGET_MODEL_RE.search(model):
+        thinking_budget = 0
+
     # Configure thinking process visibility for Gemini 2.5 models
     if include_thoughts or thinking_budget is not None:
         thinking_config = types.ThinkingConfig(include_thoughts=include_thoughts)

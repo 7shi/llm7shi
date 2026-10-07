@@ -120,6 +120,8 @@ The client creation, thinking-enablement, and thinking/answer extraction shown a
 
 `include_thoughts=False` is meant to stop reasoning entirely, not just hide it, but the providers honor this differently.
 
+> **Note (2026-10-07)**: The `gemini-2.5-flash` result below was judged by the absence of thought parts. Measuring `thoughts_token_count` later showed that `ThinkingConfig(include_thoughts=False)` only hides the thoughts while the model keeps thinking; `thinking_budget=0` is what stops it. See [20261007-disable-thinking.md](20261007-disable-thinking.md).
+
 A genuine Gemini model such as `gemini-2.5-flash` honors `--no-think` cleanly. With reasoning disabled, no thought parts come back and only the answer is produced:
 
 ```

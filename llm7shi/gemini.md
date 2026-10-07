@@ -19,6 +19,9 @@ The Gemini API client was built to address several key challenges when working w
 ### Response Object
 Created a comprehensive `Response` dataclass to capture all aspects of generation - not just the final text, but the model used, configuration, raw API response, streaming chunks, and thinking process. This enables debugging and analysis of API interactions.
 
+### Disabling Thinking
+`ThinkingConfig.include_thoughts` only decides whether thought summaries are returned; the model still thinks at its default budget. So `include_thoughts=False` also sends `thinking_budget=0`, which stops thinking on Gemini 2.5 and only reduces it on Gemini 3. `NO_ZERO_BUDGET_MODEL_RE` skips this for Gemma and Pro models, which reject a zero budget. See [20261007-disable-thinking.md](../docs/20261007-disable-thinking.md) for the measurements.
+
 ### Output Length Control
 Added `max_length` parameter to prevent runaway generation costs and `check_repetition` to detect when models get stuck in loops. Quality control logic is now handled by the `StreamMonitor` class (see [monitor.md](monitor.md))
 

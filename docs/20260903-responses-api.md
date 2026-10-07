@@ -34,6 +34,8 @@ if not USE_COMPLETION and base_url is None:
         responses_kwargs["reasoning"] = {"effort": reasoning_effort or "medium", "summary": "auto"}
 ```
 
+Here `include_thoughts=False` was designed as "skip requesting a summary," and whether the model still reasoned was not checked. Omitting `reasoning` turned out to leave the model thinking at its default effort; `include_thoughts=False` now sends `effort: "none"` instead. See [20261007-disable-thinking.md](20261007-disable-thinking.md).
+
 `USE_COMPLETION` (default `False`) is the module-level escape hatch this design still needed: a single flag to fall back to Chat Completions everywhere against real OpenAI, for if the Responses API path misbehaves in practice. `examples/args.py` exposes it as `--completion` for the example scripts.
 
 ## Message and Schema Translation

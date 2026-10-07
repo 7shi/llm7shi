@@ -217,8 +217,8 @@ def generate_content(
     check_repetition: bool = True,
     base_url: str = None,  # points at OpenAI-compatible endpoints (llama.cpp, LocalAI, etc.)
     api_key_env: str = None,
-    include_thoughts: bool = True,  # Responses API: whether to request a reasoning summary; Chat Completions: False disables thinking via extra_body.chat_template_kwargs.enable_thinking
-    reasoning_effort: str = None,  # Responses API: "none"/"minimal"/"low"/"medium"/"high"/"xhigh"/"max" (default: "medium"); Chat Completions: forwarded as-is via the top-level reasoning_effort param (server-dependent, e.g. llama.cpp/vLLM)
+    include_thoughts: bool = True,  # Responses API: False disables thinking via reasoning.effort "none" and skips the summary; Chat Completions: False disables thinking via extra_body.chat_template_kwargs.enable_thinking
+    reasoning_effort: str = None,  # Responses API: "none"/"minimal"/"low"/"medium"/"high"/"xhigh"/"max" (default: "medium", or "none" with include_thoughts=False); Chat Completions: forwarded as-is via the top-level reasoning_effort param (server-dependent, e.g. llama.cpp/vLLM)
     **kwargs
 ) -> Response:
     """Generate with OpenAI API with streaming and monitoring."""
@@ -269,8 +269,14 @@ def generate_content(
         responses_kwargs = dict(kwargs)
         if "response_format" in responses_kwargs:
             responses_kwargs["text"] = _response_format_to_text_format(responses_kwargs.pop("response_format"))
-        if include_thoughts and not NON_REASONING_MODEL_RE.match(model):
-            responses_kwargs["reasoning"] = {"effort": reasoning_effort or "medium", "summary": "auto"}
+        # include_thoughts=False must stop the thinking itself, as it does on the
+        # other providers; omitting `reasoning` would leave the model's own default
+        # effort in place, so effort "none" is sent instead (without a summary).
+        if not NON_REASONING_MODEL_RE.match(model):
+            if include_thoughts:
+                responses_kwargs["reasoning"] = {"effort": reasoning_effort or "medium", "summary": "auto"}
+            else:
+                responses_kwargs["reasoning"] = {"effort": reasoning_effort or "none"}
 
         generator = OpenAIResponsesStreamGenerator(
             model=model,

@@ -65,9 +65,9 @@ def generate_with_schema(
         model: Model name with optional vendor prefix (e.g., "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b", "llama.cpp:my-model" - defaults to http://localhost:8080/v1 unless OPENAI_BASE_URL is set). Defaults to Gemini.
         temperature: Temperature parameter for generation (None = use model default)
         system_prompt: System prompt as string
-        include_thoughts: Whether to include thinking process (Gemini and Ollama; for OpenRouter, False disables reasoning via reasoning.enabled=False; for openai, False skips requesting a reasoning summary; for llama.cpp, False sends chat_template_kwargs.enable_thinking=False)
+        include_thoughts: Whether to include thinking process (Gemini and Ollama; for Gemini, False also sends thinking_budget=0 unless given, except Gemma/Pro models; for OpenRouter, False disables reasoning via reasoning.enabled=False; for openai, False disables reasoning via reasoning.effort="none" (or the given reasoning_effort) without a summary; for llama.cpp, False sends chat_template_kwargs.enable_thinking=False)
         thinking_budget: Optional thinking budget (Gemini only)
-        reasoning_effort: Optional reasoning effort - "none"/"minimal"/"low"/"medium"/"high"/"xhigh"/"max" (openai, default: "medium"; llama.cpp, forwarded as the top-level reasoning_effort param, server-dependent range e.g. "low"/"medium"/"xhigh" for Qwen3.8)
+        reasoning_effort: Optional reasoning effort - "none"/"minimal"/"low"/"medium"/"high"/"xhigh"/"max" (openai, default: "medium", or "none" with include_thoughts=False; llama.cpp, forwarded as the top-level reasoning_effort param, server-dependent range e.g. "low"/"medium"/"xhigh" for Qwen3.8)
         file: File to stream output to. Defaults to sys.stdout.
         show_params: Whether to display parameters before generation
         max_length: Maximum length of generated text (default: None, no limit)

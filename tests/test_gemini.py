@@ -203,6 +203,43 @@ class TestGenerateContentRetry:
         assert call_args[1]['config'].thinking_config.thinking_budget == 50000
 
     @patch('llm7shi.gemini._get_client')
+    def test_include_thoughts_false_sends_zero_budget(self, mock_get_client):
+        """include_thoughts=False sends thinking_budget=0, since include_thoughts
+        alone only hides thoughts while the model still thinks."""
+        mock_stream = mock_get_client.return_value.models.generate_content_stream
+        mock_stream.return_value = iter([MockChunk("Response")])
+
+        generate_content_retry(["Test"], model="gemini-3.8-flash",
+                               include_thoughts=False, file=None)
+
+        thinking_config = mock_stream.call_args[1]['config'].thinking_config
+        assert thinking_config.thinking_budget == 0
+        assert thinking_config.include_thoughts is False
+
+    @patch('llm7shi.gemini._get_client')
+    def test_include_thoughts_false_keeps_explicit_budget(self, mock_get_client):
+        """An explicit thinking_budget replaces the 0 default of include_thoughts=False."""
+        mock_stream = mock_get_client.return_value.models.generate_content_stream
+        mock_stream.return_value = iter([MockChunk("Response")])
+
+        generate_content_retry(["Test"], model="gemini-3.8-flash",
+                               include_thoughts=False, thinking_budget=512, file=None)
+
+        assert mock_stream.call_args[1]['config'].thinking_config.thinking_budget == 512
+
+    @patch('llm7shi.gemini._get_client')
+    def test_include_thoughts_false_no_budget_for_unsupported_models(self, mock_get_client):
+        """Gemma and Pro models reject thinking_budget=0, so no thinking_config is sent."""
+        mock_stream = mock_get_client.return_value.models.generate_content_stream
+        for model in ["gemma-4-31b-it", "gemini-3.1-pro-preview"]:
+            mock_stream.return_value = iter([MockChunk("Response")])
+
+            generate_content_retry(["Test"], model=model, include_thoughts=False, file=None)
+
+            config = mock_stream.call_args[1]['config']
+            assert config is None or config.thinking_config is None
+
+    @patch('llm7shi.gemini._get_client')
     def test_with_config(self, mock_get_client):
         """Test generation with config parameter"""
         mock_stream = mock_get_client.return_value.models.generate_content_stream

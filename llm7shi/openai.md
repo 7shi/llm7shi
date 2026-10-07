@@ -31,6 +31,8 @@ The `base_url` parameter alone isn't a reliable destination check, though: `Open
 
 Because the Responses API rejects the `reasoning` param outright on legacy models, `NON_REASONING_MODEL_RE` (a `gpt-[34]` blacklist, not a reasoning-model whitelist) suppresses it for those regardless of `include_thoughts`/`reasoning_effort` — deliberately a blacklist so newer model families default to being treated as reasoning-capable without a code change.
 
+For reasoning models, `include_thoughts=False` sends `reasoning={"effort": "none"}` rather than omitting `reasoning`. Omitting it only skipped the summary: the model still thought at its own default effort, unlike `include_thoughts=False` on the other providers, which stops the thinking itself. An explicit `reasoning_effort` replaces the `"none"` default, for models that do not accept `"none"` (e.g. `"minimal"` for gpt-5). See [20261007-disable-thinking.md](../docs/20261007-disable-thinking.md) for the measurements.
+
 ### gpt-oss Template Filter Support
 **Problem**: Some OpenAI-compatible servers (particularly llama.cpp with gpt-oss template) emit special control tokens (`<|channel|>`, `<|message|>`, etc.) that separate reasoning process from final output, but these tokens would appear in raw output without filtering.
 
