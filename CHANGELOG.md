@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Default `openrouter:` model** - Now `google/gemma-4-31b-it:free`; the previous default `google/gemma-3-4b-it:free` is no longer offered, so `model="openrouter:"` failed
 - **`include_thoughts=False` for OpenAI reasoning models** - Now stops the thinking itself by sending reasoning effort `none`, as on the other providers; previously it only skipped the reasoning summary while the model still thought at its default effort. An explicit `reasoning_effort` (e.g. `minimal` for models without `none`) takes precedence
 - **`include_thoughts=False` for Gemini models** - Now also sends `thinking_budget=0`, which stops thinking on Gemini 2.5 and reduces it on Gemini 3; previously it only hid the thoughts. Gemma and Pro models, which reject a zero budget, are unchanged, and an explicit `thinking_budget` takes precedence
 

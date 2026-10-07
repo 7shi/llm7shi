@@ -125,7 +125,7 @@ Unified interface for OpenAI, Gemini, and Ollama APIs, enabling seamless switchi
 - `generate_with_schema()` - Unified generation function
 - Vendor prefix support:
   - Core providers: "openai:gpt-4.1-mini", "google:gemini-2.5-flash", "ollama:qwen3:4b"
-  - OpenAI-compatible: "openrouter:google/gemma-3-4b-it:free", "groq:llama-3.1-8b-instant", "grok:grok-4-1", "cerebras:llama3.1-8b"
+  - OpenAI-compatible: "openrouter:google/gemma-4-31b-it:free", "groq:llama-3.1-8b-instant", "grok:grok-4-1", "cerebras:llama3.1-8b"
   - Local llama-server: "llama.cpp:my-model" - defaults to `http://localhost:8080/v1` unless `OPENAI_BASE_URL` is already set
 - Base URL embedding support (e.g., "openai:model@http://localhost:8080/v1") - model name acts as client-side template identifier for llama-server
 - API key environment variable specification (e.g., "openai:model@http://proxy.com/v1|MY_PROXY_KEY")
@@ -280,7 +280,7 @@ print(response.text)
 # OpenAI-compatible providers (OpenRouter, Groq, X.AI)
 response = generate_with_schema(
     contents=["Your prompt"],
-    model="openrouter:"  # Uses default model: google/gemma-3-4b-it:free
+    model="openrouter:"  # Uses default model: google/gemma-4-31b-it:free
 )
 
 response = generate_with_schema(
