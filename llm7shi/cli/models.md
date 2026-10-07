@@ -1,4 +1,4 @@
-# models.py - Provider Model Listing
+# cli/models.py - `llm7shi models` Command
 
 ## Why This Implementation Exists
 

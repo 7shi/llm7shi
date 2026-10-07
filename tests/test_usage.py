@@ -18,12 +18,12 @@ from llm7shi.usage import (
     append_usage,
     find_usage_file,
     format_usage_line,
-    main,
     merge_usage,
     parse_usage_file,
     print_today_totals,
     today,
 )
+from llm7shi.cli.usage import main
 
 
 class TestUsageNormalizedFields:
@@ -391,3 +391,10 @@ class TestFindUsageFile:
         monkeypatch.chdir(tmp_path)
         with pytest.raises(FileNotFoundError):
             find_usage_file(search_upward=True)
+
+
+def test_library_main_forwards_to_cli(tmp_path, capsys):
+    # llm7shi.usage:main is kept for downstream console scripts written before the CLI moved
+    from llm7shi.usage import main as library_main
+    assert library_main(["-f", str(tmp_path / "missing.jsonl"), "merge"]) == 1
+    assert capsys.readouterr().out.endswith("no records\n")

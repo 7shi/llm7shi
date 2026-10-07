@@ -1,11 +1,11 @@
 """
-Tests for the command-line entry point in __main__.py.
+Tests for the command-line entry point in llm7shi/cli/__init__.py.
 """
 
 import pytest
 
 from llm7shi import __version__
-from llm7shi.__main__ import main
+from llm7shi.cli import main
 
 
 def test_version(capsys):

@@ -4,8 +4,8 @@ Tests for the `llm7shi models` CLI (no network: fetch_openrouter_models is mocke
 
 from unittest.mock import patch
 
-from llm7shi.__main__ import main
-from llm7shi.models import format_openrouter_models
+from llm7shi.cli import main
+from llm7shi.cli.models import format_openrouter_models
 
 MODELS = [
     {
@@ -47,7 +47,7 @@ def test_free_filter():
 
 
 def test_cli_dispatch(capsys):
-    with patch("llm7shi.models.fetch_openrouter_models", return_value=MODELS):
+    with patch("llm7shi.cli.models.fetch_openrouter_models", return_value=MODELS):
         assert main(["models", "openrouter", "--free"]) == 0
     out = capsys.readouterr().out
     assert "a/model:free" in out and "z/paid" not in out

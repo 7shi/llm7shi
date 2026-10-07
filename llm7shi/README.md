@@ -51,7 +51,7 @@ Provider-agnostic token-usage object (`Response.usage`), split out from `respons
 - `find_usage_file()` - The account-level `usage.jsonl` path (`$XDG_STATE_HOME/llm7shi/usage.jsonl`, falling back to `~/.local/state/llm7shi/usage.jsonl`), without creating anything (`append_usage()` creates the directory on first write); pass `search_upward=True` to instead search upward from the current directory for a project-local file, raising `FileNotFoundError` if none is found
 - `format_usage_line()` - Render a model name and its `Usage` as a compact `model|input:N|output:N|...` line
 - `print_today_totals()` - Print a date's `# {date} | {path}` header (home shown as `~`) and per-model `format_usage_line()` lines, reading and parsing `usage.jsonl` itself (`path`/`date` both default to `find_usage_file()`/`today()`; `models` optionally restricts output to the given model names), for downstream CLIs that show today's running total after appending usage
-- `main()` - Standalone `show [-a] [-m MODEL ...]`/`merge` CLI, reachable as the `llm7shi usage` command (see [__main__.py](__main__.py) below) or pointed at directly as a downstream project's own console script, e.g. `usage = "llm7shi.usage:main"`
+- `main()` - Forwards to [cli/usage.py](cli/usage.py)'s CLI, kept so existing `llm7shi.usage:main` console-script entries keep working
 
 ### [stream.py](stream.py) - Unified Stream Processing & Retry
 Unified base class and execution loop for streaming LLM generation, coordinating retry loops, exception handling, and real-time output monitoring.
@@ -217,39 +217,42 @@ Stream monitoring for output quality control, including repetition detection and
 - `GptOssTemplateFilter` - Parser for gpt-oss template control tokens
 - Channel-based content routing (analysis/final separation)
 
-### [models.py](models.py) - Provider Model Listing
-Lists the models a provider offers, to pick a value for the `model` argument. Currently supports OpenRouter, fetched live from its public API (no API key needed).
+### [cli/](cli/) - Command-Line Interface
+The `llm7shi` command, installed via `pyproject.toml [project.scripts]`. `python -m llm7shi` ([__main__.py](__main__.py), [__main__.md](__main__.md)) runs the same dispatcher.
 
-**Documentation**: [models.md](models.md)
-
-**Key Features**:
-- `format_openrouter_models(models, free=False)` - Table sorted by ID: context, max output, USD per 1M tokens, non-text inputs, reasoning (`must`/`on`/`opt`), tool calling, structured outputs (`schema`/`mode`), expiration date
-- `--free` limits the list to IDs ending with `:free`
-- `main()` - CLI reachable as `llm7shi models openrouter [--free]`
-
-### [__main__.py](__main__.py) - Command-Line Entry Point
-Command-line entry point with subcommand dispatch, installed as the `llm7shi` command.
-
-**Documentation**: [__main__.md](__main__.md)
+#### [cli/__init__.py](cli/__init__.py) - Dispatcher
+**Documentation**: [cli/__init__.md](cli/__init__.md)
 
 **Key Features**:
-- `md` subcommand - Render a Markdown file to the terminal:
+- `md` subcommand - Render a Markdown file to the terminal, streamed through `MarkdownStreamConverter` to exercise the streaming path:
   ```bash
   uv run llm7shi md <markdown-file>
   ```
-- Streams the file through `MarkdownStreamConverter` to exercise the streaming path
-- `usage` subcommand - forwards to `usage.py`'s own `main()` (see [usage.py](usage.py)) rather than redefining its parser here:
+- `usage` and `models` subcommands - forwarded to their own modules below rather than redefining their parsers here
+- `--version` prints `__version__`
+
+#### [cli/usage.py](cli/usage.py) - Usage Log Command
+**Documentation**: [cli/usage.md](cli/usage.md)
+
+**Key Features**:
+- `show [-a] [-m MODEL ...]`/`merge` over `usage.jsonl`; `-f/--file` overrides `find_usage_file()`'s account-level default path; `show -m/--model` (repeatable) limits output to the given models:
   ```bash
   uv run llm7shi usage show [-a] [-m MODEL ...]
   uv run llm7shi usage merge
   ```
-  `-f/--file` overrides `find_usage_file()`'s account-level default path; `show -m/--model` (repeatable) limits output to the given models
-- `models` subcommand - forwards to `models.py`'s `main()` the same way:
+- `main()` can be pointed at directly as a downstream project's own console script, e.g. `usage = "llm7shi.cli.usage:main"`
+
+#### [cli/models.py](cli/models.py) - Provider Model Listing
+Lists the models a provider offers, to pick a value for the `model` argument. Currently supports OpenRouter, fetched live from its public API (no API key needed).
+
+**Documentation**: [cli/models.md](cli/models.md)
+
+**Key Features**:
+- `format_openrouter_models(models, free=False)` - Table sorted by ID: context, max output, USD per 1M tokens, non-text inputs, reasoning (`must`/`on`/`opt`), tool calling, structured outputs (`schema`/`mode`), expiration date
+- `--free` limits the list to IDs ending with `:free`:
   ```bash
   uv run llm7shi models openrouter [--free]
   ```
-- `--version` prints `__version__`
-- Lives in `__main__.py` (not a submodule) to avoid runpy's import warning
 
 ## Usage Examples
 

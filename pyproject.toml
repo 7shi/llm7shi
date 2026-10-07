@@ -32,4 +32,4 @@ build-backend = "hatchling.build"
 packages = ["llm7shi"]
 
 [project.scripts]
-llm7shi = "llm7shi.__main__:main"
+llm7shi = "llm7shi.cli:main"
