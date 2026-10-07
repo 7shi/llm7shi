@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`llm7shi models openrouter` command** - Lists OpenRouter models sorted by ID with context and output limits, prices, input types, reasoning, tool and structured-output support, and expiration dates; `--free` shows only `:free` models
+
 ### Fixed
 - **Default `openrouter:` model** - Now `google/gemma-4-31b-it:free`; the previous default `google/gemma-3-4b-it:free` is no longer offered, so `model="openrouter:"` failed
 - **`include_thoughts=False` for OpenAI reasoning models** - Now stops the thinking itself by sending reasoning effort `none`, as on the other providers; previously it only skipped the reasoning summary while the model still thought at its default effort. An explicit `reasoning_effort` (e.g. `minimal` for models without `none`) takes precedence

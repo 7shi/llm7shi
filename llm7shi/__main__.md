@@ -40,6 +40,9 @@ uv run llm7shi usage merge
 `usage.main()` receives `prog="llm7shi usage"` so its help shows the name it
 was invoked by rather than a bare script name.
 
+`models` is forwarded to `models.main()` the same way, so its per-provider
+options are defined only in `models.py`.
+
 ### Installed as the `llm7shi` Command
 **Problem**: Separate console scripts per use (e.g. an `llm7shi-usage`) would
 add one more name to `PATH` for every future command, and each would need

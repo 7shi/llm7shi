@@ -217,6 +217,16 @@ Stream monitoring for output quality control, including repetition detection and
 - `GptOssTemplateFilter` - Parser for gpt-oss template control tokens
 - Channel-based content routing (analysis/final separation)
 
+### [models.py](models.py) - Provider Model Listing
+Lists the models a provider offers, to pick a value for the `model` argument. Currently supports OpenRouter, fetched live from its public API (no API key needed).
+
+**Documentation**: [models.md](models.md)
+
+**Key Features**:
+- `format_openrouter_models(models, free=False)` - Table sorted by ID: context, max output, USD per 1M tokens, non-text inputs, reasoning (`must`/`on`/`opt`), tool calling, structured outputs (`schema`/`mode`), expiration date
+- `--free` limits the list to IDs ending with `:free`
+- `main()` - CLI reachable as `llm7shi models openrouter [--free]`
+
 ### [__main__.py](__main__.py) - Command-Line Entry Point
 Command-line entry point with subcommand dispatch, installed as the `llm7shi` command.
 
@@ -234,6 +244,10 @@ Command-line entry point with subcommand dispatch, installed as the `llm7shi` co
   uv run llm7shi usage merge
   ```
   `-f/--file` overrides `find_usage_file()`'s account-level default path; `show -m/--model` (repeatable) limits output to the given models
+- `models` subcommand - forwards to `models.py`'s `main()` the same way:
+  ```bash
+  uv run llm7shi models openrouter [--free]
+  ```
 - `--version` prints `__version__`
 - Lives in `__main__.py` (not a submodule) to avoid runpy's import warning
 

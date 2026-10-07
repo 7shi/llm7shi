@@ -12,6 +12,7 @@ import sys
 from . import __version__
 from .terminal import render_file
 from . import usage as usage_module
+from . import models as models_module
 
 
 def main(argv=None):
@@ -22,6 +23,8 @@ def main(argv=None):
     # rather than redefining its parser here.
     if argv and argv[0] == "usage":
         return usage_module.main(argv[1:], prog="llm7shi usage")
+    if argv and argv[0] == "models":
+        return models_module.main(argv[1:], prog="llm7shi models")
 
     parser = argparse.ArgumentParser(
         prog="llm7shi",
@@ -47,6 +50,12 @@ def main(argv=None):
         help="Show or merge recorded token usage (usage.jsonl); "
              "run 'llm7shi usage -h' for its options",
         add_help=False,  # never reached: "usage" is dispatched above before parsing
+    )
+    sub.add_parser(
+        "models",
+        help="List the models a provider offers (e.g. 'openrouter --free'); "
+             "run 'llm7shi models -h' for its options",
+        add_help=False,  # never reached: dispatched above like "usage"
     )
 
     args = parser.parse_args(argv)
