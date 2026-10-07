@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-10-07
+
 ### Added
 - **`llm7shi chat <model>` command** - Interactive chat showing usage and tokens/s after each reply, with `/think [on|off]`, `/clear`, `/help` and `/exit`; usage is recorded like other OpenAI runs (`--save-usage` for any model)
 - **`llm7shi models openrouter` command** - Lists OpenRouter models with limits, prices and capabilities; `--free` shows only free models
