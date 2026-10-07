@@ -12,7 +12,7 @@ from ..terminal import render_file
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else list(argv)
 
-    # "usage" and "models" own their argparse CLIs (see usage.py, models.py); forward
+    # "usage", "models" and "chat" own their argparse CLIs (see usage.py etc.); forward
     # to them rather than redefining their parsers here. Imported on demand so that
     # `python -m llm7shi.cli.usage` does not find itself already in sys.modules
     # (runpy's RuntimeWarning).
@@ -22,6 +22,9 @@ def main(argv=None):
     if argv and argv[0] == "models":
         from .models import main as models_main
         return models_main(argv[1:], prog="llm7shi models")
+    if argv and argv[0] == "chat":
+        from .chat import main as chat_main
+        return chat_main(argv[1:], prog="llm7shi chat")
 
     parser = argparse.ArgumentParser(
         prog="llm7shi",
@@ -52,6 +55,11 @@ def main(argv=None):
         "models",
         help="List the models a provider offers (e.g. 'openrouter --free'); "
              "run 'llm7shi models -h' for its options",
+        add_help=False,  # never reached: dispatched above like "usage"
+    )
+    sub.add_parser(
+        "chat",
+        help="Chat interactively with a model; run 'llm7shi chat -h' for its options",
         add_help=False,  # never reached: dispatched above like "usage"
     )
 

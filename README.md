@@ -158,10 +158,11 @@ llm7shi usage show -a     # every date plus a grand total
 llm7shi usage merge       # collapse to one record per UTC date and model
 ```
 
-To pick an OpenRouter model, list them sorted by ID (`--free` keeps only `:free` models):
+To pick an OpenRouter model, list them sorted by ID (`--free` keeps only `:free` models), then try one interactively (`/help` lists the chat commands):
 
 ```bash
 llm7shi models openrouter --free
+llm7shi chat openrouter:google/gemma-4-31b-it:free
 ```
 
 Inside a project that depends on llm7shi, `uv run llm7shi usage ...` does the same. Run `llm7shi --help` for the other subcommands. For the design rationale, see [llm7shi/usage.md](llm7shi/usage.md).

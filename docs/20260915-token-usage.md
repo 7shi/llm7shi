@@ -114,10 +114,13 @@ The providers disagree on whether the output count already contains reasoning to
 | OpenAI (Responses / Chat Completions) | yes - `reasoning_tokens` is a breakdown of it | `total = input + output` (e.g. 13 + 17 = 30, of which reasoning 9) |
 | Ollama | yes - thinking and answer are bundled, no split available | `total = input + output` |
 | Gemini / Gemma | **no** - `thoughts_token_count` is a separate term | `total = input + output + thoughts` (e.g. 8 + 8 + 56 = 72; 8 + 7 + 26 = 41) |
+| OpenRouter (some upstream providers) | **no** - seen as `completion_tokens` smaller than `reasoning_tokens` | `total = input + output`, reasoning outside both (e.g. 11 + 592 = 603, with reasoning 737) |
 
 This holds for both `gemini-*` and `gemma-*` models on the Gemini API. Whether thinking *text* comes back is a separate matter: Gemma streams its raw thoughts, whereas Gemini never exposes its thinking and returns at most a summary when the reasoning is long. A short prompt like the one above therefore shows `gemini-3.8-flash` consuming 56 thinking tokens with no thought text at all - expected behavior, not a dropped part. The same counts later showed that `include_thoughts=False` alone does not stop Gemini's thinking; see [20261007-disable-thinking.md](20261007-disable-thinking.md).
 
-`Usage.output_tokens` normalizes this to "includes reasoning": for Gemini it is `candidates_token_count + thoughts_token_count` (either may be absent, e.g. thinking cut off before any answer), so `reasoning_tokens` is always a subset of it and `total = input + output` everywhere. `Usage.raw` keeps the untouched provider values.
+OpenRouter normally follows OpenAI (e.g. 8 + 29 = 37 with reasoning 22 for `google/gemma-4-31b-it:free`), so the exclusion can only be detected when it is unambiguous: `completion_tokens < reasoning_tokens`. When reasoning is smaller than the completion count, excluded and included reasoning look the same and the count is taken as included.
+
+`Usage.output_tokens` normalizes this to "includes reasoning": for Gemini it is `candidates_token_count + thoughts_token_count` (either may be absent, e.g. thinking cut off before any answer), and for a Chat Completions response with `completion_tokens < reasoning_tokens` it is their sum (with `total_tokens` recomputed as input + output), so `reasoning_tokens` is always a subset of it and `total = input + output` everywhere. `Usage.raw` keeps the untouched provider values.
 
 ## What llm7shi Implements
 

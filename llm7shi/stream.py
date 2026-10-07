@@ -1,4 +1,5 @@
 import sys
+import time
 from typing import Optional, List, Any
 
 from .response import Response
@@ -65,6 +66,8 @@ class StreamGenerator:
             )
             chunks = []
             try:
+                # per attempt, so a retry's countdown is not counted as processing time
+                start_time = time.monotonic()
                 stream = self.make_stream()
                 with processor:
                     for chunk in stream:
@@ -76,6 +79,7 @@ class StreamGenerator:
                                 stream._client.close()
                             break
                 self.finalize_stream(processor)
+                end_time = time.monotonic()  # after finalize_stream, which may still flush buffered text
 
                 raw_usage = self.extract_usage(chunks)
 
@@ -90,6 +94,10 @@ class StreamGenerator:
                     repetition=processor.repetition_detected,
                     max_length=processor.max_length_exceeded,
                     usage=Usage(raw=raw_usage) if raw_usage is not None else None,
+                    start_time=start_time,
+                    thoughts_start_time=processor.thoughts_start_time,
+                    text_start_time=processor.text_start_time,
+                    end_time=end_time,
                 )
 
             except Exception as e:

@@ -7,6 +7,7 @@ Whitespace detection uses weighted calculation:
 - Threshold: 512 weighted units
 """
 import sys
+import time
 from typing import Optional
 from math import ceil
 import re
@@ -337,6 +338,10 @@ class StreamProcessor:
         self.text = ""      # Raw server answer text (verbatim)
         self._thoughts_shown = False
         self._answer_shown = False
+        # set on the first non-empty chunk of each section, before display, so they
+        # mark arrival rather than when buffered markdown reaches the terminal
+        self.thoughts_start_time: Optional[float] = None
+        self.text_start_time: Optional[float] = None
         self._held = ""  # Trailing newlines held back from display only
         self._leading = True  # Drop leading newlines at the start of a section
         self._last_char = ""  # Last character written to the display
@@ -358,6 +363,8 @@ class StreamProcessor:
         """
         if not chunk:
             return True
+        if self.thoughts_start_time is None:
+            self.thoughts_start_time = time.monotonic()
         if not self._thoughts_shown:
             self._emit_header(THINKING_HEADER)
             self._thoughts_shown = True
@@ -376,6 +383,8 @@ class StreamProcessor:
         """
         if not chunk:
             return True
+        if self.text_start_time is None:
+            self.text_start_time = time.monotonic()
         if self._thoughts_shown and not self._answer_shown:
             self._close_section()
             self._emit_header(ANSWER_HEADER)

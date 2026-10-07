@@ -61,7 +61,7 @@ Unit tests for vendor prefix functionality in `llm7shi/compat.py`.
 #### [test_stream.py](test_stream.py) - Stream Generator Module Tests
 Unit tests for the core `StreamGenerator` base class and execution loop in `llm7shi/stream.py`.
 
-**Key Features**: Streaming generator success, early stopping via monitor, rate-limit countdown retry execution, exception propagation, backoff sleeps, and wrapping `extract_usage()`'s result into a `Usage` object.
+**Key Features**: Streaming generator success, early stopping via monitor, rate-limit countdown retry execution, exception propagation, backoff sleeps, wrapping `extract_usage()`'s result into a `Usage` object, and recording request/first-thought/first-answer/end timestamps on `Response` (restarted per retry attempt).
 
 #### [test_response.py](test_response.py) - Response Module Tests
 Unit tests for the `Response` dataclass in `llm7shi/response.py`.
@@ -71,7 +71,7 @@ Unit tests for the `Response` dataclass in `llm7shi/response.py`.
 #### [test_usage.py](test_usage.py) - Usage Module Tests
 Unit tests for the `Usage` dataclass and the usage.jsonl persistence helpers in `llm7shi/usage.py`.
 
-**Key Features**: Normalized field fallback across each provider's raw shape (Ollama, Gemini, OpenAI Responses, OpenAI Chat Completions), `to_dict()` omitting `None`s and `raw`, `__repr__` matching `to_dict()`, `+` aggregation across multiple calls (ignoring `raw`, chaining correctly); `format_usage_line()`'s compact rendering; `append_usage()`/`parse_usage_file()` round-tripping and summing records with UTC date bucketing; `merge_usage()` consolidating same-day/model records idempotently; `print_today_totals()`'s date lookup, model filtering, and default path/date; `append_usage()` creating missing parent directories; `find_usage_file()`'s account-level default (`$XDG_STATE_HOME` or `~/.local/state`) without creating anything, and `search_upward=True`'s upward search with `FileNotFoundError` when nothing is found; the `llm7shi usage show -m` CLI (`llm7shi/cli/usage.py`), and `llm7shi.usage.main` still forwarding to it.
+**Key Features**: Normalized field fallback across each provider's raw shape (Ollama, Gemini, OpenAI Responses, OpenAI Chat Completions), `to_dict()` omitting `None`s and `raw`, `__repr__` matching `to_dict()`, `+` aggregation across multiple calls (ignoring `raw`, chaining correctly); `format_usage_line()`'s compact rendering; `append_usage()`/`parse_usage_file()` round-tripping and summing records with UTC date bucketing; `merge_usage()` consolidating same-day/model records idempotently; Chat Completions reasoning folded into output/total when `completion_tokens < reasoning_tokens`; `print_today_totals()`'s date lookup, model filtering, and default path/date; `append_usage()` creating missing parent directories; `find_usage_file()`'s account-level default (`$XDG_STATE_HOME` or `~/.local/state`) without creating anything, and `search_upward=True`'s upward search with `FileNotFoundError` when nothing is found; the `llm7shi usage show -m` CLI (`llm7shi/cli/usage.py`), and `llm7shi.usage.main` still forwarding to it.
 
 #### [test_terminal.py](test_terminal.py) - Terminal Formatting Tests
 Unit tests for terminal output formatting in `llm7shi/terminal.py`.
@@ -102,6 +102,11 @@ Unit tests for the stateful Client implementation in `llm7shi/client.py`.
 Unit tests for the `llm7shi` command in `llm7shi/cli/__init__.py`.
 
 **Key Features**: `--version` printing the package version, and `usage -h` naming the command as `llm7shi usage`.
+
+#### [test_cli_chat.py](test_cli_chat.py) - Chat Command Tests
+Unit tests for `llm7shi chat` in `llm7shi/cli/chat.py`, with generation mocked and input fed until a simulated Ctrl+D.
+
+**Key Features**: Per-turn usage line with input/output tokens/s, `/think` showing and toggling `include_thoughts`, `/clear` emptying the history, `/help` and `/exit`, usage recorded once on exit for `openai:`/`gpt-` models or `--save-usage` (also on Ctrl+C, including attempts of a failed turn), an API error keeping the session alive without adding the failed prompt to history, `format_stats()` formatting, and `token_rates()` excluding reasoning tokens and thinking time (falling back to all output when no reasoning count is reported).
 
 #### [test_cli_models.py](test_cli_models.py) - Model Listing Command Tests
 Unit tests for `llm7shi models` in `llm7shi/cli/models.py`, with the OpenRouter fetch mocked.

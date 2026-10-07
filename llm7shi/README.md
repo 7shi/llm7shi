@@ -38,6 +38,7 @@ Provider-agnostic response object that encapsulates results from LLM API calls.
 - Text, thoughts, and metadata access
 - String conversion support
 - `usage: Optional[Usage]` field - see [usage.py](usage.py) below
+- `start_time`/`thoughts_start_time`/`text_start_time`/`end_time` - `time.monotonic()` points of the request, the first thinking chunk, the first answer chunk, and the end of the stream (for the attempt that produced this response), for deriving time to first token or answer-only tokens/s
 
 ### [usage.py](usage.py) - Token-Usage Data Class
 Provider-agnostic token-usage object (`Response.usage`), split out from `response.py` once it grew its own set of normalization and aggregation logic.
@@ -228,7 +229,7 @@ The `llm7shi` command, installed via `pyproject.toml [project.scripts]`. `python
   ```bash
   uv run llm7shi md <markdown-file>
   ```
-- `usage` and `models` subcommands - forwarded to their own modules below rather than redefining their parsers here
+- `usage`, `models` and `chat` subcommands - forwarded to their own modules below rather than redefining their parsers here
 - `--version` prints `__version__`
 
 #### [cli/usage.py](cli/usage.py) - Usage Log Command
@@ -253,6 +254,19 @@ Lists the models a provider offers, to pick a value for the `model` argument. Cu
   ```bash
   uv run llm7shi models openrouter [--free]
   ```
+
+#### [cli/chat.py](cli/chat.py) - Interactive Chat
+**Documentation**: [cli/chat.md](cli/chat.md)
+
+**Key Features**:
+- Chat with one model through `Client`, keeping history across turns:
+  ```bash
+  uv run llm7shi chat openrouter:google/gemma-4-31b-it:free
+  ```
+- Each turn ends with an `input:N (N tps) | output:N (N tps) | ...` line (usage summed over quality retries; tokens/s from the final attempt's `Response` timestamps: input over the time to the first chunk, which includes network latency, and output over the answer's own span using answer tokens only, since OpenAI and Gemini don't stream their thinking in full)
+- `/think` shows whether thinking is on (default on), `/think on|off` switches it; `/clear` clears the conversation history; `/help`; `/exit` or Ctrl+D to quit
+- An API error is reported and the session continues; the failed prompt is not added to history
+- For `openai:`/`gpt-` models, or any model with `--save-usage` (the rule from [docs/20260924-usage-log.md](../docs/20260924-usage-log.md)), the session's usage is appended to `usage.jsonl` on exit (Ctrl+C included) and today's totals for the model are printed
 
 ## Usage Examples
 

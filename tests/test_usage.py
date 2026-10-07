@@ -86,6 +86,21 @@ class TestUsageNormalizedFields:
         assert usage.cached_tokens == 0
         assert usage.total_tokens == 164
 
+    def test_chat_completions_reasoning_outside_completion(self):
+        # some upstream providers on OpenRouter report reasoning on top of completion_tokens
+        # (completion < reasoning is impossible otherwise); fold it back in, total included
+        usage = Usage(raw={
+            "prompt_tokens": 11,
+            "completion_tokens": 592,
+            "completion_tokens_details": {"reasoning_tokens": 737},
+            "total_tokens": 603,
+        })
+        assert usage.output_tokens == 1329
+        assert usage.reasoning_tokens == 737
+        assert usage.total_tokens == 1340
+        # the folded values survive aggregation, where raw holds normalized names
+        assert (usage + usage).output_tokens == 2658
+
     def test_missing_fields_return_none(self):
         usage = Usage(raw={})
         assert usage.input_tokens is None

@@ -23,6 +23,15 @@ class Response:
             Pydantic schema was used), set when a schema is passed to Client.__call__
         usage: Token-usage info as a Usage object, or None if the provider
             didn't return any. See Usage for details
+        start_time: When the request was sent (time.monotonic()), for the attempt
+            that produced this response; waits before API-error retries are not
+            included. The *_time fields are only meaningful as differences between
+            each other, not as wall-clock times
+        thoughts_start_time: When the first thinking chunk arrived, or None if
+            no thinking was streamed
+        text_start_time: When the first answer chunk arrived, or None if there
+            was no answer text
+        end_time: When the stream finished (or was stopped early)
     """
     model: Optional[str] = None
     config: Optional[Any] = None  # provider-specific objects stay Any; only common fields are standardized
@@ -35,6 +44,10 @@ class Response:
     max_length: Optional[int] = None  # set only when truncated by max_length; None means natural completion
     data: Optional[Any] = None
     usage: Optional[Usage] = None
+    start_time: Optional[float] = None
+    thoughts_start_time: Optional[float] = None
+    text_start_time: Optional[float] = None
+    end_time: Optional[float] = None
 
     def __str__(self) -> str:
         """Return the text content when converting to string."""

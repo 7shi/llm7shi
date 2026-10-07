@@ -8,15 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **`llm7shi models openrouter` command** - Lists OpenRouter models sorted by ID with context and output limits, prices, input types, reasoning, tool and structured-output support, and expiration dates; `--free` shows only `:free` models
+- **`llm7shi chat <model>` command** - Interactive chat showing usage and tokens/s after each reply, with `/think [on|off]`, `/clear`, `/help` and `/exit`; usage is recorded like other OpenAI runs (`--save-usage` for any model)
+- **`llm7shi models openrouter` command** - Lists OpenRouter models with limits, prices and capabilities; `--free` shows only free models
+- **Stream timestamps on `Response`** - `start_time`, `thoughts_start_time`, `text_start_time` and `end_time` for measuring latency and tokens/s
 
 ### Changed
-- **Command-line code moved to `llm7shi.cli`** - Downstream console scripts can now point at `llm7shi.cli.usage:main`; the old `llm7shi.usage:main` still works
+- **CLI code moved to `llm7shi.cli`** - Point console scripts at `llm7shi.cli.usage:main`; `llm7shi.usage:main` still works
 
 ### Fixed
-- **Default `openrouter:` model** - Now `google/gemma-4-31b-it:free`; the previous default `google/gemma-3-4b-it:free` is no longer offered, so `model="openrouter:"` failed
-- **`include_thoughts=False` for OpenAI reasoning models** - Now stops the thinking itself by sending reasoning effort `none`, as on the other providers; previously it only skipped the reasoning summary while the model still thought at its default effort. An explicit `reasoning_effort` (e.g. `minimal` for models without `none`) takes precedence
-- **`include_thoughts=False` for Gemini models** - Now also sends `thinking_budget=0`, which stops thinking on Gemini 2.5 and reduces it on Gemini 3; previously it only hid the thoughts. Gemma and Pro models, which reject a zero budget, are unchanged, and an explicit `thinking_budget` takes precedence
+- **`include_thoughts=False` on OpenAI and Gemini** - Now actually stops (or, on Gemini 3, reduces) the thinking instead of only hiding it; an explicit `reasoning_effort`/`thinking_budget` still takes precedence
+- **`Usage.output_tokens` on some OpenRouter models** - Now includes reasoning tokens even when the provider reports them separately
+- **Default `openrouter:` model** - Changed to `google/gemma-4-31b-it:free`, since the previous one is no longer offered
 
 ## [0.22.1] - 2026-10-06
 

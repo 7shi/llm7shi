@@ -3,8 +3,8 @@
 ## Why This Implementation Exists
 
 The library needs a small command-line surface: eyeballing terminal formatting
-(`md`), inspecting the shared usage log (`usage`), and picking a model
-(`models`).
+(`md`), inspecting the shared usage log (`usage`), picking a model
+(`models`), and trying one interactively (`chat`).
 
 ### A Separate `cli` Package
 **Problem**: CLI code was spread across library modules (`__main__.py`, the
@@ -33,8 +33,8 @@ script pointing at this `main()` would have to strip a leading `"usage"` off
 **Solution**: Each subcommand module owns a complete `main(argv, prog)`, and
 this module forwards `argv[1:]` to it before the top-level parser runs, passing
 `prog` so help shows `llm7shi usage` rather than a bare script name. `models`
-is forwarded the same way, so its per-provider options are defined only in
-`cli/models.py`. The forwarded modules are imported on demand rather than at
+and `chat` are forwarded the same way, so their options are defined only in
+their own modules. The forwarded modules are imported on demand rather than at
 package import, so running one with `python -m llm7shi.cli.usage` does not hit
 runpy's "found in sys.modules" warning.
 

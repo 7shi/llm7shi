@@ -174,3 +174,31 @@ def test_module_helpers_delegation():
         assert mock_sleep.call_count == 3
         assert fallback_file.getvalue() == "\rwait 2s\rwait 1s\rwait 0s\n"
 
+
+
+def test_stream_generator_records_timestamps():
+    class ThinkingGenerator(MockStreamGenerator):
+        def process_chunk(self, chunk, processor):
+            if chunk.startswith("T:"):
+                processor.add_thought(chunk[2:])
+            else:
+                processor.add_text(chunk)
+            return True
+
+    clock = iter([1.0, 2.0, 3.0, 4.0])
+    generator = ThinkingGenerator(stream_data=["T:hmm", "T:more", "answer", "!"], file=None)
+    with patch("time.monotonic", side_effect=lambda: next(clock)):
+        response = generator.generate()
+    # request, first thought, first answer chunk, end; later chunks don't move the starts
+    assert (response.start_time, response.thoughts_start_time,
+            response.text_start_time, response.end_time) == (1.0, 2.0, 3.0, 4.0)
+
+
+def test_stream_generator_timestamps_restart_on_retry():
+    clock = iter([1.0, 50.0, 51.0, 52.0])
+    generator = MockStreamGenerator(stream_data=["ok"], error_map={1: KeyError("Rate limit")}, file=None)
+    with patch("time.sleep"), patch("time.monotonic", side_effect=lambda: next(clock)):
+        response = generator.generate()
+    # the failed attempt's start (1.0) and the countdown are not part of this response
+    assert (response.start_time, response.thoughts_start_time,
+            response.text_start_time, response.end_time) == (50.0, None, 51.0, 52.0)

@@ -48,8 +48,18 @@ class Usage:
     def input_tokens(self) -> Optional[int]:
         return self._first("input_tokens", "prompt_tokens", "prompt_token_count", "prompt_eval_count")
 
+    def _completion_excludes_reasoning(self) -> bool:
+        # Chat Completions (OpenRouter etc.) normally counts reasoning inside
+        # completion_tokens, but some upstream providers report it on top instead;
+        # a reasoning count larger than the completion count can only mean that
+        completion = self.raw.get("completion_tokens")
+        reasoning = self._first_nested(("completion_tokens_details", "reasoning_tokens"))
+        return completion is not None and reasoning is not None and completion < reasoning
+
     @property
     def output_tokens(self) -> Optional[int]:
+        if self._completion_excludes_reasoning():
+            return self.raw["completion_tokens"] + self.raw["completion_tokens_details"]["reasoning_tokens"]
         direct = self._first("output_tokens", "completion_tokens", "eval_count")
         if direct is not None:
             return direct
@@ -90,6 +100,8 @@ class Usage:
     def total_tokens(self) -> Optional[int]:
         # every provider but Ollama reports a total directly; Ollama's own API never
         # surfaces a combined count either, so it's summed here from the two halves
+        if self._completion_excludes_reasoning() and self.input_tokens is not None:
+            return self.input_tokens + self.output_tokens  # provider total omits the reasoning too
         direct = self._first("total_tokens", "total_token_count")
         if direct is not None:
             return direct
